@@ -28,6 +28,7 @@ class ViewResultItem(BaseModel):
 class SOVAnalysisRequest(BaseModel):
     target_hospital: str
     keywords: List[str]
+    platform: str = "NAVER_PLACE" # "NAVER_PLACE" or "NAVER_VIEW"
     top_n: int = 5 # Default 5, configurable 1-20
 
 class RankingRequest(BaseModel):
@@ -57,6 +58,15 @@ class CompetitorAnalysisResult(BaseModel):
     platform: str
     top_n: int
     competitors: List[CompetitorRankItem]
+
+class AIAnalysisRequest(BaseModel):
+    keyword: str
+    target_hospital: str
+    platform: str = "NAVER_PLACE"
+    top_n: int = 10
+
+class AIAnalysisResponse(BaseModel):
+    report: str
 
 class SOVAnalysisResult(BaseModel):
     keyword: str

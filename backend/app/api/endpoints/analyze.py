@@ -4,12 +4,45 @@ from typing import List
 from app.core.database import get_db
 from app.schemas.scraping import (
     SOVAnalysisRequest, SOVAnalysisResult, RankingRequest, RankingResultItem,
-    CompetitorAnalysisRequest, CompetitorAnalysisResult
+    CompetitorAnalysisRequest, CompetitorAnalysisResult,
+    AIAnalysisRequest, AIAnalysisResponse
 )
 from app.services.analysis import AnalysisService
+from app.services.ai_service import AIService
 from app.models.models import PlatformType
 
 router = APIRouter()
+
+@router.post("/ai-report", response_model=AIAnalysisResponse)
+def get_ai_report(
+    request: AIAnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    analysis_service = AnalysisService(db)
+    ai_service = AIService()
+    
+    platform = PlatformType.NAVER_VIEW if request.platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
+    
+    # 1. Get SOV
+    sov_data = analysis_service.calculate_sov(request.keyword, request.target_hospital, platform, request.top_n)
+    
+    # 2. Get Competitors
+    comp_data = analysis_service.get_competitor_analysis(request.keyword, platform, request.top_n)
+    
+    # 3. Generate AI Report
+    try:
+        report = ai_service.generate_marketing_report(
+            request.keyword, 
+            sov_data["sov"], 
+            comp_data["competitors"]
+        )
+        if "API 키가 설정되지 않았습니다" in report:
+             from fastapi import HTTPException
+             raise HTTPException(status_code=400, detail=report)
+        return AIAnalysisResponse(report=report)
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Gemini 서비스 오류: {str(e)}")
 
 @router.post("/competitors", response_model=CompetitorAnalysisResult)
 def analyze_competitors(
@@ -46,20 +79,17 @@ def analyze_sov(
     results = []
     
     for keyword in request.keywords:
-        # Check both Place and View
-        # Here we just return Place SOV for simplicity or aggregate
-        # Let's return separate items per keyword/platform if needed, 
-        # or just specific platform requested. 
-        # For now, let's just return View SOV as an example or avg.
-        # Impl: Return View SOV (Blog)
+        # Check specific platform requested
+        platform = PlatformType.NAVER_VIEW if request.platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
         
-        sov_data = service.calculate_sov(keyword, request.target_hospital, PlatformType.NAVER_VIEW, request.top_n)
+        sov_data = service.calculate_sov(keyword, request.target_hospital, platform, request.top_n)
         
         results.append(SOVAnalysisResult(
             keyword=keyword,
             total_items=sov_data["total"],
             target_hits=sov_data["hits"],
-            sov_score=sov_data["sov"]
+            sov_score=sov_data["sov"],
+            top_rank=sov_data.get("top_rank") # Assuming service might return this
         ))
         
     return results

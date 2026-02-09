@@ -55,3 +55,13 @@ brain/
 task.md
 implementation_plan.md
 walkthrough.md
+
+# Build Logs
+*_log.txt
+*_log_full.txt
+*_fail_log.txt
+*_fail_log_*.txt
+backend-test
+
+# Secrets
+manual_deploy.ps1
