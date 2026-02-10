@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
 interface ControlPanelProps {
     keyword: string;
@@ -9,9 +10,11 @@ interface ControlPanelProps {
     setTopN: (value: number) => void;
     onScrapePlace: () => void;
     onScrapeView: () => void;
+    onFullSync: () => void;
     onRefresh: () => void;
     isPlacePending: boolean;
     isViewPending: boolean;
+    isSyncPending: boolean;
 }
 
 export function ControlPanel({
@@ -20,9 +23,11 @@ export function ControlPanel({
     topN, setTopN,
     onScrapePlace,
     onScrapeView,
+    onFullSync,
     onRefresh,
     isPlacePending,
-    isViewPending
+    isViewPending,
+    isSyncPending
 }: ControlPanelProps) {
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border mb-8">
@@ -77,6 +82,13 @@ export function ControlPanel({
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-all flex-1"
                     >
                         {isViewPending ? '수집 중...' : '블로그 수집'}
+                    </button>
+                    <button
+                        onClick={onFullSync}
+                        disabled={isSyncPending}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-all flex-1"
+                    >
+                        {isSyncPending ? '동기화 중...' : '전체 동기화'}
                     </button>
                     <button
                         onClick={onRefresh}

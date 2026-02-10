@@ -1,15 +1,26 @@
 'use client';
 
-import { Home, BarChart2, Search, Settings } from 'lucide-react';
+import {
+    LayoutDashboard,
+    Database,
+    FileText,
+    Lightbulb,
+    BarChart3,
+    Users,
+    Settings
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 
 const navItems = [
-    { name: 'Overview', href: '/', icon: Home },
-    { name: 'Scrape', href: '/scrape', icon: Search },
-    { name: 'Analysis', href: '/analysis', icon: BarChart2 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: '종합 대시보드', href: '/dashboard', icon: LayoutDashboard },
+    { name: '데이터 수집', href: '/collection', icon: Database },
+    { name: '리포트 센터', href: '/reports', icon: FileText },
+    { name: 'AI 전략 수립', href: '/strategy', icon: Lightbulb },
+    { name: '심층 분석', href: '/analysis', icon: BarChart3 },
+    { name: '영업/협업', href: '/collaboration', icon: Users },
+    { name: '설정', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {

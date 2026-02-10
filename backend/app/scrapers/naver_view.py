@@ -80,7 +80,7 @@ class NaverViewScraper(ScraperBase):
                 })
 
         if not results:
-             print("No results extracted. Saving HTML to debug_view.html")
+             self.logger.warning("No results extracted. Saving HTML to debug_view.html")
              with open("debug_view.html", "w", encoding="utf-8") as f:
                  f.write(html)
 

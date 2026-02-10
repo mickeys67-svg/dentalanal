@@ -1,39 +1,48 @@
-'use client';
+"use client";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React from 'react';
+import {
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Tooltip,
+    Legend
+} from 'recharts';
 
-interface SOVData {
-    keyword: string;
-    total_items: number;
-    target_hits: number;
-    sov_score: number;
-}
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 interface SOVChartProps {
-    data: SOVData[];
+    data: { name: string; value: number }[];
 }
 
 export function SOVChart({ data }: SOVChartProps) {
     return (
-        <div className="bg-white p-6 rounded-lg shadow h-[400px]">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Share of Voice (SOV)</h3>
+        <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                    data={data}
-                    margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                    }}
-                >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="keyword" />
-                    <YAxis unit="%" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="sov_score" name="SOV %" fill="#8884d8" />
-                </BarChart>
+                <PieChart>
+                    <Pie
+                        data={data}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                    >
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                    </Pie>
+                    <Tooltip
+                        contentStyle={{
+                            borderRadius: '8px',
+                            border: 'none',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                        }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
             </ResponsiveContainer>
         </div>
     );

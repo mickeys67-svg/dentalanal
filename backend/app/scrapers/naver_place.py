@@ -22,10 +22,11 @@ class NaverPlaceScraper(ScraperBase):
         # We look for the specific elements that represent the place list.
         
         # Updated selectors based on debug_place.html analysis
-        items = soup.select("li._list_item_sis14_40, li._item, li.rE4H3") 
+        # _list_item_sis14_40 is current mobile Map list item class
+        items = soup.select("li._list_item_sis14_40, li._item, li.rE4H3, li[data-id]") 
 
         if not items:
-            print("No items found using selectors. Saving HTML to debug_place.html")
+            self.logger.warning("No items found using selectors. Saving HTML to debug_place.html")
             with open("debug_place.html", "w", encoding="utf-8") as f:
                 f.write(html)
 
@@ -40,7 +41,7 @@ class NaverPlaceScraper(ScraperBase):
                         "keyword": keyword
                     })
             except Exception as e:
-                print(f"Error parsing item: {e}")
+                self.logger.error(f"Error parsing item: {e}")
                 continue
                 
         return results

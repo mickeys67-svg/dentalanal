@@ -9,8 +9,8 @@ interface DashboardGridProps {
     targetHospital: string;
     topN: number;
     sovData: { sov: number; total: number; hits: number; history?: SOVDataItem[] } | undefined;
-    placeRankings: any[];
-    viewRankings: any[];
+    placeRankings: { rank: number; title: string; mallName?: string; keyword: string; }[];
+    viewRankings: { rank: number; title: string; blogName?: string; keyword: string; }[];
     placeCompetitors: { competitors: CompetitorData[] } | undefined;
     viewCompetitors: { competitors: CompetitorData[] } | undefined;
 }

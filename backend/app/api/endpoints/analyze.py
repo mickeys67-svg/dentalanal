@@ -37,11 +37,11 @@ def get_ai_report(
             comp_data["competitors"]
         )
         if "API 키가 설정되지 않았습니다" in report:
-             from fastapi import HTTPException
              raise HTTPException(status_code=400, detail=report)
         return AIAnalysisResponse(report=report)
+    except HTTPException:
+        raise
     except Exception as e:
-        from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=f"Gemini 서비스 오류: {str(e)}")
 
 @router.post("/competitors", response_model=CompetitorAnalysisResult)
@@ -93,3 +93,35 @@ def analyze_sov(
         ))
         
     return results
+
+@router.get("/funnel/{client_id}")
+def get_funnel_analysis(client_id: str, db: Session = Depends(get_db)):
+    service = AnalysisService(db)
+    return service.get_funnel_data(client_id)
+
+@router.get("/cohort/{client_id}")
+def get_cohort_analysis(client_id: str, db: Session = Depends(get_db)):
+    service = AnalysisService(db)
+    return service.get_cohort_data(client_id)
+
+@router.get("/attribution/{client_id}")
+def get_attribution_analysis(client_id: str, db: Session = Depends(get_db)):
+    service = AnalysisService(db)
+    return service.calculate_attribution(client_id)
+
+@router.get("/segments/{client_id}")
+def get_segment_analysis(client_id: str, db: Session = Depends(get_db)):
+    service = AnalysisService(db)
+    return service.get_segment_analysis(client_id)
+
+@router.get("/weekly-summary")
+def get_weekly_summary(
+    target_hospital: str,
+    keywords: str, # Comma separated list
+    platform: str = "NAVER_PLACE",
+    db: Session = Depends(get_db)
+):
+    service = AnalysisService(db)
+    kw_list = [k.strip() for k in keywords.split(",")]
+    p_type = PlatformType.NAVER_VIEW if platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
+    return service.get_weekly_sov_summary(target_hospital, kw_list, p_type)

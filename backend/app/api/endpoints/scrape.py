@@ -36,3 +36,19 @@ def trigger_view_scrape(
         task_id=task.id,
         message=f"Started scraping View for keyword: {request.keyword}"
     )
+
+@router.post("/ad", response_model=ScrapeResponse)
+def trigger_ad_scrape(
+    request: ScrapeRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    task_id = str(uuid.uuid4())
+    from app.worker.tasks import scrape_ad_task
+    # Offload to Celery
+    task = scrape_ad_task.delay(request.keyword)
+    
+    return ScrapeResponse(
+        task_id=task.id,
+        message=f"Started scraping Ads for keyword: {request.keyword}"
+    )

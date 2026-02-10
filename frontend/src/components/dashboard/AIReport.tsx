@@ -17,13 +17,11 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
 
     const mutation = useMutation({
         mutationFn: () => getAIReport(keyword, targetHospital, 'NAVER_PLACE', topN),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onSuccess: (data: any) => {
+        onSuccess: (data: { report: string }) => {
             setReport(data.report);
             setErrorStatus(null);
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onError: (error: any) => {
+        onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
             setErrorStatus(error.response?.data?.detail || error.message || '리포트 생성 중 오류가 발생했습니다.');
             setReport(null);
         }

@@ -1,0 +1,64 @@
+services:
+  # 1. PostgreSQL Database
+  - type: database
+    name: dentalanal-db
+    postgresRole: user
+    databaseName: d_mind
+    plan: free
+
+  # 2. Redis for Celery
+  - type: redis
+    name: dentalanal-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections
+
+  # 3. FastAPI Backend
+  - type: web
+    name: dentalanal-backend
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dentalanal-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: dentalanal-redis
+          property: connectionString
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: TARGET_HOSPITAL_NAME
+        value: "우리 병원"
+
+  # 4. Celery Worker
+  - type: worker
+    name: dentalanal-worker
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps"
+    startCommand: "cd backend && celery -A app.core.celery_app worker --loglevel=info"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dentalanal-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: dentalanal-redis
+          property: connectionString
+
+  # 5. Next.js Frontend
+  - type: web
+    name: dentalanal-frontend
+    env: node
+    buildCommand: "cd frontend && npm install && npm run build"
+    startCommand: "cd frontend && npm run start"
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: dentalanal-backend
+          property: host

@@ -1,12 +1,22 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://user:password@db:5432/d_mind"
-    REDIS_URL: str = "redis://redis:6379/0"
+    # Standard Pydantic V2 Settings
+    DATABASE_URL: str = "sqlite:///./test.db"
+    REDIS_URL: str = "redis://localhost:6379/0"
     GOOGLE_API_KEY: Optional[str] = None
+    
+    # Scraper & Ads
+    BRIGHT_DATA_CDP_URL: Optional[str] = None
+    GOOGLE_ADS_DEVELOPER_TOKEN: Optional[str] = None
+    META_ADS_ACCESS_TOKEN: Optional[str] = None
+    META_AD_ACCOUNT_ID: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8"
+    )
 
 settings = Settings()

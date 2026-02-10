@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { scrapePlace, scrapeView, getSOV, getRankings, getCompetitors } from '@/lib/api';
-import { MissionTelemetry, ScrapeResponse } from '@/types/mission';
+import { ScrapeResponse } from '@/types/mission';
 
 export function useMission() {
     const [keyword, setKeyword] = useState('송도 치과');
@@ -11,14 +11,10 @@ export function useMission() {
     // Scraping Mutations
     const placeMutation = useMutation({
         mutationFn: scrapePlace,
-        onSuccess: (data: ScrapeResponse) => alert(`플레이스 수집 시작: ${data.message}`),
-        onError: (error: Error) => alert(`플레이스 수집 실패: ${error.message || '알 수 없는 오류'}`)
     });
 
     const viewMutation = useMutation({
         mutationFn: scrapeView,
-        onSuccess: (data: ScrapeResponse) => alert(`블로그 수집 시작: ${data.message}`),
-        onError: (error: Error) => alert(`블로그 수집 실패: ${error.message || '알 수 없는 오류'}`)
     });
 
     // Data Queries
