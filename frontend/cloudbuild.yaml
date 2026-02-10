@@ -1,0 +1,15 @@
+steps:
+# 1. Create .env.production file dynamically
+- name: 'bash'
+  args: ['-c', 'echo "NEXT_PUBLIC_API_URL=${_API_URL}" > .env.production']
+
+# 2. Build Docker Image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '--build-arg', 'NEXT_PUBLIC_API_URL=${_API_URL}',
+    '-t', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/frontend:latest',
+    '.'
+  ]
+images:
+- '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_REPO_NAME}/frontend:latest'

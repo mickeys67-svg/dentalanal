@@ -38,11 +38,27 @@ gcloud run deploy dentalanal-backend `
     --timeout 300 `
     --project $PROJECT_ID
 
-# 7. Deploy Frontend to Cloud Run
-Write-Host "--- 7. Deploying Frontend to Cloud Run ---" -ForegroundColor Green
-$BACKEND_URL = (gcloud run services describe dentalanal-backend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID)
+# 7. Get Backend URL and Build Frontend
+Write-Host "--- 7. Building Frontend with Backend URL ---" -ForegroundColor Green
+$BACKEND_URL = (gcloud run services describe dentalanal-backend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID).Trim()
+Write-Host "Detected Backend URL: '$BACKEND_URL'"
 
-gcloud run deploy dentalanal-frontend `
+if ([string]::IsNullOrWhiteSpace($BACKEND_URL)) {
+    Write-Host "Error: Could not find backend URL!" -ForegroundColor Red
+    exit 1
+}
+
+# Fix: Remove spaces after commas in substitutions
+$SUBSTITUTIONS = "_API_URL=$BACKEND_URL,_REGION=$REGION,_PROJECT_ID=$PROJECT_ID,_REPO_NAME=$REPO_NAME"
+
+gcloud builds submit ./frontend `
+    --config ./frontend/cloudbuild.yaml `
+    --substitutions $SUBSTITUTIONS `
+    --project $PROJECT_ID
+
+# 8. Deploy Frontend to Cloud Run
+Write-Host "--- 8. Deploying Frontend to Cloud Run ---" -ForegroundColor Green
+gcloud run deploy dentalanal `
     --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend `
     --platform managed `
     --region $REGION `
@@ -52,4 +68,4 @@ gcloud run deploy dentalanal-frontend `
 
 Write-Host "--- Deployment Complete! ---" -ForegroundColor Cyan
 Write-Host "Frontend URL: " -NoNewline
-gcloud run services describe dentalanal-frontend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID
+gcloud run services describe dentalanal --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID

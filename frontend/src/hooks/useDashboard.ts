@@ -1,11 +1,12 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { getDashboardSummary, triggerSync } from '@/lib/api';
 
-export function useDashboard(clientId?: string) {
+export function useDashboard(clientId?: string | null) {
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['dashboardSummary', clientId],
-        queryFn: () => getDashboardSummary(clientId),
+        queryFn: () => getDashboardSummary(clientId || undefined),
         staleTime: 5 * 60 * 1000,
+        enabled: true, // Always allow fetching, but backend handles empty
     });
 
     const syncMutation = useMutation({

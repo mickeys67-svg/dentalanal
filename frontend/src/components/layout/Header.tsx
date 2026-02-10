@@ -1,18 +1,21 @@
 "use client";
 
 import { useClient } from "@/components/providers/ClientProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { LogOut, User } from "lucide-react";
 
 export function Header() {
     const { clients, selectedClient, setSelectedClient } = useClient();
+    const { user, logout } = useAuth();
 
     return (
         <header className="bg-white border-b border-gray-100 h-16 flex items-center shrink-0">
             <div className="w-full max-w-7xl mx-auto px-6 flex justify-between items-center">
                 <div className="flex items-center gap-6">
-                    <h1 className="text-xl font-bold text-gray-900">대시보드</h1>
+                    <h1 className="text-xl font-bold text-gray-900">통합 분석 솔루션</h1>
                     <div className="h-6 w-px bg-gray-200"></div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">현재 관리 업체:</span>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">업체:</span>
                         <select
                             value={selectedClient?.id || ""}
                             onChange={(e) => {
@@ -30,14 +33,25 @@ export function Header() {
                         </select>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-end">
-                        <span className="text-sm font-bold text-gray-900">관리자님</span>
-                        <span className="text-[10px] text-gray-400">마스터 권한</span>
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 border-r border-gray-100 pr-6">
+                        <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold text-gray-900">{user?.name || '사용자'}님</span>
+                            <span className="text-[10px] text-primary font-bold tracking-tighter uppercase">{user?.role} 권한</span>
+                        </div>
+                        <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm ring-2 ring-white shadow-sm">
+                            <User className="w-5 h-5" />
+                        </div>
                     </div>
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs ring-2 ring-white">
-                        AD
-                    </div>
+
+                    <button
+                        onClick={logout}
+                        className="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors text-xs font-bold"
+                        title="로그아웃"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        로그아웃
+                    </button>
                 </div>
             </div>
         </header>

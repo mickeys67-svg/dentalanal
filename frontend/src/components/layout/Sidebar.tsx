@@ -7,20 +7,21 @@ import {
     Lightbulb,
     BarChart3,
     Users,
-    Settings
+    Settings,
+    UserCog
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
 import clsx from 'clsx';
 
 const navItems = [
     { name: '종합 대시보드', href: '/dashboard', icon: LayoutDashboard },
-    { name: '데이터 수집', href: '/collection', icon: Database },
     { name: '리포트 센터', href: '/reports', icon: FileText },
-    { name: 'AI 전략 수립', href: '/strategy', icon: Lightbulb },
     { name: '심층 분석', href: '/analysis', icon: BarChart3 },
-    { name: '영업/협업', href: '/collaboration', icon: Users },
-    { name: '설정', href: '/settings', icon: Settings },
+    { name: '협업 보드', href: '/collaboration', icon: Users },
+    { name: '관리자 수동설정', href: '/admin/users', icon: UserCog },
+    { name: '시스템 설정', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {

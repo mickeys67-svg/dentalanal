@@ -8,8 +8,9 @@ SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
 # Cloud Run check: SQLite must use /tmp
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
-    if "/./" in SQLALCHEMY_DATABASE_URL:
-        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("/./", "/tmp/")
+    if "./" in SQLALCHEMY_DATABASE_URL:
+        # sqlite:///./test.db -> sqlite:////tmp/test.db
+        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("./", "/tmp/")
         import logging
         logging.info(f"Overriding SQLite path for Cloud Run: {SQLALCHEMY_DATABASE_URL}")
 

@@ -67,6 +67,20 @@ class Agency(Base):
     branding_config = Column(JSON, nullable=True) # {primary_color: "#...", ...}
     
     clients = relationship("Client", back_populates="agency")
+    users = relationship("User", back_populates="agency")
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    role = Column(Enum(UserRole), default=UserRole.VIEWER)
+    is_active = Column(Integer, default=1)
+    birth_date = Column(String, nullable=True) # YYYY-MM-DD
+    agency_id = Column(GUID, ForeignKey("agencies.id"), nullable=True)
+    
+    agency = relationship("Agency", back_populates="users")
 
 class Client(Base):
     __tablename__ = "clients"

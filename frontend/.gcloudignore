@@ -26,6 +26,10 @@ dist/
 .git/
 .gitignore
 
+# Environment variables
+.env*
+.env.local
+
 # Gemini
 .gemini/
 brain/

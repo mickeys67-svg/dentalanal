@@ -141,3 +141,13 @@ export interface PlatformConnection {
     status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
     created_at: string;
 }
+
+export interface User {
+    id: string;
+    email: string;
+    name: string;
+    role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+    is_active: number;
+    birth_date?: string;
+    agency_id?: string | null;
+}

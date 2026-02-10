@@ -6,10 +6,11 @@ import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { SOVChart } from '@/components/dashboard/SOVChart';
 import { DashboardWidget } from '@/components/dashboard/DashboardWidget';
 import { useDashboard } from '@/hooks/useDashboard';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, Plus } from 'lucide-react';
 import clsx from 'clsx';
 import { DashboardKPI, Campaign } from '@/types';
 import { translateMetric } from '@/lib/i18n';
+import { InfoTooltip } from '@/components/common/InfoTooltip';
 
 const mockTrendData = [
     { name: '월', 광고비: 400000, 전환수: 12 },
@@ -28,14 +29,43 @@ const mockSOVData = [
     { name: '기타', value: 10 },
 ];
 
-export default function DashboardPage() {
-    const { summary, isLoading, error, refresh, isSyncing, startSync } = useDashboard();
+import { useClient } from '@/components/providers/ClientProvider';
+import Link from 'next/link';
 
-    if (isLoading) {
+export default function DashboardPage() {
+    const { clients, selectedClient, isLoading: isClientsLoading } = useClient();
+    const { summary, isLoading: isDashboardLoading, error, refresh, isSyncing, startSync } = useDashboard(selectedClient?.id);
+
+    if (isClientsLoading || isDashboardLoading) {
         return (
             <div className="flex h-[80vh] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-gray-500 font-medium">성과 데이터를 불러오는 중...</span>
+                <span className="ml-3 text-gray-500 font-medium">데이터를 구성하는 중...</span>
+            </div>
+        );
+    }
+
+    if (clients.length === 0) {
+        return (
+            <div className="flex h-[80vh] flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="max-w-md w-full text-center space-y-6 bg-white p-10 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                        <Plus className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold text-gray-900">환영합니다!</h2>
+                        <p className="text-gray-500">대시보드를 시작하려면 먼저 관리할 업체를 등록해야 합니다.</p>
+                    </div>
+                    <Link
+                        href="/settings"
+                        className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium text-white bg-primary rounded-xl hover:bg-opacity-90 transition-all shadow-md active:scale-[0.98]"
+                    >
+                        업체 등록하러 가기
+                    </Link>
+                    <p className="text-xs text-gray-400">
+                        * 업체 등록 후 매체(네이버, 구글 등)를 연동하면 실시간 성과 분석이 시작됩니다.
+                    </p>
+                </div>
             </div>
         );
     }

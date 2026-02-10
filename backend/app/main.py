@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 import os
 import asyncio
+import traceback
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -22,8 +24,39 @@ async def run_startup_tasks():
         # This registers models and creates tables if they don't exist
         await asyncio.to_thread(Base.metadata.create_all, bind=engine)
         logger.info("Background startup: Database schema sync successful. Tables checked/created.")
+
+        # SEEDING: Ensure default Agency and Admin exist
+        from sqlalchemy.orm import Session
+        from app.models.models import Agency, User, UserRole
+        from app.core.security import get_password_hash
+        
+        with Session(engine) as session:
+            # 1. Ensure Default Agency exists
+            agency_id = "00000000-0000-0000-0000-000000000000"
+            agency = session.query(Agency).filter(Agency.id == agency_id).first()
+            if not agency:
+                agency = Agency(id=agency_id, name="D-MIND Default Agency")
+                session.add(agency)
+                logger.info("Seeding: Default Agency created.")
+            
+            # 2. Ensure Default Admin User exists
+            admin_email = os.environ.get("ADMIN_EMAIL", "admin@dmind.com")
+            admin_pw = os.environ.get("ADMIN_PASSWORD", "admin123!")
+            admin = session.query(User).filter(User.email == admin_email).first()
+            if not admin:
+                admin = User(
+                    email=admin_email,
+                    hashed_password=get_password_hash(admin_pw),
+                    name="Administrator",
+                    role=UserRole.ADMIN,
+                    agency_id=agency_id
+                )
+                session.add(admin)
+                logger.info(f"Seeding: Default Admin User ({admin_email}) created.")
+            
+            session.commit()
     except Exception as e:
-        logger.error(f"Background startup: Database schema sync failed: {e}")
+        logger.error(f"Background startup: Database schema sync or seeding failed: {e}")
 
     try:
         start_scheduler()
@@ -32,8 +65,8 @@ async def run_startup_tasks():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start startup tasks in the background so uvicorn can start listening immediately
-    asyncio.create_task(run_startup_tasks())
+    # Ensure critical startup tasks (DB init, seeding) are complete before accepting requests
+    await run_startup_tasks()
     yield
     # Shutdown logic
     from app.core.scheduler import stop_scheduler
@@ -45,7 +78,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="D-MIND API", version="1.0.0", lifespan=lifespan)
 
 # CORS Configuration
-origins = ["*"]
+origins = [
+    "https://dentalanal-864421937037.us-west1.run.app",
+    "https://dentalanal-2556cvhe3q-uw.a.run.app",
+    "https://dentalanal-frontend-2556cvhe3q-uw.a.run.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -61,7 +101,10 @@ def health_check():
     return {"status": "ok"}
 
 # Lazy-loaded Routers to prevent top-level import crashes
-from app.api.endpoints import scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients
+from app.api.endpoints import scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, auth, users, status
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
 app.include_router(scrape.router, prefix="/api/v1/scrape", tags=["Scraping"])
 app.include_router(analyze.router, prefix="/api/v1/analyze", tags=["Analysis"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
@@ -71,6 +114,24 @@ app.include_router(collaboration.router, prefix="/api/v1/collaboration", tags=["
 app.include_router(automation.router, prefix="/api/v1/automation", tags=["Automation"])
 app.include_router(clients.router, prefix="/api/v1/clients", tags=["Clients"])
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to D-MIND API"}
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global Error Catch: {exc}")
+    logger.error(traceback.format_exc())
+    
+    # Manual CORS headers for error responses
+    headers = {
+        "Access-Control-Allow-Origin": "*", # In error state, allow all to let browser see it
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    }
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "내부 서버 오류가 발생했습니다. (bcrypt/passlib conflict detected)",
+            "error_type": str(type(exc).__name__),
+            "traceback": traceback.format_exc()
+        },
+        headers=headers
+    )
