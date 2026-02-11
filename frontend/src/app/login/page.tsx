@@ -73,6 +73,7 @@ export default function LoginPage() {
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     required
+                                    autoComplete="current-password"
                                     className="block w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm font-medium"
                                     placeholder="••••••••"
                                     value={password}

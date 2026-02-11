@@ -1,28 +1,39 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getDashboardSummary, triggerSync } from '@/lib/api';
+import { getDashboardSummary, getMetricsTrend, triggerSync } from '@/lib/api';
 
 export function useDashboard(clientId?: string | null) {
-    const { data, isLoading, error, refetch } = useQuery({
+    const { data: summary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = useQuery({
         queryKey: ['dashboardSummary', clientId],
         queryFn: () => getDashboardSummary(clientId || undefined),
         staleTime: 5 * 60 * 1000,
-        enabled: true, // Always allow fetching, but backend handles empty
+    });
+
+    const { data: trend, isLoading: isTrendLoading, refetch: refetchTrend } = useQuery({
+        queryKey: ['dashboardTrend', clientId],
+        queryFn: () => getMetricsTrend(clientId || undefined),
+        staleTime: 5 * 60 * 1000,
     });
 
     const syncMutation = useMutation({
         mutationFn: triggerSync,
         onSuccess: () => {
-            // Refetch dashboard data after a short delay or immediately
-            setTimeout(() => refetch(), 2000);
+            setTimeout(() => {
+                refetchSummary();
+                refetchTrend();
+            }, 2000);
         }
     });
 
     return {
-        summary: data,
-        isLoading,
-        error,
+        summary,
+        trend,
+        isLoading: isSummaryLoading || isTrendLoading,
+        error: summaryError,
         isSyncing: syncMutation.isPending,
-        refresh: refetch,
+        refresh: () => {
+            refetchSummary();
+            refetchTrend();
+        },
         startSync: () => syncMutation.mutate()
     };
 }

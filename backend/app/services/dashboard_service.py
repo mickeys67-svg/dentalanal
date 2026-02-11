@@ -19,14 +19,21 @@ class DashboardService:
         )
         
         if client_id:
-            query = query.join(Campaign).join(PlatformConnection).filter(PlatformConnection.client_id == client_id)
+            query = query.outerjoin(Campaign).outerjoin(PlatformConnection).filter(PlatformConnection.client_id == client_id)
         
         results = query.first()
         
-        total_spend = float(results.total_spend or 0)
-        total_clicks = int(results.total_clicks or 0)
-        total_conversions = int(results.total_conversions or 0)
-        total_impressions = int(results.total_impressions or 0)
+        # FIX: Check if results is None (occurs when no campaigns/connections found for client)
+        if not results:
+            total_spend = 0.0
+            total_clicks = 0
+            total_conversions = 0
+            total_impressions = 0
+        else:
+            total_spend = float(results.total_spend or 0)
+            total_clicks = int(results.total_clicks or 0)
+            total_conversions = int(results.total_conversions or 0)
+            total_impressions = int(results.total_impressions or 0)
         
         # Calculate ROAS and CPC (Fixed undefined variables)
         avg_roas = 0.0
@@ -34,9 +41,11 @@ class DashboardService:
         # For demo, let's assume a fixed conversion value if revenue is 0.
         revenue_query = self.db.query(func.sum(MetricsDaily.revenue).label("total_revenue"))
         if client_id:
-            revenue_query = revenue_query.join(Campaign).join(PlatformConnection).filter(PlatformConnection.client_id == client_id)
+            revenue_query = revenue_query.outerjoin(Campaign).outerjoin(PlatformConnection).filter(PlatformConnection.client_id == client_id)
         
-        total_revenue = float(revenue_query.first().total_revenue or 0)
+        revenue_res = revenue_query.first()
+        total_revenue = float(revenue_res.total_revenue or 0) if revenue_res else 0.0
+        
         if total_revenue == 0 and total_conversions > 0:
             total_revenue = total_conversions * 150000 # Mock value: 15만원 per conversion
             
@@ -47,7 +56,7 @@ class DashboardService:
         platforms_query = self.db.query(
             PlatformConnection.platform,
             func.sum(MetricsDaily.spend).label("spend")
-        ).join(Campaign).join(PlatformConnection).group_by(PlatformConnection.platform)
+        ).outerjoin(Campaign).outerjoin(PlatformConnection).group_by(PlatformConnection.platform)
         
         if client_id:
             platforms_query = platforms_query.filter(PlatformConnection.client_id == client_id)
@@ -56,12 +65,13 @@ class DashboardService:
         total_sov_spend = sum(float(r.spend or 0) for r in platforms_results)
         
         sov_data = []
-        for r in platforms_results:
-            share = (float(r.spend or 0) / total_sov_spend * 100) if total_sov_spend > 0 else 0
-            sov_data.append({
-                "name": r.platform.value if hasattr(r.platform, 'value') else str(r.platform),
-                "value": round(share, 1)
-            })
+        if platforms_results:
+            for r in platforms_results:
+                share = (float(r.spend or 0) / total_sov_spend * 100) if total_sov_spend > 0 else 0
+                sov_data.append({
+                    "name": r.platform.value if hasattr(r.platform, 'value') else str(r.platform),
+                    "value": round(share, 1)
+                })
 
         if not sov_data:
             sov_data = [
@@ -91,14 +101,15 @@ class DashboardService:
             func.sum(MetricsDaily.spend).label("spend"),
             func.sum(MetricsDaily.revenue).label("revenue"),
             func.sum(MetricsDaily.conversions).label("conversions")
-        ).join(PlatformConnection, Campaign.connection_id == PlatformConnection.id)\
-         .join(MetricsDaily, MetricsDaily.campaign_id == Campaign.id)\
+        ).outerjoin(PlatformConnection, Campaign.connection_id == PlatformConnection.id)\
+         .outerjoin(MetricsDaily, MetricsDaily.campaign_id == Campaign.id)\
          .group_by(Campaign.id, PlatformConnection.platform)\
          .order_by(func.sum(MetricsDaily.spend).desc())\
          .limit(limit)
 
         if client_id:
             query = query.filter(PlatformConnection.client_id == client_id)
+
 
         results = query.all()
         

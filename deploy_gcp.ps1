@@ -40,24 +40,38 @@ gcloud run deploy dentalanal-backend `
 
 # 7. Get Backend URL and Build Frontend
 Write-Host "--- 7. Building Frontend with Backend URL ---" -ForegroundColor Green
-$BACKEND_URL = (gcloud run services describe dentalanal-backend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID).Trim()
-Write-Host "Detected Backend URL: '$BACKEND_URL'"
+
+# Use a loop to wait for backend to be ready and get URL
+$BACKEND_URL = ""
+$retries = 0
+while ($retries -lt 5) {
+    $BACKEND_URL = (gcloud run services describe dentalanal-backend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID 2>$null).Trim()
+    if (-not [string]::IsNullOrWhiteSpace($BACKEND_URL)) { break }
+    Write-Host "Waiting for backend URL... (Attempt $($retries + 1))"
+    Start-Sleep -Seconds 5
+    $retries++
+}
+
+Write-Host "Detected Backend URL: '$BACKEND_URL'" -ForegroundColor Cyan
 
 if ([string]::IsNullOrWhiteSpace($BACKEND_URL)) {
     Write-Host "Error: Could not find backend URL!" -ForegroundColor Red
     exit 1
 }
 
-# Fix: Remove spaces after commas in substitutions
+# Fix: Ensure no trailing slashes or hidden characters
+$BACKEND_URL = $BACKEND_URL.Replace(" ", "").Trim()
+
+# 8. Build Frontend Image with Next.js Build-Time ENV
 $SUBSTITUTIONS = "_API_URL=$BACKEND_URL,_REGION=$REGION,_PROJECT_ID=$PROJECT_ID,_REPO_NAME=$REPO_NAME"
 
-gcloud builds submit ./frontend `
+gcloud builds submit . `
     --config ./frontend/cloudbuild.yaml `
     --substitutions $SUBSTITUTIONS `
     --project $PROJECT_ID
 
-# 8. Deploy Frontend to Cloud Run
-Write-Host "--- 8. Deploying Frontend to Cloud Run ---" -ForegroundColor Green
+# 9. Deploy Frontend to Cloud Run
+Write-Host "--- 9. Deploying Frontend to Cloud Run ---" -ForegroundColor Green
 gcloud run deploy dentalanal `
     --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend `
     --platform managed `

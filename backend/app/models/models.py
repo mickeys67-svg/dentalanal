@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, DateTime, JSON, Enum, CHAR
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, DateTime, JSON, Enum, CHAR, Text
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
@@ -47,6 +47,7 @@ class TargetType(str, enum.Enum):
     OTHERS = "OTHERS"
 
 class UserRole(str, enum.Enum):
+    SUPER_ADMIN = "SUPER_ADMIN"
     ADMIN = "ADMIN"
     EDITOR = "EDITOR"
     VIEWER = "VIEWER"
@@ -98,7 +99,15 @@ class PlatformConnection(Base):
     client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
     credentials = Column(JSON, nullable=True) # encrypted or sensitive data
+    access_token = Column(String(500), nullable=True)
+    refresh_token = Column(String(500), nullable=True)
+    token_expires_at = Column(DateTime, nullable=True)
+    account_name = Column(String(255), nullable=True)
+    account_id = Column(String(255), nullable=True)
+    is_active = Column(Integer, default=1) # 1 for True, 0 for False (SQLite compatibility)
     status = Column(String, default="ACTIVE")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     client = relationship("Client", back_populates="connections")
     campaigns = relationship("Campaign", back_populates="connection")
@@ -206,18 +215,125 @@ class CollaborativeTask(Base):
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
     title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
     status = Column(String, default="PENDING") # PENDING, IN_PROGRESS, COMPLETED
     owner = Column(String, nullable=True)
     deadline = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    comments = relationship("TaskComment", back_populates="task")
+
+class TaskComment(Base):
+    __tablename__ = "task_comments"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    task_id = Column(GUID, ForeignKey("collaborative_tasks.id"), nullable=False)
+    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    task = relationship("CollaborativeTask", back_populates="comments")
+    user = relationship("User")
 
 class ApprovalRequest(Base):
     __tablename__ = "approval_requests"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    requester_id = Column(GUID, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False)
-    description = Column(String, nullable=True)
+    content = Column(Text, nullable=False)
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
-    request_type = Column(String, nullable=True) # BUDGET, CREATIVE
-    due_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    requester = relationship("User")
+    client = relationship("Client")
+
+class Notice(Base):
+    __tablename__ = "notices"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    agency_id = Column(GUID, ForeignKey("agencies.id"), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    author_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    is_pinned = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    author = relationship("User")
+
+class ReportTemplate(Base):
+    __tablename__ = "report_templates"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    agency_id = Column(GUID, ForeignKey("agencies.id"), nullable=True) # templates can be global (null) or agency-specific
+    config = Column(JSON, nullable=False) # Layout, charts, metrics mapping
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class Report(Base):
+    __tablename__ = "reports"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    template_id = Column(GUID, ForeignKey("report_templates.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    data = Column(JSON, nullable=True) # Frozen data at the time of report generation
+    status = Column(String, default="PENDING") # PENDING, COMPLETED, FAILED, ARCHIVED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    template = relationship("ReportTemplate")
+    client = relationship("Client")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(String, nullable=True)
+    link = Column(String, nullable=True)
+    is_read = Column(Integer, default=0) # 0 for False, 1 for True
+    type = Column(String, nullable=True) # TASK, COMMENT, APPROVAL, NOTICE
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    user = relationship("User")
+
+class SettlementStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    ISSUED = "ISSUED"
+    PAID = "PAID"
+    OVERDUE = "OVERDUE"
+    CANCELLED = "CANCELLED"
+
+class Settlement(Base):
+    __tablename__ = "settlements"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    period = Column(String, nullable=False) # e.g., "2024-02"
+    total_spend = Column(Float, default=0.0)
+    fee_amount = Column(Float, default=0.0)
+    tax_amount = Column(Float, default=0.0)
+    total_amount = Column(Float, default=0.0)
+    status = Column(Enum(SettlementStatus), default=SettlementStatus.PENDING)
+    issued_at = Column(DateTime(timezone=True), nullable=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    client = relationship("Client")
+    details = relationship("SettlementDetail", back_populates="settlement", cascade="all, delete-orphan")
+
+class SettlementDetail(Base):
+    __tablename__ = "settlement_details"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    settlement_id = Column(GUID, ForeignKey("settlements.id"), nullable=False)
+    platform = Column(Enum(PlatformType), nullable=False)
+    campaign_name = Column(String, nullable=True)
+    spend = Column(Float, default=0.0)
+    fee_rate = Column(Float, default=0.0) # e.g., 0.15 for 15%
+    fee_amount = Column(Float, default=0.0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    settlement = relationship("Settlement", back_populates="details")

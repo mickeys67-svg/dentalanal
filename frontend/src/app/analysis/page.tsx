@@ -1,57 +1,67 @@
 "use client";
 
 import React, { useState } from 'react';
+import Head from 'next/head';
 import { DashboardWidget } from '@/components/dashboard/DashboardWidget';
-import { Filter, BarChart2, TrendingUp, Users, Target, MousePointer2, Loader2 } from 'lucide-react';
+import { Filter, BarChart2, TrendingUp, Users, Target, MousePointer2, Loader2, Search, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import { useQuery } from '@tanstack/react-query';
 import { getFunnelData, getCohortData, getAttributionData, getSegmentData } from '@/lib/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend
+    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend,
+    LineChart, Line, AreaChart, Area
 } from 'recharts';
 import { FunnelStage, CohortRow, AttributionData, SegmentRow } from '@/types';
+import { useClient } from '@/components/providers/ClientProvider';
+import { EmptyClientPlaceholder } from '@/components/common/EmptyClientPlaceholder';
 
-const DEFAULT_CLIENT_ID = "00000000-0000-0000-0000-000000000000";
 
 const analysisTypes = [
     { id: 'funnel', name: '퍼널 분석 (Funnel)', icon: Target, description: '사용자 여정별 전환 단계 분석' },
     { id: 'cohort', name: '코호트 분석 (Cohort)', icon: Users, description: '사용자 유지율 및 생애 가치 분석' },
     { id: 'attribution', name: '기여도 분석 (Attribution)', icon: MousePointer2, description: '매체별 전환 기여도 가중치 산출' },
     { id: 'segment', name: '세그먼트 분석 (Segment)', icon: Filter, description: '오디언스 그룹별 성과 비교' },
-    { id: 'rankings', name: '키워드 순위 (Rankings)', icon: TrendingUp, description: '네이버 실시간 노출 순위 모니터링' },
+    { id: 'rankings', name: '순위 추적 (Ranking)', icon: Search, description: '주요 키워드별 노출 순위 변동' },
+    { id: 'sov', name: '점유율 분석 (SOV)', icon: Activity, description: '경쟁사 대비 노출 점유율 분석' },
 ];
 
 export default function AnalysisPage() {
+    const { selectedClient } = useClient();
+    if (!selectedClient) {
+        return <EmptyClientPlaceholder title="분석할 업체를 선택해주세요" description="상단에서 업체를 선택하면 정밀 데이터 분석 기능이 활성화됩니다." />;
+    }
+
+    const clientId = selectedClient?.id;
     const [selectedType, setSelectedType] = useState('funnel');
     const [attrModel, setAttrModel] = useState<'first_touch' | 'last_touch' | 'linear'>('linear');
 
     // 1. Funnel Data
     const { data: funnelData, isLoading: isFunnelLoading } = useQuery({
-        queryKey: ['funnel', DEFAULT_CLIENT_ID],
-        queryFn: () => getFunnelData(DEFAULT_CLIENT_ID),
-        enabled: selectedType === 'funnel'
+        queryKey: ['funnel', clientId],
+        queryFn: () => getFunnelData(clientId!),
+        enabled: selectedType === 'funnel' && !!clientId
     });
 
     // 2. Cohort Data
     const { data: cohortData, isLoading: isCohortLoading } = useQuery({
-        queryKey: ['cohort', DEFAULT_CLIENT_ID],
-        queryFn: () => getCohortData(DEFAULT_CLIENT_ID),
-        enabled: selectedType === 'cohort'
+        queryKey: ['cohort', clientId],
+        queryFn: () => getCohortData(clientId!),
+        enabled: selectedType === 'cohort' && !!clientId
     });
 
     // 3. Attribution Data
     const { data: attributionData, isLoading: isAttrLoading } = useQuery({
-        queryKey: ['attribution', DEFAULT_CLIENT_ID],
-        queryFn: () => getAttributionData(DEFAULT_CLIENT_ID),
-        enabled: selectedType === 'attribution'
+        queryKey: ['attribution', clientId],
+        queryFn: () => getAttributionData(clientId!),
+        enabled: selectedType === 'attribution' && !!clientId
     });
 
     // 4. Segment Data
     const { data: segmentData, isLoading: isSegmentLoading } = useQuery({
-        queryKey: ['segments', DEFAULT_CLIENT_ID],
-        queryFn: () => getSegmentData(DEFAULT_CLIENT_ID),
-        enabled: selectedType === 'segment'
+        queryKey: ['segments', clientId],
+        queryFn: () => getSegmentData(clientId!),
+        enabled: selectedType === 'segment' && !!clientId
     });
 
     // 5. Rankings Data (New)
@@ -59,9 +69,31 @@ export default function AnalysisPage() {
     const [rankingPlatform, setRankingPlatform] = useState('NAVER_AD');
 
     const { data: rankingData, isLoading: isRankingLoading } = useQuery({
-        queryKey: ['rankings', rankingKeyword, rankingPlatform],
+        queryKey: ['rankings', rankingKeyword, rankingPlatform, clientId],
         queryFn: () => import('@/lib/api').then(mod => mod.getRankings(rankingKeyword, rankingPlatform)),
-        enabled: selectedType === 'rankings'
+        enabled: selectedType === 'rankings' && !!clientId
+    });
+
+    const { data: trendData, isLoading: isTrendLoading } = useQuery({
+        queryKey: ['rankingTrend', rankingKeyword, rankingPlatform, clientId],
+        queryFn: () => import('@/lib/api').then(mod => mod.getRankingTrend({
+            keyword: rankingKeyword,
+            target_hospital: selectedClient?.name || '',
+            platform: rankingPlatform,
+            days: 14
+        })),
+        enabled: selectedType === 'rankings' && !!clientId && !!selectedClient?.name
+    });
+
+    const { data: sovData, isLoading: isSOVLoading } = useQuery({
+        queryKey: ['sov', clientId],
+        queryFn: () => import('@/lib/api').then(mod => mod.analyzeSOV({
+            keywords: ['치과', '임플란트', '교정'],
+            target_hospital: selectedClient?.name || '',
+            platform: 'NAVER_PLACE',
+            top_n: 10
+        })),
+        enabled: selectedType === 'sov' && !!clientId
     });
 
     const renderFunnelChart = () => {
@@ -82,7 +114,7 @@ export default function AnalysisPage() {
         );
     };
 
-    const renderCohortHeatmap = () => {
+    const renderCohortTable = () => {
         if (isCohortLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
         return (
             <div className="overflow-x-auto">
@@ -158,7 +190,7 @@ export default function AnalysisPage() {
         );
     };
 
-    const renderSegmentTable = () => {
+    const renderSegmentAnalysis = () => {
         if (isSegmentLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
         return (
             <div className="overflow-x-auto">
@@ -190,7 +222,7 @@ export default function AnalysisPage() {
         );
     };
 
-    const renderRankingTable = () => {
+    const renderRankingsList = () => {
         if (isRankingLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
 
         return (
@@ -214,7 +246,56 @@ export default function AnalysisPage() {
                     </select>
                 </div>
 
-                <div className="overflow-x-auto border rounded-lg">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                            <h4 className="text-sm font-bold text-gray-800 mb-4">순위 변동 트렌드 (14일)</h4>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={trendData}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                                        <YAxis reversed domain={[1, 50]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                                        <Tooltip
+                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                            formatter={(value: any) => [`${value}위`, '순위']}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="rank"
+                                            stroke="#6366f1"
+                                            strokeWidth={3}
+                                            dot={{ r: 4, fill: '#6366f1' }}
+                                            activeDot={{ r: 6, strokeWidth: 0 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                            {(!trendData || trendData.length === 0) && !isTrendLoading && (
+                                <div className="text-center py-10 text-gray-400 text-xs mt-[-150px]">
+                                    트렌드 데이터를 불러올 수 없습니다. (충분한 이력이 필요합니다)
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="lg:col-span-1 border rounded-xl p-4 bg-gray-50/50">
+                        <h4 className="text-sm font-bold text-gray-800 mb-4">실시간 현황 요약</h4>
+                        <div className="space-y-4">
+                            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+                                <div className="text-[10px] text-gray-400">현재 순위</div>
+                                <div className="text-2xl font-black text-indigo-600">
+                                    {rankingData?.find((r: any) => r.title.includes(selectedClient?.name || ''))?.rank || '권외'}
+                                </div>
+                            </div>
+                            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+                                <div className="text-[10px] text-gray-400">전일 대비</div>
+                                <div className="text-lg font-bold text-success">▲ 2 (Simulated)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto border rounded-xl overflow-hidden">
                     <table className="w-full text-xs text-left">
                         <thead>
                             <tr className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider">
@@ -254,20 +335,72 @@ export default function AnalysisPage() {
         );
     };
 
+    const renderSOVChart = () => {
+        if (isSOVLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
+        if (!sovData || sovData.length === 0) return <div className="text-center p-20 text-gray-400">데이터가 없습니다.</div>;
+
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <DashboardWidget title="종합 노출 점유율 (Avg SOV)">
+                    <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={sovData}>
+                                <PolarGrid stroke="#E5E7EB" />
+                                <PolarAngleAxis dataKey="keyword" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                                <Radar
+                                    name="SOV 점수"
+                                    dataKey="sov_score"
+                                    stroke="#6366F1"
+                                    fill="#6366F1"
+                                    fillOpacity={0.5}
+                                />
+                                <Tooltip />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </DashboardWidget>
+                <DashboardWidget title="키워드별 점유율 현황">
+                    <div className="space-y-4">
+                        {sovData.map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div>
+                                    <div className="text-sm font-bold text-gray-900">{item.keyword}</div>
+                                    <div className="text-[10px] text-gray-400">최고 순위: {item.top_rank || '-'}위</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-lg font-bold text-indigo-600">{item.sov_score.toFixed(1)}%</div>
+                                    <div className="w-24 bg-gray-200 h-1 rounded-full mt-1 overflow-hidden">
+                                        <div className="bg-indigo-500 h-full" style={{ width: `${item.sov_score}%` }} />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </DashboardWidget>
+            </div>
+        );
+    };
+
     const renderContent = () => {
         switch (selectedType) {
             case 'funnel': return renderFunnelChart();
-            case 'cohort': return renderCohortHeatmap();
+            case 'cohort': return renderCohortTable();
             case 'attribution': return renderAttributionChart();
-            case 'segment': return renderSegmentTable();
-            case 'rankings': return renderRankingTable();
+            case 'segment': return renderSegmentAnalysis();
+            case 'rankings': return renderRankingsList();
+            case 'sov': return renderSOVChart();
             default: return null;
         }
     };
 
     return (
         <div className="space-y-8 p-6 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between">
+            <Head>
+                <title>심층 데이터 분석 | D-MIND</title>
+                <meta name="description" content="퍼널 분석, 코호트 분석 등을 통해 마케팅 성과를 심층적으로 분석합니다." />
+            </Head>
+            <div className="flex flex-col gap-8">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">데이터 심층 분석 (Deep Analytics)</h1>
                     <p className="text-gray-500">정교한 분석 엔진으로 마케팅 퍼널과 기여도를 측정하세요.</p>
@@ -326,11 +459,11 @@ export default function AnalysisPage() {
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">성능 최적화 지점 발견</p>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            {selectedType === 'funnel' ? "클릭 대비 전환 효율이 지난 달보다 15% 개선되었습니다." :
-                                                selectedType === 'cohort' ? "2월 유입 고객의 리텐션이 다른 달보다 견고합니다." :
-                                                    selectedType === 'attribution' ? "초기 인지도 형성에 인스타그램이 45% 기여하고 있습니다." :
-                                                        selectedType === 'rankings' ? "경쟁사 대비 상위 노출 점유율이 20% 상승했습니다." :
-                                                            "재방문자의 전환율이 신규 방문자보다 3배 이상 높습니다."}
+                                            {selectedType === 'funnel' ? "상단 퍼널에서 하단 전환까지의 흐름이 시각화되었습니다. 병목 지점을 확인하세요." :
+                                                selectedType === 'cohort' ? "유입 시기별 고객 유지율(Retention)을 통해 장기 가치를 분석할 수 있습니다." :
+                                                    selectedType === 'attribution' ? "각 매체가 전환에 기여한 비중을 가중치 모델별로 확인할 수 있습니다." :
+                                                        selectedType === 'rankings' ? "주요 키워드에 대한 현재 노출 위치 및 변동 이력을 추적합니다." :
+                                                            "정의된 오디언스 그룹별 성과 차이를 분석하여 고효율 세그먼트를 발굴하세요."}
                                         </p>
                                     </div>
                                 </li>

@@ -21,28 +21,43 @@ def sync_all_channels():
             
             campaigns_data = []
             if conn.platform == PlatformType.NAVER_AD:
-                # Stub: In real app, use conn.credentials
-                service = NaverAdsService(customer_id="stub", api_key="stub", secret_key="stub")
-                campaigns_data = [{"id": "n1", "name": "네이버 브랜드검색_치과", "status": "ACTIVE"}]
+                if 'username' in conn.credentials and 'password' in conn.credentials:
+                    from app.scrapers.naver_ads_manager import NaverAdsManagerScraper
+                    import asyncio
+                    
+                    scraper = NaverAdsManagerScraper()
+                    try:
+                        # Since we are in a sync function, use run_until_complete or similar
+                        # This script is likely run via scheduler or CLI
+                        campaigns_data = asyncio.run(scraper.get_performance_summary(
+                            conn.credentials['username'], 
+                            conn.credentials['password']
+                        ))
+                        if not campaigns_data:
+                            logger.warning(f"No data scraped for {conn.client_id}")
+                            campaigns_data = []
+                    except Exception as e:
+                        logger.error(f"Scraper failed: {e}")
+                        campaigns_data = []
+                else:
+                    logger.warning(f"No credentials for scraping Naver for {conn.client_id}")
+                    campaigns_data = []
             elif conn.platform == PlatformType.GOOGLE_ADS:
-                service = GoogleAdsService()
-                campaigns_data = service.get_campaigns(customer_id="stub")
-            elif conn.platform == PlatformType.META_ADS:
-                service = MetaAdsService()
-                campaigns_data = service.get_campaigns()
-
+                # ... existing stubs ...
+                campaigns_data = []
+            
             for camp in campaigns_data:
                 # Get or create campaign
                 db_camp = db.query(Campaign).filter(
                     Campaign.connection_id == conn.id,
-                    Campaign.external_id == camp["id"]
+                    Campaign.external_id == camp.get("id", "SCRAPED_" + camp.get("name", "UNKNOWN"))
                 ).first()
                 
                 if not db_camp:
                     db_camp = Campaign(
                         id=uuid.uuid4(),
                         connection_id=conn.id,
-                        external_id=camp["id"],
+                        external_id=camp.get("id", "SCRAPED_" + camp.get("name", "UNKNOWN")),
                         name=camp["name"],
                         status=camp.get("status", "ACTIVE")
                     )
@@ -50,26 +65,23 @@ def sync_all_channels():
                     db.commit()
                     db.refresh(db_camp)
                 
-                # Fetch and save metrics for last 7 days (simplified)
+                # Fetch and save metrics
                 yesterday = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
                 
-                # Check if metrics already exist for yesterday
                 m_exists = db.query(MetricsDaily).filter(
                     MetricsDaily.campaign_id == db_camp.id,
                     MetricsDaily.date == yesterday
                 ).first()
                 
                 if not m_exists:
-                    # Mock specific metrics based on platform
-                    import random
                     metrics = MetricsDaily(
                         id=uuid.uuid4(),
                         campaign_id=db_camp.id,
                         date=yesterday,
-                        spend=random.uniform(10000, 50000),
-                        impressions=random.randint(1000, 5000),
-                        clicks=random.randint(50, 200),
-                        conversions=random.randint(1, 10),
+                        spend=float(camp.get("spend", 0)),
+                        impressions=int(camp.get("impressions", 0)),
+                        clicks=int(camp.get("clicks", 0)),
+                        conversions=int(camp.get("conversions", 0)),
                         revenue=0.0
                     )
                     db.add(metrics)

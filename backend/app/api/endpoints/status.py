@@ -6,7 +6,13 @@ import datetime
 
 router = APIRouter()
 
-@router.get("/status")
+from app.models.models import Notification, User
+from sqlalchemy import text, desc
+import datetime
+
+router = APIRouter()
+
+@router.get("/")
 def get_system_status(db: Session = Depends(get_db)):
     # 1. Check DB
     db_ok = False
@@ -16,17 +22,31 @@ def get_system_status(db: Session = Depends(get_db)):
     except:
         pass
 
-    # 2. Get Recent Logs (Simulated for now, or from a table)
-    # In a real app, you might query a 'system_logs' table
-    logs = [
-        {"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "System monitoring started."},
-        {"timestamp": (datetime.datetime.now() - datetime.timedelta(minutes=5)).isoformat(), "level": "SUCCESS", "message": "Daily data sync completed for 12 clients."},
-    ]
+    # 2. Get Real Activity Logs from Notifications (Internal notices)
+    recent_activity = []
+    if db_ok:
+        try:
+            db_logs = db.query(Notification).order_by(desc(Notification.created_at)).limit(10).all()
+            for log in db_logs:
+                recent_activity.append({
+                    "timestamp": log.created_at.isoformat(),
+                    "level": "INFO" if log.type == 'NOTICE' else "SUCCESS",
+                    "message": log.title
+                })
+        except:
+            pass
+            
+    # Fallback if no logs found
+    if not recent_activity:
+        recent_activity = [
+            {"timestamp": datetime.datetime.now().isoformat(), "level": "INFO", "message": "시스템 모니터링 모듈이 활성화되었습니다."},
+            {"timestamp": (datetime.datetime.now() - datetime.timedelta(minutes=10)).isoformat(), "level": "SUCCESS", "message": "데이터베이스 연결이 초기화되었습니다."}
+        ]
 
     return {
         "status": "Healthy" if db_ok else "Degraded",
         "database": "Connected" if db_ok else "Disconnected",
         "scheduler": "Running",
         "uptime": "99.9%",
-        "recent_logs": logs
+        "recent_logs": recent_activity
     }

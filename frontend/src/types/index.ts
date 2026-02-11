@@ -142,12 +142,102 @@ export interface PlatformConnection {
     created_at: string;
 }
 
+export enum UserRole {
+    SUPER_ADMIN = 'SUPER_ADMIN',
+    ADMIN = 'ADMIN',
+    EDITOR = 'EDITOR',
+    VIEWER = 'VIEWER',
+}
+
 export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+    role: UserRole;
+    cnt: string;
     is_active: number;
+    agency_id?: string;
+    social_provider?: string;
+    created_at?: string;
+}
+
+export interface UserCreate {
+    email: string;
+    password: string;
+    name?: string;
+    role?: UserRole; // Optional because backend defaults to VIEWER
     birth_date?: string;
-    agency_id?: string | null;
+    agency_id?: string;
+}
+
+// --- Efficiency & Analysis ---
+export interface EfficiencyItem {
+    name: string;
+    spend: number;
+    conversions: number;
+    clicks: number;
+    impressions: number;
+    roas: number;
+    cpa: number;
+    ctr: number;
+    cvr: number;
+    suggestion?: string;
+}
+
+export interface EfficiencyReview {
+    items: EfficiencyItem[];
+    overall_roas: number;
+    total_spend: number;
+    total_conversions: number;
+    ai_review: string;
+    period: string;
+}
+
+// --- Settlement ---
+export interface Settlement {
+    id: string;
+    client_id: string;
+    period: string;
+    total_spend: number;
+    fee_amount: number;
+    tax_amount: number;
+    total_amount: number;
+    status: 'PENDING' | 'REQUESTED' | 'PAID' | 'CANCELLED';
+    notes?: string;
+    due_date?: string;
+    issued_at?: string;
+    paid_at?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+// --- Reports ---
+export interface ReportWidget {
+    id: string;
+    type: 'KPI' | 'CHART' | 'TABLE' | 'SOV' | 'COMPETITORS' | 'RANKINGS';
+    title: string;
+    config: Record<string, any>;
+    data?: any;
+}
+
+export interface ReportTemplate {
+    id: string;
+    name: string;
+    description?: string;
+    config: {
+        widgets: ReportWidget[];
+    };
+    created_at: string;
+}
+
+export interface Report {
+    id: string;
+    client_id: string;
+    template_id: string;
+    title: string;
+    status: 'PENDING' | 'COMPLETED' | 'ERROR';
+    data: {
+        widgets: ReportWidget[];
+    };
+    created_at: string;
 }

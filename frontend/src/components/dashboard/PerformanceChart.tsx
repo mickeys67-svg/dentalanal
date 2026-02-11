@@ -59,10 +59,11 @@ export function PerformanceChart({ data, height = 300 }: PerformanceChartProps) 
                     <Area
                         type="monotone"
                         dataKey="광고비"
-                        stroke="#4F46E5"
+                        stroke="#6366F1"
                         fillOpacity={1}
                         fill="url(#colorSpend)"
-                        strokeWidth={2}
+                        strokeWidth={4}
+                        animationDuration={1500}
                     />
                     <Area
                         type="monotone"
@@ -70,7 +71,8 @@ export function PerformanceChart({ data, height = 300 }: PerformanceChartProps) 
                         stroke="#10B981"
                         fillOpacity={1}
                         fill="url(#colorConversions)"
-                        strokeWidth={2}
+                        strokeWidth={4}
+                        animationDuration={2000}
                     />
                 </AreaChart>
             </ResponsiveContainer>

@@ -27,7 +27,7 @@ async def run_startup_tasks():
 
         # SEEDING: Ensure default Agency and Admin exist
         from sqlalchemy.orm import Session
-        from app.models.models import Agency, User, UserRole
+        from app.models.models import Agency, User, UserRole, ReportTemplate
         from app.core.security import get_password_hash
         
         with Session(engine) as session:
@@ -53,6 +53,27 @@ async def run_startup_tasks():
                 )
                 session.add(admin)
                 logger.info(f"Seeding: Default Admin User ({admin_email}) created.")
+            
+            # 3. Ensure Executive Dashboard Template exists
+            template_name = "Executive Dashboard"
+            template = session.query(ReportTemplate).filter(ReportTemplate.name == template_name).first()
+            if not template:
+                template = ReportTemplate(
+                    name=template_name,
+                    description="경영진을 위한 핵심 마케팅 지표 요약 리포트",
+                    config={
+                        "layout": "grid",
+                        "widgets": [
+                            {"id": "kpi_summary", "type": "KPI_GROUP", "metrics": ["spend", "impressions", "clicks", "conversions"]},
+                            {"id": "funnel_chart", "type": "FUNNEL", "title": "전환 퍼널 분석"},
+                            {"id": "roi_tracking", "type": "LINE_CHART", "title": "ROAS 추이"},
+                            {"id": "market_bench", "type": "BENCHMARK", "title": "업종 평균 지표 비교"},
+                            {"id": "ai_insight", "type": "AI_DIAGNOSIS", "title": "Gemini AI 성과 진단 리포트"}
+                        ]
+                    }
+                )
+                session.add(template)
+                logger.info("Seeding: Executive Dashboard Template created.")
             
             session.commit()
     except Exception as e:
@@ -101,7 +122,7 @@ def health_check():
     return {"status": "ok"}
 
 # Lazy-loaded Routers to prevent top-level import crashes
-from app.api.endpoints import scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, auth, users, status
+from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
@@ -113,6 +134,22 @@ app.include_router(strategy.router, prefix="/api/v1/strategy", tags=["Strategy"]
 app.include_router(collaboration.router, prefix="/api/v1/collaboration", tags=["Collaboration"])
 app.include_router(automation.router, prefix="/api/v1/automation", tags=["Automation"])
 app.include_router(clients.router, prefix="/api/v1/clients", tags=["Clients"])
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
+app.include_router(settlement.router, prefix="/api/v1/settlement", tags=["Settlement"])
+
+@app.get("/")
+def read_root():
+    return {"message": "D-MIND API Service is running", "version": "1.0.0"}
+
+# Catch-all for 404 Debugging
+@app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def catch_all(request: Request, path_name: str):
+    logger.warning(f"404 NOT FOUND: {request.method} {path_name}")
+    return JSONResponse(
+        status_code=404,
+        content={"detail": f"엔드포인트를 찾을 수 없습니다: {path_name}", "path": path_name}
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -129,7 +166,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={
-            "detail": "내부 서버 오류가 발생했습니다. (bcrypt/passlib conflict detected)",
+            "detail": f"내부 서버 오류가 발생했습니다: {str(exc)}",
             "error_type": str(type(exc).__name__),
             "traceback": traceback.format_exc()
         },

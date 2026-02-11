@@ -29,12 +29,26 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+from app.api.endpoints.auth import get_current_user
+
 @router.get("/", response_model=List[UserResponse])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
     return db.query(User).all()
 
 @router.post("/", response_model=UserResponse)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
+def create_user(
+    user_in: UserCreate, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+        
     existing_user = db.query(User).filter(User.email == user_in.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
@@ -53,7 +67,14 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.delete("/{user_id}")
-def delete_user(user_id: str, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+        
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")

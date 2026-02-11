@@ -12,12 +12,14 @@ services:
     plan: free
     ipAllowList: [] # Only allow internal connections
 
-  # 3. FastAPI Backend
+  # 3. FastAPI Backend (Using Docker for Playwright Support)
   - type: web
     name: dentalanal-backend
-    env: python
-    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps"
-    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    env: docker
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/status/status
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -31,14 +33,15 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: TARGET_HOSPITAL_NAME
-        value: "우리 병원"
+        value: "D-MIND Marketing Admin"
 
-  # 4. Celery Worker
+  # 4. Celery Worker (Using Docker)
   - type: worker
     name: dentalanal-worker
-    env: python
-    buildCommand: "cd backend && pip install -r requirements.txt && playwright install chromium --with-deps"
-    startCommand: "cd backend && celery -A app.core.celery_app worker --loglevel=info"
+    env: docker
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
+    startCommand: "celery -A app.core.celery_app worker --loglevel=info"
     envVars:
       - key: DATABASE_URL
         fromDatabase:

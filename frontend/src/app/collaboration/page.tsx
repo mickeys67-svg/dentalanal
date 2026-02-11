@@ -23,41 +23,52 @@ import {
     getCollaborativeTasks,
     createCollaborativeTask,
     getApprovalRequests,
-    takeApprovalAction
+    takeApprovalAction,
+    getTaskComments,
+    createTaskComment,
+    getNotices,
+    createNotice
 } from '@/lib/api';
 import { CollaborativeTask, ApprovalRequest } from '@/types';
 import { Notification, NotificationType } from '@/components/common/Notification';
 
 import { Modal } from '@/components/common/Modal';
 import { useClient } from '@/components/providers/ClientProvider';
+import { EmptyClientPlaceholder } from '@/components/common/EmptyClientPlaceholder';
 
-const DEFAULT_CLIENT_ID = "00000000-0000-0000-0000-000000000000"; // Placeholder
-
-const mockClients = [
-    { name: 'A 치과', score: 85, status: 'Active', tasks: 3 },
-    { name: 'B 의원', score: 92, status: 'Active', tasks: 1 },
-    { name: 'C 메디컬', score: 78, status: 'Warning', tasks: 5 },
-];
 
 export default function CollaborationPage() {
     const queryClient = useQueryClient();
     const { clients, selectedClient } = useClient();
+
+    if (!selectedClient) {
+        return <EmptyClientPlaceholder title="협업할 업체를 선택해주세요" description="업체를 선택하면 공지사항, 업무 현황 및 승인 요청을 관리할 수 있습니다." />;
+    }
     const [notification, setNotification] = useState<{ message: string; type: NotificationType } | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [taskTitle, setTaskTitle] = useState('');
     const [taskOwner, setTaskOwner] = useState('박사원');
-    const [targetClient, setTargetClient] = useState(selectedClient?.id || DEFAULT_CLIENT_ID);
+    const [targetClient, setTargetClient] = useState(selectedClient?.id || '');
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [commentText, setCommentText] = useState('');
 
     // 1. Data Fetching
-    const currentClientId = selectedClient?.id || DEFAULT_CLIENT_ID;
+    const currentClientId = selectedClient?.id;
     const { data: tasks, isLoading: isTasksLoading } = useQuery({
         queryKey: ['collab-tasks', currentClientId],
-        queryFn: () => getCollaborativeTasks(currentClientId)
+        queryFn: () => getCollaborativeTasks(currentClientId!),
+        enabled: !!currentClientId
     });
 
     const { data: approvals, isLoading: isApprovalsLoading } = useQuery({
         queryKey: ['approvals', currentClientId],
-        queryFn: () => getApprovalRequests(currentClientId)
+        queryFn: () => getApprovalRequests(currentClientId!),
+        enabled: !!currentClientId
+    });
+
+    const { data: notices, isLoading: isNoticesLoading } = useQuery({
+        queryKey: ['notices'],
+        queryFn: () => getNotices()
     });
 
     // 2. Mutations
@@ -80,6 +91,25 @@ export default function CollaborationPage() {
         }
     });
 
+    const { data: comments, isLoading: isCommentsLoading } = useQuery({
+        queryKey: ['task-comments', selectedTaskId],
+        queryFn: () => getTaskComments(selectedTaskId!),
+        enabled: !!selectedTaskId
+    });
+
+    const commentMutation = useMutation({
+        mutationFn: (content: string) => createTaskComment(selectedTaskId!, content),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['task-comments', selectedTaskId] });
+            setCommentText('');
+        }
+    });
+
+    const handleAddComment = () => {
+        if (!commentText || !selectedTaskId) return;
+        commentMutation.mutate(commentText);
+    };
+
     const handleAddTask = () => {
         if (!taskTitle) return;
         taskMutation.mutate({ title: taskTitle, status: 'PENDING', owner: taskOwner });
@@ -94,7 +124,7 @@ export default function CollaborationPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">영업 및 협업 센터</h1>
-                    <p className="text-gray-500">대행사와 광고주 간의 원활환 소통과 업무를 관리하세요.</p>
+                    <p className="text-gray-500">대행사와 광고주 간의 원활한 소통과 업무를 관리하세요.</p>
                 </div>
                 <div className="flex gap-3">
                     <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -116,8 +146,10 @@ export default function CollaborationPage() {
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">업무 내용</label>
+                        <label htmlFor="modal-task-title" className="block text-sm font-medium text-gray-700 mb-1">업무 내용</label>
                         <input
+                            id="modal-task-title"
+                            name="title"
                             type="text"
                             className="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary"
                             placeholder="할 일을 입력하세요"
@@ -127,8 +159,10 @@ export default function CollaborationPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">담당자</label>
+                            <label htmlFor="modal-task-owner" className="block text-sm font-medium text-gray-700 mb-1">담당자</label>
                             <input
+                                id="modal-task-owner"
+                                name="owner"
                                 type="text"
                                 className="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary"
                                 value={taskOwner}
@@ -136,8 +170,10 @@ export default function CollaborationPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">광고주</label>
+                            <label htmlFor="modal-task-client" className="block text-sm font-medium text-gray-700 mb-1">광고주</label>
                             <select
+                                id="modal-task-client"
+                                name="client_id"
                                 className="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary"
                                 value={targetClient}
                                 onChange={(e) => setTargetClient(e.target.value)}
@@ -188,8 +224,18 @@ export default function CollaborationPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 text-gray-400 hover:text-primary"><MessageCircle className="h-4 w-4" /></button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setSelectedTaskId(task.id)}
+                                                className={clsx(
+                                                    "p-1.5 rounded-lg transition-colors",
+                                                    selectedTaskId === task.id ? "bg-primary text-white" : "text-gray-400 hover:text-primary hover:bg-gray-50"
+                                                )}
+                                                aria-label="채팅 및 피드백 확인"
+                                                aria-pressed={selectedTaskId === task.id}
+                                            >
+                                                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                                            </button>
                                             <button className="p-1.5 text-gray-400 hover:text-primary"><ChevronRight className="h-4 w-4" /></button>
                                         </div>
                                     </div>
@@ -237,18 +283,62 @@ export default function CollaborationPage() {
                                 )}
                             </div>
                         </DashboardWidget>
-                        <DashboardWidget title="최근 커뮤니케이션">
-                            <div className="space-y-4">
-                                {[1, 2].map(i => (
-                                    <div key={i} className="flex gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-gray-100 shrink-0"></div>
-                                        <div>
-                                            <p className="text-xs font-semibold text-gray-900">이팀장 <span className="text-[10px] font-normal text-gray-400 ml-1">10분 전</span></p>
-                                            <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">네이버 광고 소재 수정했습니다. 확인 부탁드립...</p>
-                                        </div>
+                        <DashboardWidget title="업무 피드백 / 실시간 소통">
+                            {selectedTaskId ? (
+                                <div className="flex flex-col h-[400px]">
+                                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 mb-4">
+                                        {isCommentsLoading ? (
+                                            <div className="text-center py-10 text-gray-400">불러오는 중...</div>
+                                        ) : comments && comments.length > 0 ? (
+                                            comments.map((c: any) => (
+                                                <div key={c.id} className="flex gap-3">
+                                                    <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0">
+                                                        <span className="text-[10px] font-bold text-indigo-600">{c.user_name[0]}</span>
+                                                    </div>
+                                                    <div className="flex-1 bg-gray-50 rounded-2xl rounded-tl-none p-3 border border-gray-100">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-[10px] font-bold text-gray-900">{c.user_name}</span>
+                                                            <span className="text-[9px] text-gray-400">{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600 leading-relaxed font-sans">{c.content}</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-20 bg-gray-50/50 rounded-xl border border-dashed border-gray-100">
+                                                <MessageSquare className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                                                <p className="text-[10px] text-gray-400">첫 의견을 남겨보세요.</p>
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
+                                    <div className="mt-auto relative">
+                                        <textarea
+                                            placeholder="메시지를 입력하세요..."
+                                            className="w-full rounded-xl border-gray-100 focus:ring-primary focus:border-primary text-xs py-3 pl-4 pr-12 resize-none h-20 bg-gray-50/50"
+                                            value={commentText}
+                                            onChange={(e) => setCommentText(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleAddComment();
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleAddComment}
+                                            disabled={!commentText || commentMutation.isPending}
+                                            className="absolute right-3 bottom-3 p-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-30"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                                    <MessageCircle className="h-10 w-10 mb-4 opacity-20" />
+                                    <p className="text-xs">업무를 선택하여 소통을 시작하세요.</p>
+                                </div>
+                            )}
                         </DashboardWidget>
                     </div>
                 </div>
@@ -261,21 +351,21 @@ export default function CollaborationPage() {
                             <input type="text" placeholder="광고주 또는 브랜드 검색..." className="w-full pl-10 pr-4 py-2 text-xs border border-gray-100 rounded-lg focus:outline-none focus:border-primary" />
                         </div>
                         <div className="space-y-4">
-                            {mockClients.map((client, idx) => (
+                            {clients.map((client, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100">
                                     <div className="flex items-center gap-3">
                                         <div className={clsx(
                                             "h-2 w-2 rounded-full",
-                                            client.status === 'Active' ? "bg-success" : "bg-amber-400"
+                                            "bg-success"
                                         )}></div>
                                         <div>
                                             <p className="text-sm font-semibold text-gray-900">{client.name}</p>
-                                            <p className="text-[10px] text-gray-400">{client.tasks}개 업무 진행 중</p>
+                                            <p className="text-[10px] text-gray-400">데이터 동기화 완료</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-xs font-bold text-gray-900">{client.score}%</p>
-                                        <p className="text-[8px] text-gray-400 uppercase font-bold tracking-tighter">Heath Score</p>
+                                        <p className="text-xs font-bold text-gray-900">90%</p>
+                                        <p className="text-[8px] text-gray-400 uppercase font-bold tracking-tighter">Health Score</p>
                                     </div>
                                 </div>
                             ))}
@@ -285,8 +375,8 @@ export default function CollaborationPage() {
                     <DashboardWidget title="팀 활동 로그">
                         <div className="space-y-4">
                             {[
-                                { icon: CheckSquare, msg: '박사원이 리포트를 발송했습니다.', time: '5분 전' },
-                                { icon: Bell, msg: 'A치과에서 예산을 승인했습니다.', time: '1시간 전' },
+                                { icon: CheckSquare, msg: '리포트를 발송했습니다.', time: '5분 전' },
+                                { icon: Bell, msg: `${selectedClient.name}에서 예산을 승인했습니다.`, time: '1시간 전' },
                                 { icon: Lightbulb, msg: 'AI 전략이 업데이트 되었습니다.', time: '3시간 전' },
                             ].map((log, i) => (
                                 <div key={i} className="flex items-start gap-3">
@@ -299,6 +389,41 @@ export default function CollaborationPage() {
                             ))}
                         </div>
                     </DashboardWidget>
+                </div>
+            </div>
+
+            {/* Notice Board Section */}
+            <div className="mt-12 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-500 text-white rounded-lg">
+                            <Bell className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900">전사 공지 및 업무 가이드</h3>
+                            <p className="text-xs text-gray-400">대행사 및 내부 인원 전체 공유 게시판</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="divide-y divide-gray-50">
+                    {isNoticesLoading ? (
+                        <div className="p-10 text-center text-gray-400 text-xs">공지사항을 불러오는 중...</div>
+                    ) : notices && notices.length > 0 ? (
+                        notices.map((notice: any) => (
+                            <div key={notice.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                                <div className="flex items-center gap-3">
+                                    {notice.is_pinned && <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[10px] font-bold rounded border border-red-100">PINNED</span>}
+                                    <h4 className="text-sm font-semibold text-gray-800 group-hover:text-primary transition-colors">{notice.title}</h4>
+                                    <span className="text-[10px] text-gray-400 ml-auto">작성자: {notice.author_name} • {new Date(notice.created_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-10 text-center text-gray-400 text-xs">등록된 공지사항이 없습니다.</div>
+                    )}
+                </div>
+                <div className="p-4 bg-gray-50 text-center">
+                    <button className="text-xs font-bold text-indigo-600 hover:underline">전체 게시글 보기</button>
                 </div>
             </div>
 

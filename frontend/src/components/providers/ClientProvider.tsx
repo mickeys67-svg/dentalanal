@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Client } from '@/types';
 import { getClients } from '@/lib/api';
+import { useAuth } from './AuthProvider';
 
 interface ClientContextType {
     clients: Client[];
@@ -15,30 +16,51 @@ interface ClientContextType {
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
+    const { user, isLoading: isAuthLoading } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const refreshClients = async () => {
+        if (!user) {
+            setClients([]);
+            setSelectedClient(null);
+            setIsLoading(false);
+            return;
+        }
+
         try {
+            setIsLoading(true);
             const data = await getClients();
             setClients(data);
-            if (data.length > 0 && !selectedClient) {
-                // Restore from localStorage or pick first
-                const savedId = localStorage.getItem('selectedClientId');
-                const savedClient = data.find(c => c.id === savedId);
-                setSelectedClient(savedClient || data[0]);
+
+            // Restore from localStorage or pick first
+            const savedId = localStorage.getItem('selectedClientId');
+            const savedClient = data.find(c => c.id === savedId);
+
+            if (data.length > 0) {
+                if (savedClient) {
+                    setSelectedClient(savedClient);
+                } else if (!selectedClient) {
+                    setSelectedClient(data[0]);
+                }
+            } else {
+                setSelectedClient(null);
             }
         } catch (error) {
             console.error('Failed to fetch clients:', error);
+            setClients([]);
+            setSelectedClient(null);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        refreshClients();
-    }, []);
+        if (!isAuthLoading) {
+            refreshClients();
+        }
+    }, [user, isAuthLoading]);
 
     useEffect(() => {
         if (selectedClient) {

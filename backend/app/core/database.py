@@ -14,10 +14,23 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
         import logging
         logging.info(f"Overriding SQLite path for Cloud Run: {SQLALCHEMY_DATABASE_URL}")
 
+# Database Engine Configuration
+connect_args = {}
+engine_args = {
+    "pool_pre_ping": True,
+    "pool_size": 5,
+    "max_overflow": 10
+}
+
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    # SQLite doesn't support pool_size/max_overflow
+    engine_args = {}
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    # Add connect_args for SQLite to handle multi-threading
-    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
+    connect_args=connect_args,
+    **engine_args
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

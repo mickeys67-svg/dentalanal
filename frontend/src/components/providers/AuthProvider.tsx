@@ -33,11 +33,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-            // Set default auth header for axios
-            axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        if (storedToken && storedUser && storedToken !== 'null' && storedToken !== 'undefined') {
+            try {
+                setToken(storedToken);
+                setUser(JSON.parse(storedUser));
+                axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            } catch (e) {
+                console.error("Failed to parse stored user", e);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        } else {
+            // Clean up potentially corrupt state
+            if (storedToken === 'null' || storedToken === 'undefined') {
+                localStorage.removeItem('token');
+            }
         }
         setIsLoading(false);
     }, []);

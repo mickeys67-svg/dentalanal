@@ -43,7 +43,9 @@ class AIService:
             )
             return response.text
         except Exception as e:
-            return f"Gemini 리포트 생성 중 오류가 발생했습니다: {str(e)}"
+            import logging
+            logging.error(f"Gemini API Error (Report): {str(e)}")
+            return f"Gemini 리포트 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요. (Detail: {type(e).__name__})"
 
     def generate_ad_copy(self, swot_data: Dict, target_audience: str, key_proposition: str) -> List[Dict]:
         """
@@ -89,7 +91,7 @@ class AIService:
             return []
 
         campaign_data = "\n".join([
-            f"- 캠페인명: {c['name']}, ROAS: {c['roas']}%, CPC: {c['cpc']}원, 전환수: {c['conversions']}" 
+            f"- 캠페인명: {c['name']}, ROAS: {c.get('roas', 0)}%, CPC: {c.get('cpc', 0)}원, 전환수: {c.get('conversions', 0)}" 
             for c in campaigns
         ])
 
@@ -114,6 +116,42 @@ class AIService:
             return [{"recommendation": response.text}]
         except Exception as e:
             return [{"recommendation": f"분석 실패: {str(e)}"}]
+
+    def generate_deep_diagnosis(self, benchmark_data: Dict) -> str:
+        """
+        AI diagnosis based on benchmark comparison results.
+        """
+        if not self.client:
+            return "Gemini API Client not initialized."
+
+        client_kpis = benchmark_data.get("client_kpis", {})
+        industry_avg = benchmark_data.get("industry_avg", {})
+        diff = benchmark_data.get("comparison", {})
+
+        prompt = f"""
+        너는 대한민국 마케팅 시장 분석 전문가이자 Gemini AI 컨설턴트야. 
+        우리 병원의 광고 성과를 업종({benchmark_data.get('industry')}) 평균 데이터와 비교하여 정밀 진단 리포트를 작성해줘.
+
+        [성과 비교 데이터]
+        1. 클릭률 (CTR): 우리 병원 {client_kpis.get('ctr')}% vs 업종 평균 {industry_avg.get('avg_ctr')}% (차이: {diff.get('ctr_diff')}%)
+        2. 클릭당 비용 (CPC): 우리 병원 {client_kpis.get('cpc')}원 vs 업종 평균 {industry_avg.get('avg_cpc')}원 (차이: {diff.get('cpc_diff')}원)
+        3. 전환율 (CVR): 우리 병원 {client_kpis.get('cvr')}% vs 업종 평균 {industry_avg.get('avg_cvr')}% (차이: {diff.get('cvr_diff')}%)
+
+        [요청 사항]
+        - 위 수치를 바탕으로 현재 우리 병원이 업종 내에서 어느 정도 수준(상/중/하)인지 객관적으로 평가해줘.
+        - 특히 차이가 크게 발생하는 지표(예: CTR이 낮거나 CPC가 높음)에 대해 원인을 분석하고, 이를 해결하기 위한 '즉시 개선 가능한 3가지 액션 플랜'을 마케팅 용어를 사용하여 제안해줘.
+        - 리포트 마지막에는 이번 달의 총평과 다음 달 목표를 한 문장으로 제시해줘.
+
+        톤앤매너: 전문적이고 신뢰감 있는 보고서 형식. 한국어로 작성.
+        """
+        try:
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash', 
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            return f"정밀 진단 생성 중 오류 발생: {str(e)}"
     def generate_swot_analysis(self, hospital_name: str, competitor_info: List[Dict]) -> str:
         """
         AI generated SWOT based on competitor presence.
@@ -140,3 +178,63 @@ class AIService:
             return response.text
         except Exception as e:
             return f"SWOT 분석 실패: {str(e)}"
+    def generate_efficiency_review(self, efficiency_data: Dict) -> Dict:
+        """
+        AI-driven review of spend vs performance efficiency.
+        Returns a dict with 'overall' markdown and 'suggestions' mapping item names to strings.
+        """
+        if not self.client:
+            return {"overall": "Gemini API Client not initialized.", "suggestions": {}}
+
+        items = efficiency_data.get("items", [])
+        overall_roas = efficiency_data.get("overall_roas", 0)
+        total_spend = efficiency_data.get("total_spend", 0)
+        
+        items_str = "\n".join([
+            f"- {i['name']}: 비용 ₩{i['spend']:,.0f}, 전환 {i['conversions']}건, ROAS {i['roas']}%, CPA ₩{i['cpa']:,.0f}"
+            for i in items[:15]
+        ])
+
+        prompt = f"""
+        너는 데이터 기반 퍼포먼스 마케팅 컨설턴트야. 아래의 광고 비용 대 성과 데이터를 보고 종합적인 '효율 리뷰'와 '캠페인별 개선 액션'을 작성해줘.
+        
+        [전체 요약]
+        - 기간: {efficiency_data.get('period')}
+        - 총 집행 비용: ₩{total_spend:,.0f}
+        - 전체 ROAS: {overall_roas}%
+        
+        [세부 캠페인 성과]
+        {items_str}
+        
+        [요청 사항]
+        1. 광고 효율 총평: 단순히 수치 나열이 아닌, 현재 예산 대비 성과가 적정한지 전문가적 소견을 마크다운으로 작성해줘.
+        2. 캠페인별 구체적 제안: 각 캠페인(리스트에 있는 캠페인명 정확히 사용)에 대해 1~2문장의 아주 구체적인 개선 액션(액터가 수행할 작업)을 제안해줘.
+        
+        [응답 형식]
+        반드시 아래의 정해진 JSON 형식을 지켜서 응답해줘. JSON 외의 다른 텍스트는 포함하지 마.
+        {{
+            "overall": "여기에 마케팅 총평 (Markdown 형식) 작성",
+            "suggestions": {{
+                "캠페인명1": "구체적인 개선 제안 텍스트",
+                "캠페인명2": "구체적인 개선 제안 텍스트",
+                ...
+            }}
+        }}
+
+        톤앤매너: 전문적이고 날카로운 비평가 스타일. 한국어로 작성.
+        """
+        try:
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash', 
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                ),
+                contents=prompt
+            )
+            import json
+            return json.loads(response.text)
+        except Exception as e:
+            return {
+                "overall": f"효율 리뷰 생성 중 오류 발생: {str(e)}",
+                "suggestions": {}
+            }

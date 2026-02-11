@@ -1,15 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Union, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.schemas.scraping import (
     SOVAnalysisRequest, SOVAnalysisResult, RankingRequest, RankingResultItem,
     CompetitorAnalysisRequest, CompetitorAnalysisResult,
     AIAnalysisRequest, AIAnalysisResponse
 )
+from app.schemas.analysis import EfficiencyReviewResponse
 from app.services.analysis import AnalysisService
 from app.services.ai_service import AIService
-from app.models.models import PlatformType
+from app.services.benchmark_service import BenchmarkService
+from app.models.models import PlatformType, User
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter()
 
@@ -65,10 +70,19 @@ def get_rankings(
         platform = PlatformType.NAVER_VIEW
         
     results = service.get_daily_ranks(request.keyword, platform)
-    
-    # Map to schema
-    # Logic in service returns dict, schema expects matching fields
     return results
+
+@router.get("/ranking-trend")
+def get_ranking_trend(
+    keyword: str,
+    target_hospital: str,
+    platform: str = "NAVER_PLACE",
+    days: int = 30,
+    db: Session = Depends(get_db)
+):
+    service = AnalysisService(db)
+    p_type = PlatformType.NAVER_VIEW if platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
+    return service.get_ranking_trend(keyword, target_hospital, p_type, days)
 
 @router.post("/sov", response_model=List[SOVAnalysisResult])
 def analyze_sov(
@@ -125,3 +139,43 @@ def get_weekly_summary(
     kw_list = [k.strip() for k in keywords.split(",")]
     p_type = PlatformType.NAVER_VIEW if platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
     return service.get_weekly_sov_summary(target_hospital, kw_list, p_type)
+def get_current_user_wrapper(db: Session = Depends(get_db), token: str = Depends(OAuth2PasswordBearer(tokenUrl="api/v1/auth/login"))):
+    from app.api.endpoints.auth import get_current_user
+    return get_current_user(token, db)
+
+@router.get("/benchmark/{client_id}")
+def get_benchmark_comparison(
+    client_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_wrapper)
+):
+    service = BenchmarkService(db)
+    return service.compare_client_performance(client_id)
+
+@router.get("/efficiency/{client_id}", response_model=EfficiencyReviewResponse)
+def get_efficiency_review(
+    client_id: UUID,
+    days: int = 30,
+    db: Session = Depends(get_db)
+):
+    service = AnalysisService(db)
+    ai_service = AIService()
+    
+    # 1. Get raw efficiency data
+    data = service.get_efficiency_data(str(client_id), days)
+    
+    # 2. Generate AI review (structured)
+    if data["items"]:
+        ai_res = ai_service.generate_efficiency_review(data)
+        data["ai_review"] = ai_res.get("overall", "분석 결과를 불러오는 중입니다.")
+        
+        # Map suggestions back to items
+        suggestions = ai_res.get("suggestions", {})
+        for item in data["items"]:
+            item_name = item["name"]
+            if item_name in suggestions:
+                item["suggestion"] = suggestions[item_name]
+    else:
+        data["ai_review"] = "분석할 수 있는 광고 집행 데이터가 충분하지 않습니다."
+        
+    return data

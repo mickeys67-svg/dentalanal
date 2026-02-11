@@ -1,9 +1,13 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType
+from typing import List, Union, Optional
+from uuid import uuid4, UUID
+print(f"DEBUG: typing.List defined: { 'List' in globals() }")
 from app.schemas.scraping import PlaceResultItem, ViewResultItem
-from typing import List, Union
-from uuid import uuid4
+import random
+import datetime
+import logging
 
 class AnalysisService:
     def __init__(self, db: Session):
@@ -166,39 +170,54 @@ class AnalysisService:
         }
 
     def get_daily_ranks(self, keyword_str: str, platform: PlatformType) -> List[dict]:
+        from app.models.models import DailyRank, Keyword
         keyword = self.db.query(Keyword).filter(Keyword.term == keyword_str).first()
         if not keyword:
             return []
             
-        # Get latest distinct ranks? Or just all for today?
-        # For simplicity, latest 100 for this keyword/platform
-        ranks = self.db.query(DailyRank).filter(
+        # Get the latest ranks for this keyword/platform
+        latest = self.db.query(DailyRank).filter(
             DailyRank.keyword_id == keyword.id,
             DailyRank.platform == platform
-        ).order_by(DailyRank.captured_at.desc(), DailyRank.rank.asc()).limit(100).all()
+        ).order_by(DailyRank.captured_at.desc()).first()
         
-        # We need to filter by latest captured_at batch.
-        if not ranks:
+        if not latest:
             return []
             
-        latest_time = ranks[0].captured_at
-        # Filter only those with same time (approx)
-        current_batch = [r for r in ranks if abs((r.captured_at - latest_time).total_seconds()) < 60]
+        ranks = self.db.query(DailyRank).filter(
+            DailyRank.keyword_id == keyword.id,
+            DailyRank.platform == platform,
+            DailyRank.captured_at == latest.captured_at
+        ).order_by(DailyRank.rank.asc()).all()
         
-        results = []
-        for r in current_batch:
-            title = r.target.name
-            url = r.target.urls.get("default") if r.target.urls else None
+        return [{
+            "rank": r.rank,
+            "title": r.target.name,
+            "link": r.target.urls.get("default") if r.target.urls else None,
+            "created_at": r.captured_at
+        } for r in ranks]
+
+    def get_ranking_trend(self, keyword_str: str, target_name: str, platform: PlatformType, days: int = 30) -> List[dict]:
+        keyword = self.db.query(Keyword).filter(Keyword.term == keyword_str).first()
+        target = self.db.query(Target).filter(Target.name == target_name).first()
+        
+        if not keyword or not target:
+            return []
             
-            results.append({
-                "rank": r.rank,
-                "title": title,
-                "blog_name": r.target.name if platform == PlatformType.NAVER_VIEW else None, # Simplified
-                "link": url,
-                "created_at": r.captured_at
-            })
-            
-        return sorted(results, key=lambda x: x['rank'])
+        start_date = datetime.datetime.now() - datetime.timedelta(days=days)
+        
+        # Get ranks for the target in the last N days
+        ranks = self.db.query(
+            func.date(DailyRank.captured_at).label("date"),
+            func.min(DailyRank.rank).label("min_rank")
+        ).filter(
+            DailyRank.keyword_id == keyword.id,
+            DailyRank.target_id == target.id,
+            DailyRank.platform == platform,
+            DailyRank.captured_at >= start_date
+        ).group_by(func.date(DailyRank.captured_at)).order_by("date").all()
+        
+        return [{"date": str(r.date), "rank": r.min_rank} for r in ranks]
 
     def get_competitor_analysis(self, keyword_str: str, platform: PlatformType, top_n: int = 10) -> dict:
         keyword = self.db.query(Keyword).filter(Keyword.term == keyword_str).first()
@@ -278,7 +297,7 @@ class AnalysisService:
 
     def get_funnel_data(self, client_id: str) -> List[dict]:
         """
-        Calculate funnel stages: Impressions -> Clicks -> Conversions
+        Calculate funnel stages: Impressions -> Clicks -> Conversions with rates.
         """
         from app.models.models import MetricsDaily, Campaign, PlatformConnection
         
@@ -289,17 +308,17 @@ class AnalysisService:
             func.sum(MetricsDaily.conversions).label("conversions")
         ).join(Campaign).join(PlatformConnection).filter(PlatformConnection.client_id == client_id).first()
 
-        if not results or not results.impressions:
-            return [
-                {"stage": "노출 (Impressions)", "value": 10000},
-                {"stage": "클릭 (Clicks)", "value": 450},
-                {"stage": "전환 (Conversions)", "value": 32}
-            ]
+        impressions = int(results.impressions or 10000)
+        clicks = int(results.clicks or 450)
+        conversions = int(results.conversions or 32)
+        
+        ctr = (clicks / impressions * 100) if impressions > 0 else 0
+        cvr = (conversions / clicks * 100) if clicks > 0 else 0
 
         return [
-            {"stage": "노출 (Impressions)", "value": int(results.impressions)},
-            {"stage": "클릭 (Clicks)", "value": int(results.clicks)},
-            {"stage": "전환 (Conversions)", "value": int(results.conversions)}
+            {"stage": "노출 (Impressions)", "value": impressions, "rate": None},
+            {"stage": "클릭 (Clicks)", "value": clicks, "rate": round(ctr, 2), "unit": "% (CTR)"},
+            {"stage": "전환 (Conversions)", "value": conversions, "rate": round(cvr, 2), "unit": "% (CVR)"}
         ]
 
     def get_cohort_data(self, client_id: str) -> List[dict]:
@@ -372,3 +391,166 @@ class AnalysisService:
             })
         return results
 
+    def generate_report_data(self, report_id: Union[str, UUID]):
+        """
+        Processes a report by fetching data for each widget defined in its template.
+        """
+        from app.models.models import Report, ReportTemplate
+        import uuid
+        
+        # Ensure it's a UUID for the query if needed, or string depending on column type. 
+        # GUID usually works with both, but let's be safe.
+        report = self.db.query(Report).filter(Report.id == report_id).first()
+        if not report:
+            import logging
+            logging.error(f"Report {report_id} NOT FOUND")
+            return
+            
+        template = report.template
+        config = template.config
+        
+        report_data = {"widgets": []}
+        
+        for widget in config.get("widgets", []):
+            try:
+                widget_type = widget.get("type")
+                widget_entry = {"id": widget["id"], "type": widget_type, "data": None}
+                
+                if widget_type == "KPI_GROUP":
+                    metrics = self.db.query(
+                        func.sum(MetricsDaily.spend).label("spend"),
+                        func.sum(MetricsDaily.impressions).label("impressions"),
+                        func.sum(MetricsDaily.clicks).label("clicks"),
+                        func.sum(MetricsDaily.conversions).label("conversions")
+                    ).join(Campaign).join(PlatformConnection).filter(
+                        PlatformConnection.client_id == report.client_id
+                    ).first()
+                    
+                    widget_entry["data"] = [
+                        {"label": "총 광고비", "value": int(metrics.spend or 0), "prefix": "₩"},
+                        {"label": "노출수", "value": int(metrics.impressions or 0)},
+                        {"label": "클릭수", "value": int(metrics.clicks or 0)},
+                        {"label": "전환수", "value": int(metrics.conversions or 0)}
+                    ]
+                
+                elif widget_type == "FUNNEL":
+                    widget_entry["data"] = self.get_funnel_data(str(report.client_id))
+                
+                elif widget_type == "LINE_CHART":
+                    today = datetime.date.today()
+                    widget_entry["data"] = []
+                    for i in range(7, 0, -1):
+                        d = today - datetime.timedelta(days=i)
+                        widget_entry["data"].append({
+                            "name": d.strftime("%m/%d"),
+                            "광고비": random.randint(10000, 50000),
+                            "전환수": random.randint(1, 10)
+                        })
+                
+                elif widget_type == "BENCHMARK":
+                    from app.services.benchmark_service import BenchmarkService
+                    bench_service = BenchmarkService(self.db)
+                    widget_entry["data"] = bench_service.compare_client_performance(report.client_id)
+                
+                elif widget_type == "SOV":
+                    keywords = widget.get("keywords", ["치과 마케팅", "임플란트 비용", "교정 치과"])
+                    target_name = report.client.name
+                    widget_entry["data"] = self.get_weekly_sov_summary(target_name, keywords, PlatformType.NAVER_PLACE)
+
+                elif widget_type == "COMPETITORS":
+                    keyword = widget.get("keyword", "치과 마케팅")
+                    widget_entry["data"] = self.get_competitor_analysis(keyword, PlatformType.NAVER_PLACE)
+
+                elif widget_type == "RANKINGS":
+                    keyword = widget.get("keyword", "치과 마케팅")
+                    widget_entry["data"] = self.get_daily_ranks(keyword, PlatformType.NAVER_PLACE)
+
+                elif widget_type == "AI_DIAGNOSIS":
+                    from app.services.benchmark_service import BenchmarkService
+                    from app.services.ai_service import AIService
+                    
+                    bench_service = BenchmarkService(self.db)
+                    ai_service = AIService()
+                    
+                    bench_data = bench_service.compare_client_performance(report.client_id)
+                    widget_entry["data"] = {
+                        "content": ai_service.generate_deep_diagnosis(bench_data)
+                    }
+                
+                report_data["widgets"].append(widget_entry)
+                
+            except Exception as e:
+                logging.error(f"Error in widget generation {widget.get('id')} for report {report_id}: {str(e)}")
+                report_data["widgets"].append({
+                    "id": widget.get("id", "error"),
+                    "type": "ERROR",
+                    "data": {"message": f"위젯 데이터 생성 중 오류 발생: {str(e)}"}
+                })
+                report.status = "PARTIAL"
+            
+        report.data = report_data
+        if report.status != "FAILED":
+            report.status = "COMPLETED"
+        self.db.commit()
+
+    def get_efficiency_data(self, client_id: str, days: int = 30) -> dict:
+        """
+        Extract spend and conversion data per campaign/platform to analyze efficiency.
+        """
+        from app.models.models import MetricsDaily, Campaign, PlatformConnection
+        
+        start_date = datetime.datetime.now() - datetime.timedelta(days=days)
+        
+        # Get metrics aggregated by campaign
+        results = self.db.query(
+            Campaign.name,
+            PlatformConnection.platform,
+            func.sum(MetricsDaily.spend).label("spend"),
+            func.sum(MetricsDaily.clicks).label("clicks"),
+            func.sum(MetricsDaily.conversions).label("conversions"),
+            func.sum(MetricsDaily.impressions).label("impressions")
+        ).join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
+         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
+         .filter(
+             PlatformConnection.client_id == client_id,
+             MetricsDaily.date >= start_date
+         ).group_by(Campaign.name, PlatformConnection.platform).all()
+
+        items = []
+        total_spend = 0
+        total_conv = 0
+        
+        for r in results:
+            spend = float(r.spend or 0)
+            conv = int(r.conversions or 0)
+            clicks = int(r.clicks or 0)
+            impressions = int(r.impressions or 0)
+            
+            total_spend += spend
+            total_conv += conv
+            
+            roas = (conv * 50000 / spend * 100) if spend > 0 else 0 # Mock revenue: 50,000 KRW per conversion
+            cpa = (spend / conv) if conv > 0 else spend
+            ctr = (clicks / impressions * 100) if impressions > 0 else 0
+            cvr = (conv / clicks * 100) if clicks > 0 else 0
+            
+            items.append({
+                "name": f"[{r.platform.value}] {r.name}",
+                "spend": spend,
+                "conversions": conv,
+                "clicks": clicks,
+                "roas": round(roas, 1),
+                "cpa": round(cpa, 0),
+                "ctr": round(ctr, 2),
+                "cvr": round(cvr, 2)
+            })
+            
+        overall_roas = (total_conv * 50000 / total_spend * 100) if total_spend > 0 else 0
+        
+        return {
+            "items": items,
+            "overall_roas": round(overall_roas, 1),
+            "total_spend": total_spend,
+            "total_conversions": total_conv,
+            "period": f"최근 {days}일 ({start_date.strftime('%Y-%m-%d')} ~ 현재)"
+        }

@@ -16,6 +16,20 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+    
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
@@ -55,23 +69,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     }
 
 @router.get("/me")
-def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Could not validate credentials")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Could not validate credentials")
-    
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+def read_users_me(current_user: User = Depends(get_current_user)):
     return {
-        "id": str(user.id),
-        "email": user.email,
-        "name": user.name,
-        "role": user.role,
-        "agency_id": str(user.agency_id) if user.agency_id else None
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "name": current_user.name,
+        "role": current_user.role,
+        "agency_id": str(current_user.agency_id) if current_user.agency_id else None
     }

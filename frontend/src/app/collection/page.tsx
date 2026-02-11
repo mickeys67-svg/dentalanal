@@ -9,9 +9,12 @@ import clsx from 'clsx';
 import { Connector } from '@/types';
 import { Notification, NotificationType } from '@/components/common/Notification';
 
+import { useClient } from '@/components/providers/ClientProvider';
+
 export default function CollectionPage() {
     const queryClient = useQueryClient();
-    const clientId = "c1"; // Demo clientId
+    const { selectedClient } = useClient();
+    const clientId = selectedClient?.id;
     const [notification, setNotification] = useState<{ message: string; type: NotificationType } | null>(null);
 
     const { data: connectorsData, isLoading: isConnectorsLoading } = useQuery({
@@ -21,12 +24,13 @@ export default function CollectionPage() {
 
     const { data: activeConnections, isLoading: isActiveLoading } = useQuery({
         queryKey: ['activeConnections', clientId],
-        queryFn: () => getActiveConnections(clientId)
+        queryFn: () => getActiveConnections(clientId!),
+        enabled: !!clientId
     });
 
     const connectMutation = useMutation({
         mutationFn: ({ platformId, creds }: { platformId: string, creds: any }) =>
-            connectPlatform(platformId, clientId, creds),
+            connectPlatform(platformId, clientId!, creds),
         onSuccess: (data) => {
             setNotification({ message: data.message, type: 'SUCCESS' });
             queryClient.invalidateQueries({ queryKey: ['activeConnections'] });
@@ -49,13 +53,25 @@ export default function CollectionPage() {
     const activePlatformIds = activeConnections?.map((c: any) => c.platform) || [];
 
     const handleConnect = (connector: Connector) => {
-        const apiKey = prompt(`${connector.name} API Key (또는 액세스 토큰)를 입력하세요:`);
-        if (!apiKey) return;
+        if (connector.id === 'naver_ads') {
+            const username = prompt(`${connector.name} 아이디를 입력하세요:`);
+            if (!username) return;
+            const password = prompt(`${connector.name} 비밀번호를 입력하세요:`);
+            if (!password) return;
 
-        connectMutation.mutate({
-            platformId: connector.id,
-            creds: { api_key: apiKey }
-        });
+            connectMutation.mutate({
+                platformId: connector.id,
+                creds: { username, password }
+            });
+        } else {
+            const apiKey = prompt(`${connector.name} API Key (또는 액세스 토큰)를 입력하세요:`);
+            if (!apiKey) return;
+
+            connectMutation.mutate({
+                platformId: connector.id,
+                creds: { api_key: apiKey }
+            });
+        }
     };
 
     return (

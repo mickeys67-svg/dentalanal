@@ -25,13 +25,20 @@ export function SOVChart({ data }: SOVChartProps) {
                         data={data}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={4}
                         dataKey="value"
+                        animationBegin={0}
+                        animationDuration={1500}
                     >
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                                stroke="rgba(255,255,255,0.2)"
+                                strokeWidth={2}
+                            />
                         ))}
                     </Pie>
                     <Tooltip

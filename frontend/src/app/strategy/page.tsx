@@ -21,12 +21,17 @@ import { SWOTData, StrategyGoal } from '@/types';
 import { Notification, NotificationType } from '@/components/common/Notification';
 import { Modal } from '@/components/common/Modal';
 import { useClient } from '@/components/providers/ClientProvider';
+import { EmptyClientPlaceholder } from '@/components/common/EmptyClientPlaceholder';
 
-const DEFAULT_CLIENT_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function StrategyPage() {
     const queryClient = useQueryClient();
     const { selectedClient } = useClient();
+
+    if (!selectedClient) {
+        return <EmptyClientPlaceholder title="전략을 수립할 업체를 선택해주세요" description="업체를 선택하면 SWOT 분석 및 AI 타겟팅 전략 수립이 가능합니다." />;
+    }
+
     const [swotState, setSwotState] = useState<SWOTData>({
         strengths: [], weaknesses: [], opportunities: [], threats: []
     });
@@ -46,11 +51,12 @@ export default function StrategyPage() {
     const [isGenerating, setIsGenerating] = useState(false);
 
     // 1. Data Fetching
-    const currentClientId = selectedClient?.id || DEFAULT_CLIENT_ID;
+    const currentClientId = selectedClient?.id;
 
     const { data: swotData, isLoading: isSwotLoading } = useQuery({
         queryKey: ['swot', currentClientId],
-        queryFn: () => getSWOT(currentClientId)
+        queryFn: () => getSWOT(currentClientId!),
+        enabled: !!currentClientId
     });
 
     useEffect(() => {
@@ -66,12 +72,13 @@ export default function StrategyPage() {
 
     const { data: goals, isLoading: isGoalsLoading } = useQuery({
         queryKey: ['goals', currentClientId],
-        queryFn: () => getStrategyGoals(currentClientId)
+        queryFn: () => getStrategyGoals(currentClientId!),
+        enabled: !!currentClientId
     });
 
     // 2. Mutations
     const swotMutation = useMutation({
-        mutationFn: (data: SWOTData) => saveSWOT(currentClientId, data),
+        mutationFn: (data: SWOTData) => saveSWOT(currentClientId!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['swot'] });
             setNotification({ message: "SWOT 분석이 성공적으로 저장되었습니다.", type: 'SUCCESS' });
@@ -82,7 +89,7 @@ export default function StrategyPage() {
     });
 
     const goalMutation = useMutation({
-        mutationFn: (data: Partial<StrategyGoal>) => createStrategyGoal(currentClientId, data),
+        mutationFn: (data: Partial<StrategyGoal>) => createStrategyGoal(currentClientId!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['goals'] });
             setNotification({ message: "목표가 등록되었습니다.", type: 'SUCCESS' });
@@ -174,7 +181,8 @@ export default function StrategyPage() {
                         </div>
                         <h2 className="text-2xl font-bold mb-4">현재 캠페인 최적화 전략 제안</h2>
                         <p className="text-indigo-50 leading-relaxed">
-                            {aiCopy || "최근 데이터를 분석한 결과, 타겟 키워드 효율이 전월 대비 15% 상승하고 있습니다. 고효율 키워드에 대한 예산 배분을 권장합니다."}
+                            {isGenerating ? "Gemini AI가 데이터를 기반으로 최적의 전략을 구성하고 있습니다..." :
+                                aiCopy || "최근 데이터를 분석한 결과와 수립된 SWOT 분석을 바탕으로 AI가 구체적인 매체 믹스 및 광고 타겟팅 전략을 제안할 준비가 되었습니다. 'AI 전략 생성' 버튼을 클릭해 주세요."}
                         </p>
                     </div>
                 </div>

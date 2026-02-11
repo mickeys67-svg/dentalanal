@@ -43,13 +43,23 @@ services:
     container_name: d_mind_worker
     restart: always
     command: celery -A app.core.celery_app worker --loglevel=info
-    volumes:
-      - ./backend:/app
     env_file:
       - ./backend/.env
     depends_on:
       - db
       - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: d_mind_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

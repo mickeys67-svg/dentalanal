@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Head from 'next/head';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { SOVChart } from '@/components/dashboard/SOVChart';
@@ -11,6 +12,7 @@ import clsx from 'clsx';
 import { DashboardKPI, Campaign } from '@/types';
 import { translateMetric } from '@/lib/i18n';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
+import { EmptyClientPlaceholder } from '@/components/common/EmptyClientPlaceholder';
 
 const mockTrendData = [
     { name: '월', 광고비: 400000, 전환수: 12 },
@@ -34,40 +36,19 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
     const { clients, selectedClient, isLoading: isClientsLoading } = useClient();
-    const { summary, isLoading: isDashboardLoading, error, refresh, isSyncing, startSync } = useDashboard(selectedClient?.id);
+    const { summary, trend, isLoading: isDashboardLoading, error, refresh, isSyncing, startSync } = useDashboard(selectedClient?.id);
 
     if (isClientsLoading || isDashboardLoading) {
         return (
             <div className="flex h-[80vh] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-gray-500 font-medium">데이터를 구성하는 중...</span>
+                <span className="ml-3 text-gray-500 font-medium">데이터를 분석하는 중...</span>
             </div>
         );
     }
 
     if (clients.length === 0) {
-        return (
-            <div className="flex h-[80vh] flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="max-w-md w-full text-center space-y-6 bg-white p-10 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
-                        <Plus className="w-8 h-8 text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-gray-900">환영합니다!</h2>
-                        <p className="text-gray-500">대시보드를 시작하려면 먼저 관리할 업체를 등록해야 합니다.</p>
-                    </div>
-                    <Link
-                        href="/settings"
-                        className="inline-flex items-center justify-center w-full px-6 py-3 text-base font-medium text-white bg-primary rounded-xl hover:bg-opacity-90 transition-all shadow-md active:scale-[0.98]"
-                    >
-                        업체 등록하러 가기
-                    </Link>
-                    <p className="text-xs text-gray-400">
-                        * 업체 등록 후 매체(네이버, 구글 등)를 연동하면 실시간 성과 분석이 시작됩니다.
-                    </p>
-                </div>
-            </div>
-        );
+        return <EmptyClientPlaceholder />;
     }
 
     if (error) {
@@ -90,6 +71,10 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8 p-6 animate-in fade-in duration-500">
+            <Head>
+                <title>종합 성과 대시보드 | D-MIND</title>
+                <meta name="description" content="모든 채널의 마케팅 성과를 한눈에 파악하고 실시간 데이터를 분석하세요." />
+            </Head>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">종합 성과 대시보드</h1>
@@ -110,9 +95,12 @@ export default function DashboardPage() {
                     >
                         <RefreshCw className="h-4 w-4" /> 새로고침
                     </button>
-                    <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 transition-all shadow-sm">
-                        리포트 생성
-                    </button>
+                    <Link
+                        href="/reports"
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 transition-all shadow-sm"
+                    >
+                        전체 리포트조회
+                    </Link>
                 </div>
             </div>
 
@@ -145,7 +133,11 @@ export default function DashboardPage() {
                             <span className="h-2 w-2 rounded-full bg-success"></span> 전환수
                         </span>
                     </div>
-                    <PerformanceChart data={mockTrendData} />
+                    <PerformanceChart data={trend?.map(t => ({
+                        name: t.date.split('-').slice(1).join('/'), // Convert 2024-02-11 to 02/11
+                        "광고비": t.spend,
+                        "전환수": t.conversions
+                    })) || mockTrendData} />
                 </DashboardWidget>
 
                 <DashboardWidget title="매체별 비중 (SOV)">
@@ -156,7 +148,7 @@ export default function DashboardPage() {
             {/* Detailed Table */}
             <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900">캠페인별 성과 상세</h3>
+                    <h2 className="text-lg font-semibold text-gray-900">캠페인별 성과 상세</h2>
                     <span className="text-xs text-gray-400">최근 7일 기준</span>
                 </div>
                 <div className="overflow-x-auto">
