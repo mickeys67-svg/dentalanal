@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     GOOGLE_ADS_DEVELOPER_TOKEN: Optional[str] = None
     META_ADS_ACCESS_TOKEN: Optional[str] = None
     META_AD_ACCOUNT_ID: Optional[str] = None
+    
+    # Naver Search Ads API
+    NAVER_AD_CUSTOMER_ID: Optional[str] = None
+    NAVER_AD_ACCESS_LICENSE: Optional[str] = None
+    NAVER_AD_SECRET_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

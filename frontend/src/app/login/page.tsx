@@ -24,14 +24,14 @@ export default function LoginPage() {
         } catch (err: any) {
             console.error('Login error:', err);
             const detail = err.response?.data?.detail;
-            const tb = err.response?.data?.traceback;
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://BACKEND_URL_NOT_SET';
 
             if (typeof detail === 'string') {
-                setError(`${detail}${tb ? '\n\n[Debug Info]\n' + tb.substring(0, 200) + '...' : ''}`);
+                setError(detail);
             } else {
-                const errorMsg = err.response ? `서버 오류 (${err.response.status})` : `네트워크 연결 오류 (${err.message || 'Unknown'})`;
-                setError(`${errorMsg}\n\n[Debug Info]\nTarget: ${apiBase}\nCode: ${err.code || 'N/A'}\n${tb ? tb.substring(0, 200) + '...' : ''}`);
+                const errorMsg = err.response
+                    ? `서버 오류 (${err.response.status}): 로그인에 실패했습니다.`
+                    : `네트워크 연결 오류: 서버에 접속할 수 없습니다.`;
+                setError(errorMsg);
             }
         } finally {
             setIsLoading(false);

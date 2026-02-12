@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.models import CollaborativeTask, ApprovalRequest, TaskComment, User, Notification
+from app.models.models import CollaborativeTask, ApprovalRequest, TaskComment, User, Notification, Notice
 from app.api.endpoints.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional

@@ -98,6 +98,7 @@ export default function AnalysisPage() {
 
     const renderFunnelChart = () => {
         if (isFunnelLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+        if (!funnelData || funnelData.length === 0) return <div className="h-80 flex items-center justify-center text-gray-400 text-sm">데이터가 없습니다.</div>;
         return (
             <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={funnelData} layout="vertical" margin={{ left: 40, right: 40 }}>
@@ -154,6 +155,7 @@ export default function AnalysisPage() {
 
     const renderAttributionChart = () => {
         if (isAttrLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+        if (!attributionData || attributionData.length === 0) return <div className="h-80 flex items-center justify-center text-gray-400 text-sm">데이터가 없습니다.</div>;
 
         return (
             <div className="space-y-6">

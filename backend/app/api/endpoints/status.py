@@ -12,7 +12,7 @@ import datetime
 
 router = APIRouter()
 
-@router.get("/")
+@router.get("")
 def get_system_status(db: Session = Depends(get_db)):
     # 1. Check DB
     db_ok = False

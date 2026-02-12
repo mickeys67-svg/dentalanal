@@ -55,7 +55,7 @@ services:
 
   # 5. Next.js Frontend
   - type: web
-    name: dentalanal-frontend
+    name: dentalanal
     env: node
     buildCommand: "cd frontend && npm install && npm run build"
     startCommand: "cd frontend && npm run start"

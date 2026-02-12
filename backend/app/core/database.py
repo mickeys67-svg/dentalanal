@@ -14,18 +14,25 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
         import logging
         logging.info(f"Overriding SQLite path for Cloud Run: {SQLALCHEMY_DATABASE_URL}")
 
+# Handle Render/Supabase/Heroku postgres:// vs postgresql:// issue
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Database Engine Configuration
 connect_args = {}
 engine_args = {
     "pool_pre_ping": True,
-    "pool_size": 5,
-    "max_overflow": 10
 }
 
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
-    # SQLite doesn't support pool_size/max_overflow
-    engine_args = {}
+else:
+    # PostgreSQL specific engine args
+    engine_args.update({
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_recycle": 3600,
+    })
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

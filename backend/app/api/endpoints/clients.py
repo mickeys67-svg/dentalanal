@@ -22,7 +22,7 @@ class ClientResponse(ClientBase):
     id: UUID
     model_config = ConfigDict(from_attributes=True)
 
-@router.get("/", response_model=List[ClientResponse])
+@router.get("", response_model=List[ClientResponse])
 def get_clients(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

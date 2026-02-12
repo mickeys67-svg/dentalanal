@@ -42,6 +42,24 @@ export default function ReportDetailPage() {
         );
     }
 
+    if (report.status === "PENDING") {
+        return (
+            <div className="flex flex-col h-screen items-center justify-center space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div className="text-center">
+                    <h2 className="text-xl font-bold text-gray-900">리포트 생성 중...</h2>
+                    <p className="text-gray-500">데이터를 분석하여 리포트를 생성하고 있습니다. 잠시만 기다려 주세요.</p>
+                </div>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    새로고침
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Header */}

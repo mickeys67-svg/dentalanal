@@ -29,7 +29,7 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-from app.api.endpoints.auth import get_current_user
+from app.api.endpoints.auth import get_current_user, get_optional_current_user
 
 @router.get("/", response_model=List[UserResponse])
 def get_users(
@@ -44,10 +44,16 @@ def get_users(
 def create_user(
     user_in: UserCreate, 
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    if current_user and current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+    # If no users exist, allow creating the first admin
+    num_users = db.query(User).count()
+    
+    if num_users > 0:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
         
     existing_user = db.query(User).filter(User.email == user_in.email).first()
     if existing_user:

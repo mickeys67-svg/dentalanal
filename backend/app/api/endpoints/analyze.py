@@ -154,15 +154,31 @@ def get_benchmark_comparison(
 
 @router.get("/efficiency/{client_id}", response_model=EfficiencyReviewResponse)
 def get_efficiency_review(
-    client_id: UUID,
+    client_id: str,
     days: int = 30,
     db: Session = Depends(get_db)
 ):
+    # Handle "undefined" or other invalid strings
+    if client_id == "undefined" or client_id == "null":
+        return {
+            "items": [],
+            "overall_roas": 0.0,
+            "total_spend": 0,
+            "total_conversions": 0,
+            "period": "데이터를 불러올 수 없습니다 (선택된 업체 없음)",
+            "ai_review": "분석할 수 있는 광고 집행 데이터가 충분하지 않습니다."
+        }
+    
+    try:
+        validated_id = str(UUID(client_id))
+    except (ValueError, TypeError):
+         raise HTTPException(status_code=400, detail="Invalid client_id format")
+
     service = AnalysisService(db)
     ai_service = AIService()
     
     # 1. Get raw efficiency data
-    data = service.get_efficiency_data(str(client_id), days)
+    data = service.get_efficiency_data(validated_id, days)
     
     # 2. Generate AI review (structured)
     if data["items"]:

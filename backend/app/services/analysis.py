@@ -341,10 +341,14 @@ class AnalysisService:
         from app.models.models import MetricsDaily, Campaign, PlatformConnection
         
         # Get conversion share by platform
+        # FIX: Use explicit select_from to avoid multiple FROMs error
         p_metrics = self.db.query(
             PlatformConnection.platform,
             func.sum(MetricsDaily.conversions).label("conversions")
-        ).join(Campaign).join(PlatformConnection).filter(
+        ).select_from(MetricsDaily)\
+         .join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
+         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
+         .filter(
             PlatformConnection.client_id == client_id
         ).group_by(PlatformConnection.platform).all()
         
@@ -391,107 +395,117 @@ class AnalysisService:
             })
         return results
 
-    def generate_report_data(self, report_id: Union[str, UUID]):
+    def generate_report_data(self, report_id: UUID):
         """
         Processes a report by fetching data for each widget defined in its template.
         """
-        from app.models.models import Report, ReportTemplate
+        from app.models.models import Report, MetricsDaily, Campaign, PlatformConnection, PlatformType
         import uuid
+        import logging
+        import random
+        import datetime
         
-        # Ensure it's a UUID for the query if needed, or string depending on column type. 
-        # GUID usually works with both, but let's be safe.
+        logger = logging.getLogger(__name__)
+        
         report = self.db.query(Report).filter(Report.id == report_id).first()
         if not report:
-            import logging
-            logging.error(f"Report {report_id} NOT FOUND")
+            logger.error(f"Report {report_id} NOT FOUND")
             return
             
-        template = report.template
-        config = template.config
-        
-        report_data = {"widgets": []}
-        
-        for widget in config.get("widgets", []):
-            try:
-                widget_type = widget.get("type")
-                widget_entry = {"id": widget["id"], "type": widget_type, "data": None}
-                
-                if widget_type == "KPI_GROUP":
-                    metrics = self.db.query(
-                        func.sum(MetricsDaily.spend).label("spend"),
-                        func.sum(MetricsDaily.impressions).label("impressions"),
-                        func.sum(MetricsDaily.clicks).label("clicks"),
-                        func.sum(MetricsDaily.conversions).label("conversions")
-                    ).join(Campaign).join(PlatformConnection).filter(
-                        PlatformConnection.client_id == report.client_id
-                    ).first()
-                    
-                    widget_entry["data"] = [
-                        {"label": "총 광고비", "value": int(metrics.spend or 0), "prefix": "₩"},
-                        {"label": "노출수", "value": int(metrics.impressions or 0)},
-                        {"label": "클릭수", "value": int(metrics.clicks or 0)},
-                        {"label": "전환수", "value": int(metrics.conversions or 0)}
-                    ]
-                
-                elif widget_type == "FUNNEL":
-                    widget_entry["data"] = self.get_funnel_data(str(report.client_id))
-                
-                elif widget_type == "LINE_CHART":
-                    today = datetime.date.today()
-                    widget_entry["data"] = []
-                    for i in range(7, 0, -1):
-                        d = today - datetime.timedelta(days=i)
-                        widget_entry["data"].append({
-                            "name": d.strftime("%m/%d"),
-                            "광고비": random.randint(10000, 50000),
-                            "전환수": random.randint(1, 10)
-                        })
-                
-                elif widget_type == "BENCHMARK":
-                    from app.services.benchmark_service import BenchmarkService
-                    bench_service = BenchmarkService(self.db)
-                    widget_entry["data"] = bench_service.compare_client_performance(report.client_id)
-                
-                elif widget_type == "SOV":
-                    keywords = widget.get("keywords", ["치과 마케팅", "임플란트 비용", "교정 치과"])
-                    target_name = report.client.name
-                    widget_entry["data"] = self.get_weekly_sov_summary(target_name, keywords, PlatformType.NAVER_PLACE)
-
-                elif widget_type == "COMPETITORS":
-                    keyword = widget.get("keyword", "치과 마케팅")
-                    widget_entry["data"] = self.get_competitor_analysis(keyword, PlatformType.NAVER_PLACE)
-
-                elif widget_type == "RANKINGS":
-                    keyword = widget.get("keyword", "치과 마케팅")
-                    widget_entry["data"] = self.get_daily_ranks(keyword, PlatformType.NAVER_PLACE)
-
-                elif widget_type == "AI_DIAGNOSIS":
-                    from app.services.benchmark_service import BenchmarkService
-                    from app.services.ai_service import AIService
-                    
-                    bench_service = BenchmarkService(self.db)
-                    ai_service = AIService()
-                    
-                    bench_data = bench_service.compare_client_performance(report.client_id)
-                    widget_entry["data"] = {
-                        "content": ai_service.generate_deep_diagnosis(bench_data)
-                    }
-                
-                report_data["widgets"].append(widget_entry)
-                
-            except Exception as e:
-                logging.error(f"Error in widget generation {widget.get('id')} for report {report_id}: {str(e)}")
-                report_data["widgets"].append({
-                    "id": widget.get("id", "error"),
-                    "type": "ERROR",
-                    "data": {"message": f"위젯 데이터 생성 중 오류 발생: {str(e)}"}
-                })
-                report.status = "PARTIAL"
+        try:
+            template = report.template
+            config = template.config
             
-        report.data = report_data
-        if report.status != "FAILED":
-            report.status = "COMPLETED"
-        self.db.commit()
+            report_data = {"widgets": []}
+            
+            for widget in config.get("widgets", []):
+                try:
+                    widget_type = widget.get("type")
+                    widget_entry = {"id": widget["id"], "type": widget_type, "data": None}
+                    
+                    if widget_type == "KPI_GROUP":
+                        # FIX: Explicit joins to avoid multiple FROMs error
+                        metrics = self.db.query(
+                            func.sum(MetricsDaily.spend).label("spend"),
+                            func.sum(MetricsDaily.impressions).label("impressions"),
+                            func.sum(MetricsDaily.clicks).label("clicks"),
+                            func.sum(MetricsDaily.conversions).label("conversions")
+                        ).select_from(MetricsDaily)\
+                         .join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
+                         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
+                         .filter(PlatformConnection.client_id == report.client_id).first()
+                        
+                        widget_entry["data"] = [
+                            {"label": "총 광고비", "value": int(metrics.spend or 0), "prefix": "₩"},
+                            {"label": "노출수", "value": int(metrics.impressions or 0)},
+                            {"label": "클릭수", "value": int(metrics.clicks or 0)},
+                            {"label": "전환수", "value": int(metrics.conversions or 0)}
+                        ]
+                    
+                    elif widget_type == "FUNNEL":
+                        widget_entry["data"] = self.get_funnel_data(str(report.client_id))
+                    
+                    elif widget_type == "LINE_CHART":
+                        today = datetime.date.today()
+                        widget_entry["data"] = []
+                        for i in range(7, 0, -1):
+                            d = today - datetime.timedelta(days=i)
+                            widget_entry["data"].append({
+                                "name": d.strftime("%m/%d"),
+                                "광고비": random.randint(10000, 50000),
+                                "전환수": random.randint(1, 10)
+                            })
+                    
+                    elif widget_type == "BENCHMARK":
+                        from app.services.benchmark_service import BenchmarkService
+                        bench_service = BenchmarkService(self.db)
+                        widget_entry["data"] = bench_service.compare_client_performance(report.client_id)
+                    
+                    elif widget_type == "SOV":
+                        keywords = widget.get("keywords", ["치과 마케팅", "임플란트 비용", "교정 치과"])
+                        target_name = report.client.name if report.client else "주식회사 마스터"
+                        widget_entry["data"] = self.get_weekly_sov_summary(target_name, keywords, PlatformType.NAVER_PLACE)
+
+                    elif widget_type == "COMPETITORS":
+                        keyword = widget.get("keyword", "치과 마케팅")
+                        widget_entry["data"] = self.get_competitor_analysis(keyword, PlatformType.NAVER_PLACE)
+
+                    elif widget_type == "RANKINGS":
+                        keyword = widget.get("keyword", "치과 마케팅")
+                        widget_entry["data"] = self.get_daily_ranks(keyword, PlatformType.NAVER_PLACE)
+
+                    elif widget_type == "AI_DIAGNOSIS":
+                        from app.services.benchmark_service import BenchmarkService
+                        from app.services.ai_service import AIService
+                        
+                        bench_service = BenchmarkService(self.db)
+                        ai_service = AIService()
+                        
+                        bench_data = bench_service.compare_client_performance(report.client_id)
+                        widget_entry["data"] = {
+                            "content": ai_service.generate_deep_diagnosis(bench_data)
+                        }
+                    
+                    report_data["widgets"].append(widget_entry)
+                    
+                except Exception as e:
+                    logger.error(f"Error in widget generation {widget.get('id')} for report {report_id}: {str(e)}")
+                    report_data["widgets"].append({
+                        "id": widget.get("id", "error"),
+                        "type": "ERROR",
+                        "data": {"message": f"위젯 데이터 생성 중 오류 발생: {str(e)}"}
+                    })
+                    report.status = "PARTIAL"
+            
+            report.data = report_data
+            if report.status != "PARTIAL":
+                report.status = "COMPLETED"
+            self.db.commit()
+            
+        except Exception as e:
+            logger.error(f"FATAL ERROR in generate_report_data for report {report_id}: {str(e)}")
+            report.status = "FAILED"
+            self.db.commit()
 
     def get_efficiency_data(self, client_id: str, days: int = 30) -> dict:
         """

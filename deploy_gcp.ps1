@@ -73,7 +73,7 @@ gcloud builds submit . `
 # 9. Deploy Frontend to Cloud Run
 Write-Host "--- 9. Deploying Frontend to Cloud Run ---" -ForegroundColor Green
 gcloud run deploy dentalanal `
-    --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend `
+    --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest `
     --platform managed `
     --region $REGION `
     --allow-unauthenticated `

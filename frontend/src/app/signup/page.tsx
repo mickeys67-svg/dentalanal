@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUser } from '@/lib/api';
-import { Loader2, Mail, Lock, User, ShieldCheck, Cake, Eye, EyeOff } from 'lucide-react';
+import { UserRole } from '@/types';
+import { Loader2, Mail, Lock, User as UserIcon, ShieldCheck, Cake, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignupPage() {
@@ -27,7 +28,7 @@ export default function SignupPage() {
                 name,
                 password,
                 birth_date: birthDate,
-                role: 'ADMIN',
+                role: UserRole.ADMIN,
                 agency_id: '00000000-0000-0000-0000-000000000000'
             });
             setSuccess(true);
@@ -37,18 +38,18 @@ export default function SignupPage() {
         } catch (err: any) {
             console.error('Signup error:', err);
             const detail = err.response?.data?.detail;
-            const tb = err.response?.data?.traceback;
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://BACKEND_URL_NOT_SET';
 
             if (Array.isArray(detail)) {
                 const messages = detail.map((d: any) => `${d.loc.join('.')}: ${d.msg}`).join(', ');
                 setError(`입력 값이 올바르지 않습니다: ${messages}`);
             } else if (typeof detail === 'string') {
-                setError(`${detail}${tb ? '\n\n[Debug Info]\n' + tb.substring(0, 200) + '...' : ''}`);
+                setError(detail);
             } else {
                 // Network or Infrastructure error
-                const errorMsg = err.response ? `서버 오류 (${err.response.status})` : `네트워크 연결 오류 (${err.message || 'Unknown'})`;
-                setError(`${errorMsg}\n\n[Debug Info]\nTarget: ${apiBase}\nCode: ${err.code || 'N/A'}\n${tb ? tb.substring(0, 200) + '...' : ''}`);
+                const errorMsg = err.response
+                    ? `서버 오류 (${err.response.status}): 회원가입에 실패했습니다.`
+                    : `네트워크 연결 오류: 서버에 접속할 수 없습니다.`;
+                setError(errorMsg);
             }
         } finally {
             setIsLoading(false);
@@ -77,7 +78,7 @@ export default function SignupPage() {
                             <div className="space-y-1">
                                 <label className="text-sm font-bold text-gray-700 ml-1">이름</label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
                                         required

@@ -107,7 +107,7 @@ def process_report_task(report_id: UUID):
 
 # --- Report Endpoints ---
 
-@router.post("/", response_model=ReportResponse)
+@router.post("", response_model=ReportResponse)
 def create_report(
     report_data: ReportCreate,
     background_tasks: BackgroundTasks,

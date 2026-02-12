@@ -17,6 +17,13 @@ interface SOVChartProps {
 }
 
 export function SOVChart({ data }: SOVChartProps) {
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm italic">
+                표시할 데이터가 없습니다.
+            </div>
+        );
+    }
     return (
         <div style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">

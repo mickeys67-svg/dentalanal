@@ -9,29 +9,31 @@ $BACKEND_URL = "https://dentalanal-864421937037.us-west1.run.app"
 # ---------------------------------------------------------
 $PROJECT_ID = "dentalanal"
 $REGION = "us-west1"
-$SERVICE_NAME = "dentalanal-frontend"
+$SERVICE_NAME = "dentalanal"
 
 Write-Host "Deploying Frontend with Backend URL: $BACKEND_URL" -ForegroundColor Cyan
 
 gcloud config set project $PROJECT_ID
 
-# 1. Image Build (Explicitly using Dockerfile in ./frontend)
-$IMAGE_NAME = "gcr.io/$PROJECT_ID/$SERVICE_NAME"
-Write-Host "Building Container Image: $IMAGE_NAME" -ForegroundColor Yellow
+# 1. Image Build (Using cloudbuild.yaml for proper env injection)
+Write-Host "Building Container Image with Backend URL: $BACKEND_URL" -ForegroundColor Yellow
 
-# Use --config if using cloudbuild.yaml, or just SOURCE for Dockerfile
-# We will use the simple form but ensure we are in the right directory context
-Push-Location frontend
-gcloud builds submit . --tag $IMAGE_NAME
-Pop-Location
+$SUBSTITUTIONS = "_API_URL=$BACKEND_URL,_REGION=$REGION,_PROJECT_ID=$PROJECT_ID,_REPO_NAME=dentalanal-repo"
+
+gcloud builds submit . `
+    --config ./frontend/cloudbuild.yaml `
+    --substitutions $SUBSTITUTIONS `
+    --project $PROJECT_ID
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build Failed! Stopping deployment."
     exit 1
 }
 
+$IMAGE_NAME = "$REGION-docker.pkg.dev/$PROJECT_ID/dentalanal-repo/frontend:latest"
+
 # 2. Deploy Service using the built image
-Write-Host "Deploying Service..." -ForegroundColor Yellow
+Write-Host "Deploying Service: $SERVICE_NAME" -ForegroundColor Yellow
 
 gcloud run deploy $SERVICE_NAME `
     --image $IMAGE_NAME `
@@ -39,4 +41,5 @@ gcloud run deploy $SERVICE_NAME `
     --allow-unauthenticated `
     --port 3000 `
     --memory 1Gi `
-    --set-env-vars "NEXT_PUBLIC_API_URL=$BACKEND_URL"
+    --set-env-vars "NEXT_PUBLIC_API_URL=$BACKEND_URL" `
+    --project $PROJECT_ID

@@ -102,7 +102,6 @@ app = FastAPI(title="D-MIND API", version="1.0.0", lifespan=lifespan)
 origins = [
     "https://dentalanal-864421937037.us-west1.run.app",
     "https://dentalanal-2556cvhe3q-uw.a.run.app",
-    "https://dentalanal-frontend-2556cvhe3q-uw.a.run.app",
     "http://localhost:3000",
     "http://localhost:8000",
 ]
