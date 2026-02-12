@@ -18,6 +18,19 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+import logging
+logger = logging.getLogger(__name__)
+
+# Log the database type (but mask password)
+masked_url = SQLALCHEMY_DATABASE_URL
+if "@" in SQLALCHEMY_DATABASE_URL:
+    prefix = SQLALCHEMY_DATABASE_URL.split("://")[0]
+    host_part = SQLALCHEMY_DATABASE_URL.split("@")[-1]
+    masked_url = f"{prefix}://****@{host_part}"
+
+print(f"--- [DATABASE] Connecting to: {masked_url} ---")
+logger.info(f"Database connection initialized: {masked_url}")
+
 # Database Engine Configuration
 connect_args = {}
 engine_args = {

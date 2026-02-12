@@ -337,3 +337,73 @@ class SettlementDetail(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     settlement = relationship("Settlement", back_populates="details")
+
+# --- Analytics Expansion (Adriel Benchmark Phase 1) ---
+
+class Lead(Base):
+    """Represents a potential patient or customer for the clinic."""
+    __tablename__ = "leads"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    name = Column(String, nullable=True)
+    contact = Column(String, nullable=True)
+    first_visit_date = Column(DateTime, nullable=False, server_default=func.now())
+    cohort_month = Column(String(7), nullable=False) # e.g., '2024-01'
+    channel = Column(String(50), nullable=True) # organic, paid, social, etc.
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    events = relationship("LeadEvent", back_populates="lead")
+    profile = relationship("LeadProfile", back_populates="lead", uselist=False)
+    activities = relationship("LeadActivity", back_populates="lead")
+
+class LeadActivity(Base):
+    """Aggregated monthly activity for a lead."""
+    __tablename__ = "lead_activities"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    activity_month = Column(String(7), nullable=False) # '2024-02'
+    visits = Column(Integer, default=0)
+    conversions = Column(Integer, default=0)
+    revenue = Column(Float, default=0.0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    lead = relationship("Lead", back_populates="activities")
+
+class LeadProfile(Base):
+    """Detailed characteristics for segment analysis."""
+    __tablename__ = "lead_profiles"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    device_type = Column(String(20), nullable=True) # mobile, desktop
+    region = Column(String(50), nullable=True) # Gangnam, etc.
+    user_type = Column(String(20), nullable=True) # new, returning
+    first_conversion_date = Column(DateTime, nullable=True)
+    last_visit_date = Column(DateTime, nullable=True)
+    total_visits = Column(Integer, default=0)
+    total_conversions = Column(Integer, default=0)
+    total_revenue = Column(Float, default=0.0)
+    
+    lead = relationship("Lead", back_populates="profile")
+
+class LeadEvent(Base):
+    """Granular touchpoint events for attribution & journey analysis."""
+    __tablename__ = "lead_events"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    event_type = Column(String(50), nullable=False) # visit, click, conversion
+    platform = Column(Enum(PlatformType), nullable=True)
+    segment_tags = Column(JSON, nullable=True)
+    event_metadata = Column(JSON, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    
+    lead = relationship("Lead", back_populates="events")
+
+class AnalyticsCache(Base):
+    """Cache for expensive calculation results (Cohort, Segments)."""
+    __tablename__ = "analytics_cache"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    cache_key = Column(String(255), nullable=False, index=True)
+    data = Column(JSON, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

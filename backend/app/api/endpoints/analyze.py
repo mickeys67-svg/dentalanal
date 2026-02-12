@@ -109,14 +109,14 @@ def analyze_sov(
     return results
 
 @router.get("/funnel/{client_id}")
-def get_funnel_analysis(client_id: str, db: Session = Depends(get_db)):
+def get_funnel_analysis(client_id: str, days: int = 30, db: Session = Depends(get_db)):
     service = AnalysisService(db)
-    return service.get_funnel_data(client_id)
+    return service.get_funnel_data(client_id, days)
 
 @router.get("/cohort/{client_id}")
 def get_cohort_analysis(client_id: str, db: Session = Depends(get_db)):
     service = AnalysisService(db)
-    return service.get_cohort_data(client_id)
+    return service.get_cohort_data_v2(client_id)
 
 @router.get("/attribution/{client_id}")
 def get_attribution_analysis(client_id: str, db: Session = Depends(get_db)):
@@ -126,7 +126,7 @@ def get_attribution_analysis(client_id: str, db: Session = Depends(get_db)):
 @router.get("/segments/{client_id}")
 def get_segment_analysis(client_id: str, db: Session = Depends(get_db)):
     service = AnalysisService(db)
-    return service.get_segment_analysis(client_id)
+    return service.get_segment_analysis_v2(client_id)
 
 @router.get("/weekly-summary")
 def get_weekly_summary(
@@ -195,3 +195,37 @@ def get_efficiency_review(
         data["ai_review"] = "분석할 수 있는 광고 집행 데이터가 충분하지 않습니다."
         
     return data
+
+# --- Market Analysis Endpoints (Phase 3) ---
+
+@router.get("/market/landscape")
+def get_market_landscape(
+    keyword: str,
+    platform: str = "NAVER_PLACE",
+    top_n: int = 10,
+    db: Session = Depends(get_db)
+):
+    from app.services.competitor_service import CompetitorService
+    service = CompetitorService(db)
+    p_type = PlatformType.NAVER_VIEW if platform == "NAVER_VIEW" else PlatformType.NAVER_PLACE
+    return service.get_competitor_landscape(keyword, p_type, top_n)
+
+@router.get("/market/spend")
+def estimate_competitor_spend(
+    keywords: str, # Comma separated
+    db: Session = Depends(get_db)
+):
+    from app.services.competitor_service import CompetitorService
+    service = CompetitorService(db)
+    kw_list = [k.strip() for k in keywords.split(",")]
+    return service.estimate_ad_spend(kw_list)
+
+@router.get("/market/reputation")
+def compare_market_reputation(
+    hospitals: str, # Comma separated
+    db: Session = Depends(get_db)
+):
+    from app.services.competitor_service import CompetitorService
+    service = CompetitorService(db)
+    h_list = [h.strip() for h in hospitals.split(",")]
+    return service.get_reputation_comparison(h_list)

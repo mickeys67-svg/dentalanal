@@ -1,18 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db, engine
-from sqlalchemy import text
-import datetime
-
-router = APIRouter()
-
 from app.models.models import Notification, User
 from sqlalchemy import text, desc
 import datetime
 
-router = APIRouter()
+router = APIRouter(tags=["Status"])
 
-@router.get("")
+@router.get("/status") # prefix(/api/v1/status) + /status = /api/v1/status/status
 def get_system_status(db: Session = Depends(get_db)):
     # 1. Check DB
     db_ok = False
