@@ -22,7 +22,7 @@ class ClientResponse(ClientBase):
     id: UUID
     model_config = ConfigDict(from_attributes=True)
 
-@router.get("", response_model=List[ClientResponse])
+@router.get("/", response_model=List[ClientResponse])
 def get_clients(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -80,6 +80,21 @@ def create_client(
     db.commit()
     db.refresh(new_client)
     return new_client
+
+@router.get("/search", response_model=List[ClientResponse])
+def search_clients(
+    name: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    DEFAULT_AGENCY_ID = "00000000-0000-0000-0000-000000000000"
+    agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
+    
+    # Simple like search
+    return db.query(Client).filter(
+        Client.agency_id == agency_id,
+        Client.name.ilike(f"%{name}%")
+    ).limit(10).all()
 
 @router.delete("/{client_id}")
 def delete_client(client_id: UUID, db: Session = Depends(get_db)):

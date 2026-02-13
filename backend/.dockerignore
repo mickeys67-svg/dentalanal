@@ -1,0 +1,14 @@
+.env
+*.db
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.git/
+.github/
+dist/
+build/
+*.log
+venv/
+env/
+.env.*
+!.env.example

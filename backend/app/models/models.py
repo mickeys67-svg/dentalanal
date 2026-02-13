@@ -133,6 +133,8 @@ class MetricsDaily(Base):
     clicks = Column(Integer, default=0)
     conversions = Column(Integer, default=0)
     revenue = Column(Float, default=0.0)
+    source = Column(String, default="API") # 'API', 'SCRAPER', 'RECONCILED'
+    meta_info = Column(JSON, nullable=True) # Extra info like raw response snippet
     
     campaign = relationship("Campaign", back_populates="metrics")
 
@@ -397,6 +399,17 @@ class LeadEvent(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     lead = relationship("Lead", back_populates="events")
+
+class AnalysisHistory(Base):
+    """Stores metadata about each investigation/analysis performed."""
+    __tablename__ = "analysis_history"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    keyword = Column(String, nullable=False)
+    platform = Column(Enum(PlatformType), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    client = relationship("Client")
 
 class AnalyticsCache(Base):
     """Cache for expensive calculation results (Cohort, Segments)."""

@@ -13,30 +13,23 @@ import { DashboardKPI, Campaign } from '@/types';
 import { translateMetric } from '@/lib/i18n';
 import { InfoTooltip } from '@/components/common/InfoTooltip';
 import { EmptyClientPlaceholder } from '@/components/common/EmptyClientPlaceholder';
+import { scrapePlace, scrapeView } from '@/lib/api'; // Added scrapePlace and scrapeView
 
-const mockTrendData = [
-    { name: '월', 광고비: 400000, 전환수: 12 },
-    { name: '화', 광고비: 300000, 전환수: 10 },
-    { name: '수', 광고비: 500000, 전환수: 18 },
-    { name: '목', 광고비: 450000, 전환수: 15 },
-    { name: '금', 광고비: 600000, 전환수: 22 },
-    { name: '토', 광고비: 200000, 전환수: 8 },
-    { name: '일', 광고비: 150000, 전환수: 5 },
-];
+// Mock data removed for data clarity and accuracy
 
-const mockSOVData = [
-    { name: '네이버', value: 45 },
-    { name: '구글', value: 25 },
-    { name: '메타', value: 20 },
-    { name: '기타', value: 10 },
-];
-
+import { ControlPanel } from '@/components/dashboard/ControlPanel';
+import { Modal } from '@/components/common/Modal';
+import { SetupWizard } from '@/components/setup/SetupWizard';
+import { useState } from 'react';
 import { useClient } from '@/components/providers/ClientProvider';
-import Link from 'next/link';
 
 export default function DashboardPage() {
     const { clients, selectedClient, isLoading: isClientsLoading } = useClient();
-    const { summary, trend, isLoading: isDashboardLoading, error, refresh, isSyncing, startSync } = useDashboard(selectedClient?.id);
+    const {
+        summary, trend, isLoading: isDashboardLoading, error, refresh,
+        isSyncing, startSync, scrapePlace, scrapeView, isPlacePending, isViewPending
+    } = useDashboard(selectedClient?.id);
+    const [isSetupOpen, setIsSetupOpen] = useState(false);
 
     if (isClientsLoading || isDashboardLoading) {
         return (
@@ -70,39 +63,50 @@ export default function DashboardPage() {
     const campaigns: Campaign[] = summary?.campaigns || [];
 
     return (
-        <div className="space-y-8 p-6 animate-in fade-in duration-500">
+        <div className="space-y-6 p-6 animate-in fade-in duration-700">
             <Head>
                 <title>종합 성과 대시보드 | D-MIND</title>
                 <meta name="description" content="모든 채널의 마케팅 성과를 한눈에 파악하고 실시간 데이터를 분석하세요." />
             </Head>
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">종합 성과 대시보드</h1>
-                    <p className="text-gray-500">모든 채널의 마케팅 성과를 한눈에 파악하세요.</p>
+
+            {summary?.is_sample && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 animate-in slide-in-from-top duration-500">
+                    <div className="bg-amber-500 text-white p-2 rounded-lg">
+                        <RefreshCw className="h-5 w-5 animate-spin-slow" />
+                    </div>
+                    <div>
+                        <p className="text-amber-900 font-bold text-sm">현재 샘플 데이터를 보고 있습니다.</p>
+                        <p className="text-amber-700 text-xs">선택하신 업체의 실제 수집 데이터가 없습니다. 상단 [데이터 동기화] 또는 [조사 시작]을 눌러 실제 데이터를 수집하세요.</p>
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => startSync()}
-                        disabled={isSyncing}
-                        className="flex items-center gap-2 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw className={clsx("h-4 w-4", isSyncing && "animate-spin")} />
-                        {isSyncing ? '동기화 중...' : '전체 동기화'}
-                    </button>
-                    <button
-                        onClick={() => refresh()}
-                        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                        <RefreshCw className="h-4 w-4" /> 새로고침
-                    </button>
-                    <Link
-                        href="/reports"
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 transition-all shadow-sm"
-                    >
-                        전체 리포트조회
-                    </Link>
-                </div>
-            </div>
+            )}
+
+            <ControlPanel
+                selectedClient={selectedClient}
+                onOpenSetup={() => setIsSetupOpen(true)}
+                onScrapePlace={() => {
+                    const lastKeyword = (summary as any)?.last_keyword || '치과';
+                    scrapePlace(lastKeyword);
+                }}
+                onScrapeView={() => {
+                    const lastKeyword = (summary as any)?.last_keyword || '치과';
+                    scrapeView(lastKeyword);
+                }}
+                isPlacePending={isPlacePending}
+                isViewPending={isViewPending}
+            />
+
+            <Modal
+                isOpen={isSetupOpen}
+                onClose={() => setIsSetupOpen(false)}
+                title="프로젝트 상세 설정"
+                maxWidth="4xl"
+            >
+                <SetupWizard onComplete={() => {
+                    setIsSetupOpen(false);
+                    refresh();
+                }} />
+            </Modal>
 
             {/* KPI Section */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -133,15 +137,15 @@ export default function DashboardPage() {
                             <span className="h-2 w-2 rounded-full bg-success"></span> 전환수
                         </span>
                     </div>
-                    <PerformanceChart data={trend?.map(t => ({
-                        name: t.date.split('-').slice(1).join('/'), // Convert 2024-02-11 to 02/11
+                    <PerformanceChart data={trend?.length ? trend.map(t => ({
+                        name: t.date.split('-').slice(1).join('/'),
                         "광고비": t.spend,
                         "전환수": t.conversions
-                    })) || mockTrendData} />
+                    })) : []} />
                 </DashboardWidget>
 
                 <DashboardWidget title="매체별 비중 (SOV)">
-                    <SOVChart data={summary?.sov_data || mockSOVData} />
+                    <SOVChart data={summary?.sov_data || []} />
                 </DashboardWidget>
             </div>
 

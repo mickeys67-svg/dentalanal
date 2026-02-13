@@ -13,8 +13,11 @@ from app.schemas.analysis import EfficiencyReviewResponse
 from app.services.analysis import AnalysisService
 from app.services.ai_service import AIService
 from app.services.benchmark_service import BenchmarkService
-from app.models.models import PlatformType, User
+from app.models.models import PlatformType, User, DailyRank, Target, Keyword, TargetType, Client
 from app.api.endpoints.auth import get_current_user
+from pydantic import BaseModel, Field
+from uuid import uuid4
+from typing import List, Union, Optional, Dict
 
 router = APIRouter()
 
@@ -229,3 +232,97 @@ def compare_market_reputation(
     service = CompetitorService(db)
     h_list = [h.strip() for h in hospitals.split(",")]
     return service.get_reputation_comparison(h_list)
+
+# --- Onboarding Wizard Schemas ---
+
+class TargetItem(BaseModel):
+    name: str
+    target_type: TargetType
+    url: Optional[str] = None
+
+class BulkTargetRequest(BaseModel):
+    client_id: UUID
+    targets: List[TargetItem]
+
+@router.post("/targets/bulk")
+def bulk_update_targets(
+    request: BulkTargetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Bulk register/update owner and competitor targets for a specific client.
+    """
+    client = db.query(Client).filter(Client.id == request.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    results = []
+    for item in request.targets:
+        target = db.query(Target).filter(Target.name == item.name).first()
+        if not target:
+            target = Target(
+                id=uuid4(),
+                name=item.name,
+                type=item.target_type,
+                urls={"default": item.url} if item.url else None
+            )
+            db.add(target)
+            db.flush()
+        else:
+            # Update existing target type/url if needed
+            target.type = item.target_type
+            if item.url:
+                target.urls = {"default": item.url}
+        
+        results.append({"id": str(target.id), "name": target.name})
+    
+    db.commit()
+    return {"status": "SUCCESS", "targets": results}
+
+@router.get("/targets/search")
+def search_targets(
+    name: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search existing targets by name or return recent ones."""
+    query = db.query(Target)
+    if name:
+        return query.filter(Target.name.ilike(f"%{name}%")).limit(10).all()
+    # If no name provided, return 10 most recently created/used targets
+    return query.order_by(Target.id.desc()).limit(10).all()
+
+class HistoryCreate(BaseModel):
+    client_id: UUID
+    keyword: str
+    platform: str
+
+@router.post("/history")
+def save_analysis_history(
+    request: HistoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Save record of analysis execution."""
+    from app.models.models import AnalysisHistory
+    history = AnalysisHistory(
+        id=uuid4(),
+        client_id=request.client_id,
+        keyword=request.keyword,
+        platform=request.platform
+    )
+    db.add(history)
+    db.commit()
+    return {"status": "SUCCESS", "id": str(history.id)}
+
+@router.get("/history/{client_id}")
+def get_analysis_history(
+    client_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get recent 10 analysis histories for a client."""
+    from app.models.models import AnalysisHistory
+    return db.query(AnalysisHistory).filter(
+        AnalysisHistory.client_id == client_id
+    ).order_by(AnalysisHistory.created_at.desc()).limit(10).all()

@@ -2,7 +2,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.models import MetricsDaily, Campaign, PlatformConnection
+from app.models.models import MetricsDaily, Campaign, PlatformConnection, AnalysisHistory
 import datetime
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class DashboardService:
                 func.sum(MetricsDaily.clicks).label("total_clicks"),
                 func.sum(MetricsDaily.impressions).label("total_impressions"),
                 func.sum(MetricsDaily.conversions).label("total_conversions")
-            )
+            ).filter(MetricsDaily.source == 'RECONCILED')
             
             if client_id:
                 query = query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
@@ -41,7 +41,7 @@ class DashboardService:
             logger.debug(f"KPIs - Spend: {total_spend}, Conversions: {total_conversions}")
 
             # Revenue Query with Explicit Joins
-            revenue_query = self.db.query(func.sum(MetricsDaily.revenue).label("total_revenue"))
+            revenue_query = self.db.query(func.sum(MetricsDaily.revenue).label("total_revenue")).filter(MetricsDaily.source == 'RECONCILED')
             if client_id:
                 revenue_query = revenue_query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
                                              .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
@@ -78,22 +78,30 @@ class DashboardService:
                         "value": round(share, 1)
                     })
 
+            is_sample = False
             if not sov_data:
-                sov_data = [
-                    {"name": "네이버", "value": 60},
-                    {"name": "메타", "value": 30},
-                    {"name": "구글", "value": 10}
-                ]
+                # No longer using mock SOV data. 
+                # Front-end should handle empty state.
+                sov_data = []
+
+            # Get last keyword
+            last_keyword = "치과"
+            if client_id:
+                history = self.db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).order_by(AnalysisHistory.created_at.desc()).first()
+                if history:
+                    last_keyword = history.keyword
 
             return {
                 "kpis": [
-                    {"title": "총 광고 집행비", "value": int(total_spend), "change": 15.6, "prefix": "₩"},
-                    {"title": "평균 ROAS", "value": int(avg_roas), "change": 12.3, "suffix": "%"},
-                    {"title": "총 전환수", "value": total_conversions, "change": 8.5},
-                    {"title": "평균 CPC", "value": int(avg_cpc), "change": -5.2, "prefix": "₩"}
+                    {"title": "총 광고 집행비", "value": int(total_spend), "change": 0.0, "prefix": "₩"},
+                    {"title": "평균 ROAS", "value": int(avg_roas), "change": 0.0, "suffix": "%"},
+                    {"title": "총 전환수", "value": total_conversions, "change": 0.0},
+                    {"title": "평균 CPC", "value": int(avg_cpc), "change": 0.0, "prefix": "₩"}
                 ],
                 "campaigns": self.get_top_campaigns(client_id),
-                "sov_data": sov_data
+                "sov_data": sov_data,
+                "last_keyword": last_keyword,
+                "is_sample": is_sample
             }
         except Exception as e:
             logger.error(f"Failed to get_summary_metrics: {str(e)}")
@@ -108,7 +116,7 @@ class DashboardService:
                 func.sum(MetricsDaily.spend).label("spend"),
                 func.sum(MetricsDaily.conversions).label("conversions")
             ).outerjoin(PlatformConnection, Campaign.connection_id == PlatformConnection.id)\
-             .outerjoin(MetricsDaily, MetricsDaily.campaign_id == Campaign.id)
+             .outerjoin(MetricsDaily, (MetricsDaily.campaign_id == Campaign.id) & (MetricsDaily.source == 'RECONCILED'))
             
             if client_id:
                 query = query.filter(PlatformConnection.client_id == client_id)
@@ -129,12 +137,8 @@ class DashboardService:
                     "conversions": int(r.conversions or 0)
                 })
                 
-            if not campaigns:
-                campaigns = [
-                    {"name": "네이버 브랜드검색_치과", "platform": "NAVER_AD", "spend": 1200000, "roas": 520, "conversions": 45},
-                    {"name": "메타 리마케팅_임플란트", "platform": "META_ADS", "spend": 850000, "roas": 380, "conversions": 12}
-                ]
-                
+            # 캠페인 데이터가 없을 경우 하드코딩된 mock을 제거하고 빈 배열 반환 가능
+            # 여기서는 명시적으로 빈 배열 반환 (is_sample 여부와 무관하게 실제가 없으면 없는 것)
             return campaigns
         except Exception as e:
             logger.error(f"Failed to get_top_campaigns: {str(e)}")
@@ -148,7 +152,7 @@ class DashboardService:
                 func.sum(MetricsDaily.spend).label("spend"),
                 func.sum(MetricsDaily.clicks).label("clicks"),
                 func.sum(MetricsDaily.conversions).label("conversions")
-            )
+            ).filter(MetricsDaily.source == 'RECONCILED')
 
             if client_id:
                 query = query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
@@ -166,16 +170,7 @@ class DashboardService:
                     "conversions": int(r.conversions or 0)
                 })
                 
-            if not trend:
-                today = datetime.date.today()
-                for i in range(days, 0, -1):
-                    date = today - datetime.timedelta(days=i)
-                    trend.append({
-                        "date": date.strftime("%Y-%m-%d"),
-                        "spend": 50000 + (i * 1000),
-                        "clicks": 100 + (i * 10),
-                        "conversions": 5 + (i % 3)
-                    })
+            # 트렌드 데이터가 없을 경우 빈 배열 반환
             return trend
         except Exception as e:
             logger.error(f"Failed to get_trend_data: {str(e)}")

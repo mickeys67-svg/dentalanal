@@ -3,10 +3,12 @@ from app.models.models import PlatformConnection, Campaign, MetricsDaily, Platfo
 from app.services.naver_ads import NaverAdsService
 from app.scrapers.naver_ads_manager import NaverAdsManagerScraper
 from datetime import datetime
+# [IMMUTABLE CORE] 네이버 API 및 스크래퍼 정합성 수집 태스크.
 import logging
 import asyncio
 
 logger = logging.getLogger(__name__)
+import uuid
 
 def sync_naver_data(db: Session, connection_id: str):
     # 1. Fetch connection details
@@ -17,13 +19,22 @@ def sync_naver_data(db: Session, connection_id: str):
 
     creds = conn.credentials
     
-    # Use Scraping if username/password provided (Fallback strategy)
+    # --- Dual Source Collection & Reconciliation ---
+    campaign_ids_to_reconcile = set()
+    
+    # Timezone correction: Naver is KST (UTC+9). 
+    # Cloud Run (us-west1) is usually UTC.
+    from datetime import timedelta
+    now_kst = datetime.utcnow() + timedelta(hours=9)
+    today = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    logger.info(f"Target Sync Date (KST): {today.strftime('%Y-%m-%d')}")
+
+    # 1. Try Scraper if credentials available
     if 'username' in creds and 'password' in creds:
-        logger.info(f"Using Bright Data Scraper for connection {connection_id}")
+        logger.info(f"Source 1: Scraping for connection {connection_id} (User: {creds.get('username')})")
         scraper = NaverAdsManagerScraper()
         
-        # Since this is a sync function (called in background), 
-        # and scraper is async, we need to run it in the event loop
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
@@ -35,72 +46,89 @@ def sync_naver_data(db: Session, connection_id: str):
         )
         
         if data:
-            logger.info(f"Scraped {len(data)} items for connection {connection_id}")
+            logger.info(f"Scraper returned {len(data)} items for {connection_id}")
             for item in data:
                 try:
-                    # 1. Get or Create Campaign
+                    # 1단계: external_id로 조회
                     campaign = db.query(Campaign).filter(
                         Campaign.connection_id == conn.id,
                         Campaign.external_id == item["id"]
                     ).first()
                     
+                    # 2단계: external_id가 다를 수 있으므로 이름으로 재조회 (Identity 매칭)
                     if not campaign:
-                        import uuid
-                        campaign = Campaign(
-                            id=uuid.uuid4(),
-                            connection_id=conn.id,
-                            external_id=item["id"],
-                            name=item["name"],
-                            status=item.get("status", "ACTIVE")
-                        )
-                        db.add(campaign)
-                        db.flush() # Get campaign ID
+                        campaign = db.query(Campaign).filter(
+                            Campaign.connection_id == conn.id,
+                            Campaign.name == item["name"]
+                        ).first()
+                        if campaign and not campaign.external_id:
+                            logger.info(f"Campaign matched by name: {item['name']}. Updating ID to {item['id']}")
+                            campaign.external_id = item["id"]
                     
-                    # 2. Save Daily Metrics
-                    # Check if metrics for today/yesterday already exist
-                    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                    if not campaign:
+                        logger.info(f"Creating new campaign: {item['name']} ({item['id']})")
+                        campaign = Campaign(id=uuid.uuid4(), connection_id=conn.id, external_id=item["id"], name=item["name"])
+                        db.add(campaign)
+                        db.flush()
+                    
+                    # Save as SCRAPER source
                     metrics = db.query(MetricsDaily).filter(
                         MetricsDaily.campaign_id == campaign.id,
-                        MetricsDaily.date == today
+                        MetricsDaily.date == today,
+                        MetricsDaily.source == 'SCRAPER'
                     ).first()
                     
                     if not metrics:
-                        import uuid
-                        metrics = MetricsDaily(
-                            id=uuid.uuid4(),
-                            campaign_id=campaign.id,
-                            date=today,
-                            spend=float(item.get("spend", 0)),
-                            impressions=int(item.get("impressions", 0)),
-                            clicks=int(item.get("clicks", 0)),
-                            conversions=int(item.get("conversions", 0))
-                        )
+                        metrics = MetricsDaily(id=uuid.uuid4(), campaign_id=campaign.id, date=today, source='SCRAPER')
                         db.add(metrics)
-                    else:
-                        # Update existing metrics
-                        metrics.spend = float(item.get("spend", 0))
-                        metrics.impressions = int(item.get("impressions", 0))
-                        metrics.clicks = int(item.get("clicks", 0))
-                        metrics.conversions = int(item.get("conversions", 0))
-                        
-                    db.commit()
-                except Exception as item_error:
-                    db.rollback()
-                    logger.error(f"Failed to save item {item.get('name')}: {item_error}")
-            
-            logger.info(f"Finished processing {len(data)} scraped items.")
+                    
+                    metrics.spend = float(item.get("spend", 0))
+                    metrics.impressions = int(item.get("impressions", 0))
+                    metrics.clicks = int(item.get("clicks", 0))
+                    metrics.conversions = int(item.get("conversions", 0))
+                    
+                    campaign_ids_to_reconcile.add(campaign.id)
+                except Exception as e:
+                    logger.error(f"Scraper item parsing error: {e}")
+            db.commit()
         else:
-            logger.warning("Scraper returned no data.")
-    
-    # Original API logic (Keep as infrastructure)
-    elif creds.get('customer_id') and creds.get('api_key'):
-        # ... existing API logic ...
-        naver = NaverAdsService(
-            customer_id=creds.get('customer_id'),
-            api_key=creds.get('api_key'),
-            secret_key=creds.get('secret_key')
-        )
-        # ...
-        pass
+            logger.warning(f"Scraper returned no data for {connection_id}")
+
+    # 2. Try Official API if credentials available
+    if creds.get('customer_id') and (creds.get('api_key') or creds.get('access_license')):
+        logger.info(f"Source 2: API Call for connection {connection_id} (Customer: {creds.get('customer_id')})")
+        try:
+            naver_service = NaverAdsService(db, credentials=conn.credentials)
+            # 신규: 성과 수집 전 캠페인 목록 먼저 동기화 (Cold Start 방지)
+            naver_service.sync_campaigns(conn.client_id)
+            
+            date_str = today.strftime("%Y-%m-%d")
+            sync_count = naver_service.sync_all_campaign_metrics(conn.id, date_str)
+            
+            if sync_count > 0:
+                logger.info(f"API sync added/updated {sync_count} metrics for {connection_id}")
+                # Add all campaigns in this connection to reconciliation
+                campaigns = db.query(Campaign).filter(Campaign.connection_id == conn.id).all()
+                for cp in campaigns:
+                    campaign_ids_to_reconcile.add(cp.id)
+            else:
+                logger.warning(f"API sync returned 0 results for {connection_id}")
+        except Exception as api_error:
+            logger.error(f"API Sync failed for {connection_id}: {api_error}")
+    else:
+        logger.warning(f"Skipping API sync for {connection_id}: Missing API credentials")
+
+    # 3. Reconciliation Step
+    if campaign_ids_to_reconcile:
+        logger.info(f"Starting reconciliation for {len(campaign_ids_to_reconcile)} campaigns on {today.strftime('%Y-%m-%d')}...")
+        from app.services.reconciliation_service import DataReconciliationService
+        recon_service = DataReconciliationService(db)
+        reconciled_count = 0
+        for cid in campaign_ids_to_reconcile:
+            res = recon_service.reconcile_metrics(cid, today)
+            if res: reconciled_count += 1
+        logger.info(f"Reconciliation completed for connection {connection_id}. {reconciled_count} records created/updated.")
+    else:
+        logger.warning(f"No campaigns to reconcile for {connection_id} (Check if API or Scraper returned any data for {today.strftime('%Y-%m-%d')})")
 
     return

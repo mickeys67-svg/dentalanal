@@ -1,0 +1,33 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+  ??Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ??Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Failed to compile.
+
+./src/components/dashboard/ControlPanel.tsx
+2:10  Error: 'Sparkles' is defined but never used.  @typescript-eslint/no-unused-vars
+2:20  Error: 'Loader2' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/dashboard/DashboardGrid.tsx
+12:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+13:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/useMission.ts
+15:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/es
+lint#disabling-rules

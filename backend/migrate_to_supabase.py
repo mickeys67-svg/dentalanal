@@ -4,17 +4,18 @@ import json
 from datetime import datetime
 from sqlalchemy import create_engine, text
 
-# --- 설정 ---
+# 설정 로드
+from app.core.config import settings
+
 SQLITE_PATH = "backend/test.db"
-# 사용자 배포 환경 변수에서 가져온 Supabase URL (IPv4용 Pooler 사용)
-# 프로젝트 ID: uujxtnvpqdwcjqhsoshi
-# 확인된 비밀번호: 3AiLcoNojCHgZpTw
+
+# 사용자가 제공한 Supabase 정보 (설정 파일에서 로드)
 import urllib.parse
-raw_pwd = "3AiLcoNojCHgZpTw"
-safe_pwd = urllib.parse.quote_plus(raw_pwd)
-# nslookup으로 확인된 프로젝트 호스트와 매칭되는 uujxtnvpqdwcjqhsoshi 사용
+raw_pwd = settings.DATABASE_PASSWORD
+safe_pwd = urllib.parse.quote_plus(raw_pwd) if raw_pwd else ""
+# 프로젝트 ID: uujxtnvpqdwcjqhsoshi (aws-0-us-west-1.pooler.supabase.com 사용)
 SUPABASE_URL = f"postgresql://postgres.uujxtnvpqdwcjqhsoshi:{safe_pwd}@aws-0-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
-print(f"DEBUG: Using URL (masked): {SUPABASE_URL.replace(safe_pwd, '***')}")
+print(f"DEBUG: Using URL (masked): {SUPABASE_URL.replace(safe_pwd, '***') if safe_pwd else 'URL_NOT_CONFIGURED'}")
 
 def migrate():
     print(f"--- 로컬 {SQLITE_PATH} 에서 Supabase로 데이터 이전을 시작합니다 ---")

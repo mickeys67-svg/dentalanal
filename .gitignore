@@ -45,6 +45,8 @@ dist/
 
 # Project Specific
 backend/app/db/*.sqlite3
+backend/*.db
+backend/*.sqlite
 screenshots/
 records/
 
@@ -65,3 +67,4 @@ backend-test
 
 # Secrets
 manual_deploy.ps1
+deploy.ps1

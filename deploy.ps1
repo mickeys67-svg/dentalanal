@@ -1,4 +1,4 @@
-# GCP Deployment Script (dentalanal)
+# GCP Deployment Script (dentalanal) - SECURE VERSION
 # Usage: .\deploy.ps1
 # This script will build and deploy both backend and frontend to Google Cloud Run.
 
@@ -18,10 +18,15 @@ if (-not $repoExists) {
 }
 
 Write-Host "--- 3. 백엔드(Backend) 이미지 빌드 및 배포 ---" -ForegroundColor Green
-# 백엔드 이미지 빌드
 gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/backend ./backend --project $PROJECT_ID
 
-# DATABASE_URL: 외부 DB(Supabase) 연결 정보 적용됨 (영구 저장용)
+# [SECURE] 기밀 정보는 이 파일에 하드코딩하지 마십시오.
+# 윈도우 환경 $env: 변수나 비밀 저장소를 사용하세요.
+$DB_PWD = $env:DATABASE_PASSWORD # 👈 환경변수 세팅 필요
+$DB_ID = "uujxtnvpqdwcjqhsoshi"
+$DB_HOST = "db.$($DB_ID).supabase.co"
+$DB_URL = "postgresql://postgres:$($DB_PWD)@$($DB_HOST):5432/postgres?sslmode=require"
+
 gcloud run deploy dentalanal-backend `
     --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/backend `
     --platform managed `
@@ -30,23 +35,21 @@ gcloud run deploy dentalanal-backend `
     --port 8080 `
     --memory 1Gi `
     --timeout 300 `
-    --set-env-vars "DATABASE_URL=postgresql://postgres:3AiLcoNojCHgZpTw@db.uujxtnvpqdwcjqhsoshi.supabase.co:5432/postgres,ADMIN_EMAIL=mickey67@paran.com,ADMIN_PASSWORD=admin123!" `
+    --set-env-vars "DATABASE_URL=$DB_URL,DATABASE_PASSWORD=$DB_PWD" `
     --project $PROJECT_ID
 
 # 배포된 백엔드 URL 획득
 $BACKEND_URL = (gcloud run services describe dentalanal-backend --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID).Trim()
 if ([string]::IsNullOrWhiteSpace($BACKEND_URL)) {
-    Write-Error "--- 에러: 백엔드 URL을 찾을 수 없습니다. 백엔드가 먼저 배포되어 있어야 합니다. ---"
+    Write-Error "--- 에러: 백엔드 URL을 찾을 수 없습니다. ---"
     exit 1
 }
 Write-Host "Detected Backend URL: $BACKEND_URL" -ForegroundColor Cyan
 
 Write-Host "--- 4. 프런트엔드(Frontend) 이미지 빌드 및 배포 ---" -ForegroundColor Green
-# 프런트엔드 빌드 (Next.js 용 API URL 주입)
 $SUBSTITUTIONS = "_API_URL=$BACKEND_URL,_REGION=$REGION,_PROJECT_ID=$PROJECT_ID,_REPO_NAME=$REPO_NAME"
 gcloud builds submit . --config ./frontend/cloudbuild.yaml --substitutions $SUBSTITUTIONS --project $PROJECT_ID
 
-# 프런트엔드 배포
 gcloud run deploy dentalanal `
     --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/frontend:latest `
     --platform managed `
@@ -56,8 +59,6 @@ gcloud run deploy dentalanal `
     --project $PROJECT_ID
 
 $FRONTEND_URL = (gcloud run services describe dentalanal --platform managed --region $REGION --format 'value(status.url)' --project $PROJECT_ID).Trim()
-
 Write-Host "`n--- 배포 완료! ---" -ForegroundColor Cyan
 Write-Host "Backend: $BACKEND_URL"
 Write-Host "Frontend: $FRONTEND_URL"
-Write-Host "수정한 대시보드 및 권한 로직이 모두 반영되었습니다." -ForegroundColor Yellow

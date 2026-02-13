@@ -116,6 +116,17 @@ export interface SOVAnalysisResult {
     top_rank?: number;
 }
 
+export interface TargetItem {
+    name: string;
+    target_type: 'OWNER' | 'COMPETITOR' | 'OTHERS';
+    url?: string;
+}
+
+export interface BulkTargetRequest {
+    client_id: string;
+    targets: TargetItem[];
+}
+
 export interface CompetitorAnalysisResult {
     keyword: string;
     platform: string;
@@ -240,4 +251,19 @@ export interface Report {
         widgets: ReportWidget[];
     };
     created_at: string;
+}
+// --- Analysis History & Search ---
+export interface AnalysisHistory {
+    id: string;
+    client_id: string;
+    keyword: string;
+    platform: PlatformType | string;
+    created_at: string;
+}
+
+export interface SearchTarget {
+    id: string;
+    name: string;
+    type: string;
+    urls?: { default?: string };
 }

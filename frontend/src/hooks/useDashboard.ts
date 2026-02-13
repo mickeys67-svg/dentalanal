@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getDashboardSummary, getMetricsTrend, triggerSync } from '@/lib/api';
+import { getDashboardSummary, getMetricsTrend, triggerSync, scrapePlace, scrapeView } from '@/lib/api';
 
 export function useDashboard(clientId?: string | null) {
     const { data: summary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = useQuery({
@@ -24,16 +24,30 @@ export function useDashboard(clientId?: string | null) {
         }
     });
 
+    const placeMutation = useMutation({
+        mutationFn: (keyword: string) => scrapePlace(keyword),
+        onSuccess: () => refetchSummary()
+    });
+
+    const viewMutation = useMutation({
+        mutationFn: (keyword: string) => scrapeView(keyword),
+        onSuccess: () => refetchSummary()
+    });
+
     return {
         summary,
         trend,
         isLoading: isSummaryLoading || isTrendLoading,
         error: summaryError,
         isSyncing: syncMutation.isPending,
+        isPlacePending: placeMutation.isPending,
+        isViewPending: viewMutation.isPending,
         refresh: () => {
             refetchSummary();
             refetchTrend();
         },
-        startSync: () => syncMutation.mutate()
+        startSync: () => syncMutation.mutate(),
+        scrapePlace: (keyword: string) => placeMutation.mutate(keyword),
+        scrapeView: (keyword: string) => viewMutation.mutate(keyword)
     };
 }

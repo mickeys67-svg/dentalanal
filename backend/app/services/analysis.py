@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType
+from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType, MetricsDaily, Campaign, PlatformConnection, Lead, LeadActivity, LeadProfile, Report
 from typing import List, Union, Optional
 from uuid import uuid4, UUID
-from app.schemas.scraping import PlaceResultItem, ViewResultItem
 import random
 import datetime
 import logging
@@ -11,8 +10,11 @@ import logging
 class AnalysisService:
     def __init__(self, db: Session):
         self.db = db
+        self.logger = logging.getLogger(__name__)
+        from app.services.mongo_service import MongoService
+        self.mongo = MongoService()
 
-    def get_or_create_keyword(self, term: str) -> Keyword:
+    def _get_or_create_keyword(self, term: str) -> Keyword:
         keyword = self.db.query(Keyword).filter(Keyword.term == term).first()
         if not keyword:
             keyword = Keyword(id=uuid4(), term=term)
@@ -33,13 +35,15 @@ class AnalysisService:
         return target
 
     def save_place_results(self, keyword_str: str, results: List[dict]):
-        keyword = self.get_or_create_keyword(keyword_str)
+        # Save Raw Data to MongoDB
+        self.mongo.save_raw_result(PlatformType.NAVER_PLACE.value, keyword_str, results)
+        
+        keyword = self._get_or_create_keyword(keyword_str)
         
         for item in results:
             target_name = item.get("name")
             if not target_name: continue
-            
-            target = self.get_or_create_target(target_name)
+            target = self._get_or_create_target(target_name)
             
             rank = DailyRank(
                 id=uuid4(),
@@ -49,21 +53,18 @@ class AnalysisService:
                 rank=item.get("rank"),
             )
             self.db.add(rank)
-        
         self.db.commit()
 
     def save_view_results(self, keyword_str: str, results: List[dict]):
-        keyword = self.get_or_create_keyword(keyword_str)
+        # Save Raw Data to MongoDB
+        self.mongo.save_raw_result(PlatformType.NAVER_VIEW.value, keyword_str, results)
+        
+        keyword = self._get_or_create_keyword(keyword_str)
         
         for item in results:
-            # For Blog, target name is blog_name
             target_name = item.get("blog_name")
             if not target_name: continue
-             
-            title = item.get("title")
-            link = item.get("link")
-
-            target = self.get_or_create_target(target_name, url=link)
+            target = self._get_or_create_target(target_name, url=item.get("link"))
             
             rank = DailyRank(
                 id=uuid4(),
@@ -73,21 +74,19 @@ class AnalysisService:
                 rank=item.get("rank"),
             )
             self.db.add(rank)
-        
         self.db.commit()
 
     def save_ad_results(self, keyword_str: str, results: List[dict]):
-        keyword = self.get_or_create_keyword(keyword_str)
+        # Save Raw Data to MongoDB
+        self.mongo.save_raw_result(PlatformType.NAVER_AD.value, keyword_str, results)
+        
+        keyword = self._get_or_create_keyword(keyword_str)
         
         for item in results:
-            # Target name is the advertiser name or domain
             target_name = item.get("advertiser")
             if not target_name: continue
+            target = self._get_or_create_target(target_name, url=item.get("display_url"))
             
-            # Create target if not exists
-            target = self.get_or_create_target(target_name, url=item.get("display_url"))
-            
-            # Save Rank
             rank = DailyRank(
                 id=uuid4(),
                 target_id=target.id,
@@ -96,10 +95,6 @@ class AnalysisService:
                 rank=item.get("rank"),
             )
             self.db.add(rank)
-            
-            # Optionally, we could save ad copy (title/description) in a separate table or JSON field
-            # For now, we just track ranking and presence.
-        
         self.db.commit()
 
     def calculate_sov(self, keyword_str: str, target_name: str, platform: PlatformType, top_n: int = 5) -> dict:
@@ -312,17 +307,16 @@ class AnalysisService:
          .join(PlatformConnection)\
          .filter(
             PlatformConnection.client_id == client_id,
-            MetricsDaily.date >= start_date
+            MetricsDaily.date >= start_date,
+            MetricsDaily.source == 'RECONCILED'
         ).first()
 
         impressions = int(results.impressions or 0)
         clicks = int(results.clicks or 0)
         conversions = int(results.conversions or 0)
         
-        # Fallback to demo data ONLY if absolute zero to prevent empty UI during initial setup
         if impressions == 0:
-            impressions, clicks, conversions = 12500, 580, 42
-            self.logger.info("Using fallback funnel data (no DB records found)")
+            self.logger.info("No funnel data found for client_id: %s", client_id)
 
         ctr = (clicks / impressions * 100) if impressions > 0 else 0
         cvr = (conversions / clicks * 100) if clicks > 0 else 0
@@ -334,68 +328,7 @@ class AnalysisService:
         ]
 
     def get_cohort_data(self, client_id: str) -> List[dict]:
-        """
-        Mock cohort retention data for demonstration.
-        In a real app, this would query a 'User' or 'Lead' table with registration dates.
-        """
-        return [
-            {"month": "2024-01", "size": 100, "retention": [100, 85, 70, 65, 60, 58]},
-            {"month": "2024-02", "size": 120, "retention": [100, 80, 72, 60, 55]},
-            {"month": "2024-03", "size": 90, "retention": [100, 88, 75, 68]},
-            {"month": "2024-04", "size": 110, "retention": [100, 82, 70]},
-            {"month": "2024-05", "size": 130, "retention": [100, 85]}
-        ]
-
-    def calculate_attribution(self, client_id: str) -> List[dict]:
-        """
-        Calculate Channel Attribution weights based on absolute conversion contribution.
-        Note: Currently reflects simple contribution share due to lack of click-stream data.
-        """
-        from app.models.models import MetricsDaily, Campaign, PlatformConnection
-        
-        # Get conversion share by platform
-        p_metrics = self.db.query(
-            PlatformConnection.platform,
-            func.sum(MetricsDaily.conversions).label("conversions")
-        ).select_from(MetricsDaily)\
-         .join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
-         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
-         .filter(
-            PlatformConnection.client_id == client_id
-        ).group_by(PlatformConnection.platform).all()
-        
-        if not p_metrics:
-            return [
-                {"channel": "네이버 검색", "first_touch": 42.5, "last_touch": 38.0, "linear": 40.2},
-                {"channel": "구글 검색", "first_touch": 15.2, "last_touch": 22.0, "linear": 18.6},
-                {"channel": "인스타그램", "first_touch": 30.1, "last_touch": 25.0, "linear": 27.5},
-                {"channel": "기타", "first_touch": 12.2, "last_touch": 15.0, "linear": 13.7}
-            ]
-            
-        total_conv = sum(float(m.conversions or 0) for m in p_metrics)
-        results = []
-        for m in p_metrics:
-            share = (float(m.conversions or 0) / total_conv * 100) if total_conv > 0 else 0
-            p_name = m.platform.value if hasattr(m.platform, 'value') else str(m.platform)
-            
-            # Simplified Attribution Logic: Use share as linear, apply small deviations for demo models
-            # Real attribution would require Session/Event logs.
-            results.append({
-                "channel": p_name,
-                "first_touch": round(share * 1.05, 1), # Simulated first-touch bias
-                "last_touch": round(share * 0.95, 1), # Simulated last-touch bias
-                "linear": round(share, 1)
-            })
-        return results
-
-    def get_cohort_data_v2(self, client_id: str) -> List[dict]:
-        """
-        Calculates real cohort retention data using Leads and LeadActivities tables.
-        """
-        from app.models.models import Lead, LeadActivity
-        from sqlalchemy import extract, cast, Integer
-        
-        # 1. Fetch distinct cohorts for this client
+        """Calculates real cohort retention data using Leads and LeadActivities tables."""
         cohorts = self.db.query(
             Lead.cohort_month,
             func.count(Lead.id).label("size")
@@ -404,57 +337,32 @@ class AnalysisService:
          .order_by(Lead.cohort_month.asc()).all()
         
         if not cohorts:
-            # Fallback to demo data if no records exist
-            return self.get_cohort_data(client_id)
+            return []
             
         results = []
         for c in cohorts:
-            c_month = c.cohort_month
-            size = c.size
-            
-            # 2. Get activity for each month offset
-            # month_offset = (activity_year*12 + activity_month) - (cohort_year*12 + cohort_month)
-            # This is complex in SQL-agnostic way, so we'll fetch and process in Python for now
             activities = self.db.query(
                 LeadActivity.activity_month,
                 func.count(func.distinct(LeadActivity.lead_id)).label("active_count")
             ).join(Lead).filter(
                 Lead.client_id == client_id,
-                Lead.cohort_month == c_month
+                Lead.cohort_month == c.cohort_month
             ).group_by(LeadActivity.activity_month).all()
             
-            # Map activity_month to offset
-            c_y, c_m = map(int, c_month.split('-'))
-            retention = [100.0] # Month 0 is always 100%
-            
-            # Sort activities and calculate retention against 'size'
-            sorted_act = sorted(activities, key=lambda x: x.activity_month)
-            for act in sorted_act:
+            c_y, c_m = map(int, c.cohort_month.split('-'))
+            retention = [100.0]
+            for act in sorted(activities, key=lambda x: x.activity_month):
                 a_y, a_m = map(int, act.activity_month.split('-'))
                 offset = (a_y * 12 + a_m) - (c_y * 12 + c_m)
-                
                 if offset > 0:
-                    rate = (act.active_count / size * 100) if size > 0 else 0
-                    # Pad indices if gaps exist (simplified)
-                    while len(retention) < offset:
-                        retention.append(retention[-1] * 0.9) # Simulated drop if gap
+                    rate = (act.active_count / c.size * 100) if c.size > 0 else 0
                     retention.append(round(rate, 1))
             
-            results.append({
-                "month": c_month,
-                "size": size,
-                "retention": retention[:6] # Limit to 6 months
-            })
-            
+            results.append({"month": c.cohort_month, "size": c.size, "retention": retention[:6]})
         return results
 
-    def get_segment_analysis_v2(self, client_id: str) -> List[dict]:
-        """
-        Aggregate performance by REAL audience segments using LeadProfiles.
-        """
-        from app.models.models import Lead, LeadProfile
-        
-        # Aggregate by region
+    def get_segment_analysis(self, client_id: str) -> List[dict]:
+        """Aggregate performance by REAL audience segments."""
         region_stats = self.db.query(
             LeadProfile.region.label("label"),
             func.count(Lead.id).label("visitors"),
@@ -463,164 +371,53 @@ class AnalysisService:
         ).join(Lead).filter(Lead.client_id == client_id)\
          .group_by(LeadProfile.region).all()
          
-        if not region_stats or len(region_stats) < 2:
-            return self.get_segment_analysis(client_id)
+        if not region_stats:
+            return []
             
-        results = []
-        for s in region_stats:
-            v = int(s.visitors or 0)
-            c = int(s.conversions or 0)
-            rev = float(s.revenue or 0)
-            
-            cvr = (c / v * 100) if v > 0 else 0
-            # Mock ROAS calc (Revenue / Spend) - Using dummy spend for ROAS demo
-            roas = (rev / (v * 500) * 100) if v > 0 else 0 
-            
-            results.append({
-                "segment": s.label or "기타",
-                "visitors": v,
-                "conversion_rate": round(cvr, 1),
-                "roas": int(roas)
-            })
-            
-        return results
-
-    def get_segment_analysis(self, client_id: str) -> List[dict]:
-        """
-        Aggregate performance by audience segments (Simulated).
-        """
-        import random
-        # Base segments
-        segments = ["신규 방문자", "재방문자", "모바일 유저", "PC 유저", "강남/서초 지역"]
-        results = []
-        for seg in segments:
-            visitors = random.randint(500, 3000)
-            conv_rate = round(random.uniform(2.0, 10.0), 1)
-            results.append({
-                "segment": seg,
-                "visitors": visitors,
-                "conversion_rate": conv_rate,
-                "roas": random.randint(300, 700)
-            })
-        return results
+        return [{
+            "segment": s.label or "기타",
+            "visitors": int(s.visitors or 0),
+            "conversion_rate": round((s.conversions / s.visitors * 100), 1) if s.visitors else 0,
+            "roas": int(s.revenue / (s.visitors * 500) * 100) if s.visitors else 0
+        } for s in region_stats]
 
     def generate_report_data(self, report_id: UUID):
-        """
-        Processes a report by fetching data for each widget defined in its template.
-        """
-        from app.models.models import Report, MetricsDaily, Campaign, PlatformConnection, PlatformType
-        import uuid
-        import logging
-        import random
-        import datetime
-        
-        logger = logging.getLogger(__name__)
-        
         report = self.db.query(Report).filter(Report.id == report_id).first()
-        if not report:
-            logger.error(f"Report {report_id} NOT FOUND")
-            return
-            
+        if not report: return
+        
         try:
-            template = report.template
-            config = template.config
-            
             report_data = {"widgets": []}
+            for widget in report.template.config.get("widgets", []):
+                widget_entry = {"id": widget["id"], "type": widget["type"], "data": self._generate_widget_data(widget, report)}
+                report_data["widgets"].append(widget_entry)
             
-            for widget in config.get("widgets", []):
-                try:
-                    widget_type = widget.get("type")
-                    widget_entry = {"id": widget["id"], "type": widget_type, "data": None}
-                    
-                    if widget_type == "KPI_GROUP":
-                        # FIX: Explicit joins to avoid multiple FROMs error
-                        metrics = self.db.query(
-                            func.sum(MetricsDaily.spend).label("spend"),
-                            func.sum(MetricsDaily.impressions).label("impressions"),
-                            func.sum(MetricsDaily.clicks).label("clicks"),
-                            func.sum(MetricsDaily.conversions).label("conversions")
-                        ).select_from(MetricsDaily)\
-                         .join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
-                         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
-                         .filter(PlatformConnection.client_id == report.client_id).first()
-                        
-                        widget_entry["data"] = [
-                            {"label": "총 광고비", "value": int(metrics.spend or 0), "prefix": "₩"},
-                            {"label": "노출수", "value": int(metrics.impressions or 0)},
-                            {"label": "클릭수", "value": int(metrics.clicks or 0)},
-                            {"label": "전환수", "value": int(metrics.conversions or 0)}
-                        ]
-                    
-                    elif widget_type == "FUNNEL":
-                        widget_entry["data"] = self.get_funnel_data(str(report.client_id))
-                    
-                    elif widget_type == "COHORT":
-                        widget_entry["data"] = self.get_cohort_data_v2(str(report.client_id))
-                    
-                    elif widget_type == "SEGMENT":
-                        widget_entry["data"] = self.get_segment_analysis_v2(str(report.client_id))
-                    
-                    elif widget_type == "LINE_CHART":
-                        today = datetime.date.today()
-                        widget_entry["data"] = []
-                        for i in range(7, 0, -1):
-                            d = today - datetime.timedelta(days=i)
-                            widget_entry["data"].append({
-                                "name": d.strftime("%m/%d"),
-                                "광고비": random.randint(10000, 50000),
-                                "전환수": random.randint(1, 10)
-                            })
-                    
-                    elif widget_type == "BENCHMARK":
-                        from app.services.benchmark_service import BenchmarkService
-                        bench_service = BenchmarkService(self.db)
-                        widget_entry["data"] = bench_service.compare_client_performance(report.client_id)
-                    
-                    elif widget_type == "SOV":
-                        keywords = widget.get("keywords", ["치과 마케팅", "임플란트 비용", "교정 치과"])
-                        target_name = report.client.name if report.client else "주식회사 마스터"
-                        widget_entry["data"] = self.get_weekly_sov_summary(target_name, keywords, PlatformType.NAVER_PLACE)
-
-                    elif widget_type == "COMPETITORS":
-                        keyword = widget.get("keyword", "치과 마케팅")
-                        widget_entry["data"] = self.get_competitor_analysis(keyword, PlatformType.NAVER_PLACE)
-
-                    elif widget_type == "RANKINGS":
-                        keyword = widget.get("keyword", "치과 마케팅")
-                        widget_entry["data"] = self.get_daily_ranks(keyword, PlatformType.NAVER_PLACE)
-
-                    elif widget_type == "AI_DIAGNOSIS":
-                        from app.services.benchmark_service import BenchmarkService
-                        from app.services.ai_service import AIService
-                        
-                        bench_service = BenchmarkService(self.db)
-                        ai_service = AIService()
-                        
-                        bench_data = bench_service.compare_client_performance(report.client_id)
-                        widget_entry["data"] = {
-                            "content": ai_service.generate_deep_diagnosis(bench_data)
-                        }
-                    
-                    report_data["widgets"].append(widget_entry)
-                    
-                except Exception as e:
-                    logger.error(f"Error in widget generation {widget.get('id')} for report {report_id}: {str(e)}")
-                    report_data["widgets"].append({
-                        "id": widget.get("id", "error"),
-                        "type": "ERROR",
-                        "data": {"message": f"위젯 데이터 생성 중 오류 발생: {str(e)}"}
-                    })
-                    report.status = "PARTIAL"
-            
-            report.data = report_data
-            if report.status != "PARTIAL":
-                report.status = "COMPLETED"
+            report.data, report.status = report_data, "COMPLETED"
             self.db.commit()
-            
         except Exception as e:
-            logger.error(f"FATAL ERROR in generate_report_data for report {report_id}: {str(e)}")
+            self.logger.error(f"Report Generation Error: {e}")
             report.status = "FAILED"
             self.db.commit()
+
+    def _generate_widget_data(self, widget, report):
+        w_type = widget.get("type")
+        if w_type == "KPI_GROUP":
+            metrics = self.db.query(
+                func.sum(MetricsDaily.spend).label("spend"),
+                func.sum(MetricsDaily.impressions).label("impressions"),
+                func.sum(MetricsDaily.clicks).label("clicks"),
+                func.sum(MetricsDaily.conversions).label("conversions")
+            ).select_from(MetricsDaily).join(Campaign).join(PlatformConnection).filter(
+                PlatformConnection.client_id == report.client_id,
+                MetricsDaily.source == 'RECONCILED'
+            ).first()
+            return [
+                {"label": "총 광고비", "value": int(metrics.spend or 0), "prefix": "₩"},
+                {"label": "전환수", "value": int(metrics.conversions or 0)}
+            ]
+        elif w_type == "FUNNEL": return self.get_funnel_data(str(report.client_id))
+        elif w_type == "COHORT": return self.get_cohort_data(str(report.client_id))
+        elif w_type == "SOV": return self.get_weekly_sov_summary(report.client.name, widget.get("keywords", []), PlatformType.NAVER_PLACE)
+        return None
 
     def get_efficiency_data(self, client_id: str, days: int = 30) -> dict:
         """
@@ -642,7 +439,8 @@ class AnalysisService:
          .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
          .filter(
              PlatformConnection.client_id == client_id,
-             MetricsDaily.date >= start_date
+             MetricsDaily.date >= start_date,
+             MetricsDaily.source == 'RECONCILED'
          ).group_by(Campaign.name, PlatformConnection.platform).all()
 
         items = []
