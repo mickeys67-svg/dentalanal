@@ -46,6 +46,25 @@ def trigger_full_sync(background_tasks: BackgroundTasks):
     background_tasks.add_task(sync_all_channels)
     return {"status": "SUCCESS", "message": "전체 채널 데이터 동기화가 시작되었습니다."}
 
+@router.post("/cron-sync")
+def trigger_cron_sync(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Dedicated endpoint for Cloud Scheduler to trigger periodic data sync.
+    Runs silently in the background to avoid timeouts.
+    """
+    logger.info("Cron Sync triggered via Cloud Scheduler.")
+    from app.scripts.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels)
+    
+    return {
+        "status": "ACCEPTED",
+        "message": "Data synchronization routine has been dispatched to background tasks.",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 @router.get("/diagnostics")
 def get_system_diagnostics(db: Session = Depends(get_db)):
     """
