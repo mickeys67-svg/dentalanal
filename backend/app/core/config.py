@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     NAVER_AD_ACCESS_LICENSE: Optional[str] = None
     NAVER_AD_SECRET_KEY: Optional[str] = None
     
+    # Naver Open API (Login / Trend)
+    NAVER_CLIENT_ID: Optional[str] = None
+    NAVER_CLIENT_SECRET: Optional[str] = None
+    NAVER_REDIRECT_URI: str = "http://localhost:8000/api/v1/naver/callback"
+    
     # Auth
     SECRET_KEY: str = "dmind-secret-key-123456789"
     ADMIN_EMAIL: str = "admin@dmind.com"

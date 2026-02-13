@@ -8,12 +8,14 @@ from app.core.database import get_db
 from app.models.models import User, PlatformConnection, PlatformType
 from app.api.endpoints.auth import get_current_user
 
+from app.core.config import settings
+
 router = APIRouter()
 
-# These should be in .env
-NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "YOUR_NAVER_CLIENT_ID")
-NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "YOUR_NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = os.environ.get("NAVER_REDIRECT_URI", "http://localhost:8000/api/v1/naver/callback")
+# Use centralized settings
+NAVER_CLIENT_ID = settings.NAVER_CLIENT_ID
+NAVER_CLIENT_SECRET = settings.NAVER_CLIENT_SECRET
+NAVER_REDIRECT_URI = settings.NAVER_REDIRECT_URI
 
 @router.get("/auth-url")
 def get_naver_auth_url(client_id: str, current_user: User = Depends(get_current_user)):
