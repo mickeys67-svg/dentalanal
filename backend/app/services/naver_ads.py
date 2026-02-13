@@ -169,3 +169,19 @@ class NaverAdsService:
         
         self.db.commit()
         return results_count
+
+    def validate_api(self) -> dict:
+        """현재 설정된 키가 실제로 작동하는지 네이버 서버에 직접 물어봅니다."""
+        path = "/ncc/campaigns"
+        # 1개만 조회하여 최소한의 리소스로 인증 성공 여부 확인
+        headers = self._get_headers("GET", path)
+        try:
+            response = requests.get(self.base_url + path, headers=headers, params={"size": 1})
+            if response.status_code == 200:
+                return {"status": "HEALTHY", "message": "성공적으로 연결되었습니다."}
+            elif response.status_code == 401:
+                return {"status": "UNAUTHORIZED", "message": "API 키 또는 시크릿이 올바르지 않습니다."}
+            else:
+                return {"status": "ERROR", "message": f"오류 발생 ({response.status_code}): {response.text}"}
+        except Exception as e:
+            return {"status": "CATASTROPHIC", "message": f"통신 불가: {str(e)}"}

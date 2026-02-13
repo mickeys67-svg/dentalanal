@@ -66,28 +66,32 @@ def trigger_cron_sync(
     }
 
 @router.get("/diagnostics")
-def get_system_diagnostics(db: Session = Depends(get_db)):
+def get_system_diagnostics(
+    validate: bool = False,
+    db: Session = Depends(get_db)
+):
     """
     Diagnostic endpoint to check for data ingestion health.
+    If validate=True, it performs a real network check to Naver.
     """
     from app.models.models import PlatformConnection, Campaign, MetricsDaily, Client
-    
+    from app.services.naver_ads import NaverAdsService
+    from app.core.config import settings
+    from datetime import datetime
+
     conn_count = db.query(PlatformConnection).count()
     camp_count = db.query(Campaign).count()
     client_count = db.query(Client).count()
     
-    # Counts by source
     metrics_by_source = {}
     for source in ['API', 'SCRAPER', 'RECONCILED']:
         count = db.query(MetricsDaily).filter(MetricsDaily.source == source).count()
         metrics_by_source[source] = count
 
-    # Check for potential DB environment issues
     import os
-    db_type = "PostgreSQL" if settings.DATABASE_URL.startswith("postgres") else "SQLite"
+    db_type = "PostgreSQL" if settings.get_database_url.startswith("postgres") else "SQLite"
     is_cloud_run = os.environ.get("K_SERVICE") is not None
     
-    # Check if we have any active Naver connections with credentials
     active_naver = db.query(PlatformConnection).filter(
         PlatformConnection.platform == "NAVER_AD",
         PlatformConnection.status == "ACTIVE"
@@ -96,17 +100,23 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
     naver_status = []
     for c in active_naver:
         creds = c.credentials or {}
-        has_api = bool(creds.get('customer_id') and (creds.get('api_key') or creds.get('access_license')))
-        has_scraper = bool(creds.get('username') and creds.get('password'))
+        has_api = bool(creds.get('customer_id') or settings.NAVER_AD_CUSTOMER_ID)
+        
+        health = "UNKNOWN"
+        if validate and has_api:
+            # 실시간 검증 수행
+            svc = NaverAdsService(db, credentials=c.credentials)
+            health_res = svc.validate_api()
+            health = health_res["status"]
+            
         naver_status.append({
             "id": str(c.id),
             "client_id": c.client_id,
             "has_api_creds": has_api,
-            "has_scraper_creds": has_scraper
+            "realtime_health": health
         })
 
-    # Check global settings (Environment Variables)
-    global_settings = {
+    global_secrets = {
         "naver_customer_id": bool(settings.NAVER_AD_CUSTOMER_ID),
         "naver_access_license": bool(settings.NAVER_AD_ACCESS_LICENSE),
         "naver_secret_key": bool(settings.NAVER_AD_SECRET_KEY),
@@ -119,7 +129,7 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
             "db_type": db_type,
             "is_cloud_run": is_cloud_run,
             "current_time_utc": datetime.utcnow().isoformat(),
-            "global_secrets_configured": global_settings
+            "global_secrets_configured": global_secrets
         },
         "counts": {
             "clients": client_count,
