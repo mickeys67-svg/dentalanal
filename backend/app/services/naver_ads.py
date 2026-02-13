@@ -47,7 +47,7 @@ class NaverAdsService:
         
         response = requests.get(self.base_url + path, headers=headers)
         if response.status_code != 200:
-            logger.error(f"Naver API Error (Sync Campaigns): {response.status_code}")
+            logger.error(f"Naver API Error (Sync Campaigns): {response.status_code} - {response.text}")
             return False
 
         naver_campaigns = response.json()
@@ -71,10 +71,21 @@ class NaverAdsService:
 
         # 2. 캠페인 동기화
         for nc in naver_campaigns:
+            # 2a. external_id로 먼저 확인 (공식 API 기준)
             campaign = self.db.query(Campaign).filter(
                 Campaign.connection_id == connection.id,
                 Campaign.external_id == nc['nccCampaignId']
             ).first()
+            
+            # 2b. 이름으로 재확인 (스크래퍼가 먼저 생성했을 경우 ID 매칭 보정)
+            if not campaign:
+                campaign = self.db.query(Campaign).filter(
+                    Campaign.connection_id == connection.id,
+                    Campaign.name == nc['name']
+                ).first()
+                if campaign:
+                    logger.info(f"Existing campaign found by name: {nc['name']}. Mapping external_id to {nc['nccCampaignId']}")
+                    campaign.external_id = nc['nccCampaignId']
             
             if not campaign:
                 campaign = Campaign(
@@ -93,46 +104,61 @@ class NaverAdsService:
 
     def sync_daily_metrics(self, campaign_external_id: str, date_str: str):
         """특정 날짜의 캠페인 성과 데이터를 수집하여 source='API'로 저장합니다."""
-        # Note: 네이버 통계 API 상세 구현 (간략화)
-        time_range = '{"from":"' + date_str + '","to":"' + date_str + '"}'
-        path = f"/stats?ids={campaign_external_id}&fields=impCnt,clickCnt,pcCost,mobCost,ccnt&timeRange={time_range}"
-        # 실제로는 JSON body나 쿼리 스트링 포맷팅이 더 복잡하지만 개념 위주로 구현
+        # Naver Ads Stats API: GET /stats
+        # fields: impCnt(노출), clickCnt(클릭), salesAmt(비용), convCnt(전환)
+        time_range = {"from": date_str, "to": date_str}
+        params = {
+            "ids": campaign_external_id,
+            "fields": "impCnt,clickCnt,salesAmt,convCnt",
+            "timeRange": json.dumps(time_range)
+        }
         
-        headers = self._get_headers("GET", "/stats")
+        path = "/stats"
+        headers = self._get_headers("GET", path)
         try:
-            # response = requests.get(self.base_url + "/stats", headers=headers, params={"ids": campaign_external_id, ...})
-            # if response.status_code == 200:
-            #     data = response.json()
-            #     ...
+            response = requests.get(self.base_url + path, headers=headers, params=params)
+            if response.status_code != 200:
+                logger.error(f"Naver API Stats Error: {response.status_code} - {response.text}")
+                return None
             
-            # API 호출 결과 시뮬레이션 (Reconciliation 테스트용)
-            # 실제 운영 환경에서는 위의 주석 처리된 코드로 작동하게 됩니다.
-            logger.info(f"API Sync for campaign {campaign_external_id} on {date_str} (Simulated)")
+            data = response.json()
+            if not data or 'data' not in data or not data['data']:
+                logger.warning(f"No API stats data found for {campaign_external_id} on {date_str}")
+                return None
+            
+            # Extract first record
+            stats = data['data'][0]
             return {
-                "spend": 10000.0,
-                "impressions": 500,
-                "clicks": 10,
-                "conversions": 1
+                "spend": float(stats.get("salesAmt", 0)),
+                "impressions": int(stats.get("impCnt", 0)),
+                "clicks": int(stats.get("clickCnt", 0)),
+                "conversions": int(stats.get("convCnt", 0))
             }
         except Exception as e:
-            logger.error(f"Failed to fetch API metrics: {e}")
+            logger.error(f"Failed to fetch real Naver API metrics: {e}")
             return None
 
     def sync_all_campaign_metrics(self, connection_id: uuid.UUID, date_str: str):
         """커넥션에 연결된 모든 캠페인의 API 지표를 수집합니다."""
         campaigns = self.db.query(Campaign).filter(Campaign.connection_id == connection_id).all()
         results_count = 0
+        target_date = datetime.strptime(date_str, "%Y-%m-%d")
+        
         for cp in campaigns:
+            if not cp.external_id:
+                continue
+                
             data = self.sync_daily_metrics(cp.external_id, date_str)
             if data:
                 # Save as API source
                 metrics = self.db.query(MetricsDaily).filter(
                     MetricsDaily.campaign_id == cp.id,
-                    MetricsDaily.date == datetime.strptime(date_str, "%Y-%m-%d"),
+                    MetricsDaily.date == target_date,
                     MetricsDaily.source == 'API'
                 ).first()
+                
                 if not metrics:
-                    metrics = MetricsDaily(id=uuid.uuid4(), campaign_id=cp.id, date=datetime.strptime(date_str, "%Y-%m-%d"), source='API')
+                    metrics = MetricsDaily(id=uuid.uuid4(), campaign_id=cp.id, date=target_date, source='API')
                     self.db.add(metrics)
                 
                 metrics.spend = data["spend"]

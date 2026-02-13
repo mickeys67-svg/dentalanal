@@ -86,12 +86,21 @@ def get_system_diagnostics(db: Session = Depends(get_db)):
             "has_scraper_creds": has_scraper
         })
 
+    # Check global settings (Environment Variables)
+    global_settings = {
+        "naver_customer_id": bool(settings.NAVER_AD_CUSTOMER_ID),
+        "naver_access_license": bool(settings.NAVER_AD_ACCESS_LICENSE),
+        "naver_secret_key": bool(settings.NAVER_AD_SECRET_KEY),
+        "bright_data_cdp": bool(settings.BRIGHT_DATA_CDP_URL)
+    }
+
     return {
         "status": "OK",
         "environment": {
             "db_type": db_type,
             "is_cloud_run": is_cloud_run,
-            "current_time_utc": datetime.utcnow().isoformat()
+            "current_time_utc": datetime.utcnow().isoformat(),
+            "global_secrets_configured": global_settings
         },
         "counts": {
             "clients": client_count,

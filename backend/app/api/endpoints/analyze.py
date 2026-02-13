@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing import List, Union, Optional
@@ -24,8 +24,13 @@ router = APIRouter()
 @router.post("/ai-report", response_model=AIAnalysisResponse)
 def get_ai_report(
     request: AIAnalysisRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
+    # 0. Trigger Sync in background
+    from app.scripts.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels)
+    
     analysis_service = AnalysisService(db)
     ai_service = AIService()
     
@@ -158,9 +163,14 @@ def get_benchmark_comparison(
 @router.get("/efficiency/{client_id}", response_model=EfficiencyReviewResponse)
 def get_efficiency_review(
     client_id: str,
+    background_tasks: BackgroundTasks,
     days: int = 30,
     db: Session = Depends(get_db)
 ):
+    # Trigger Sync to ensure fresh ROAS/Spend data
+    from app.scripts.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels)
+    
     # Handle "undefined" or other invalid strings
     if client_id == "undefined" or client_id == "null":
         return {
