@@ -59,7 +59,7 @@ jobs:
       - name: Deploy Frontend to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: dentalanal-frontend
+          service: dentalanal
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
           region: ${{ env.REGION }}
           env_vars: |
