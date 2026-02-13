@@ -1,10 +1,11 @@
+# [IMMUTABLE CORE] DB 엔진 및 세션 관리.
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 import os
 
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
+SQLALCHEMY_DATABASE_URL = settings.get_database_url
 
 # Cloud Run check: SQLite must use /tmp
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
@@ -28,7 +29,7 @@ if "@" in SQLALCHEMY_DATABASE_URL:
     host_part = SQLALCHEMY_DATABASE_URL.split("@")[-1]
     masked_url = f"{prefix}://****@{host_part}"
 
-print(f"--- [DATABASE] Connecting to: {masked_url} ---")
+# logger.info(f"Database connection initialized: {masked_url}")
 logger.info(f"Database connection initialized: {masked_url}")
 
 # Database Engine Configuration
@@ -40,11 +41,11 @@ engine_args = {
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 else:
-    # PostgreSQL specific engine args
+    # PostgreSQL specific engine args - Enhanced for production performance
     engine_args.update({
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_recycle": 3600,
+        "pool_size": 20,
+        "max_overflow": 40,
+        "pool_recycle": 1800, # More aggressive recycle
     })
 
 engine = create_engine(
