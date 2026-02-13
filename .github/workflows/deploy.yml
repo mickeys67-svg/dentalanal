@@ -33,12 +33,6 @@ jobs:
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest ./backend
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
 
-      # Build and Push Frontend
-      - name: Build and Push Frontend
-        run: |
-          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest ./frontend
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
-
       # Deploy Backend
       - name: Deploy Backend to Cloud Run
         id: deploy_backend
@@ -47,7 +41,19 @@ jobs:
           service: dentalanal-backend
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
           region: ${{ env.REGION }}
+          env_vars: |
+            DATABASE_PASSWORD=3AiLcoNojCHgZpTw
+            SUPABASE_URL=https://uujxtnvpqdwcjqhsoshi.supabase.co
+            MONGODB_URL=mongodb+srv://mickeys67:mickeys67@cluster0.v8kxt.mongodb.net/dentalanal?retryWrites=true&w=majority
+            ADMIN_EMAIL=admin@dmind.com
+            ADMIN_PASSWORD=admin123!
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
+
+      # Build and Push Frontend (After Backend is deployed to get the URL)
+      - name: Build and Push Frontend
+        run: |
+          docker build --build-arg NEXT_PUBLIC_API_URL=${{ steps.deploy_backend.outputs.url }} -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest ./frontend
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
 
       # Deploy Frontend
       - name: Deploy Frontend to Cloud Run
