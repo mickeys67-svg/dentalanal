@@ -46,6 +46,14 @@ class TargetType(str, enum.Enum):
     COMPETITOR = "COMPETITOR"
     OTHERS = "OTHERS"
 
+class SystemConfig(Base):
+    """프로젝트의 전역 설정을 DB에 영구 보존하기 위한 테이블"""
+    __tablename__ = "system_configs"
+    key = Column(String(100), primary_key=True) # e.g., 'NAVER_AD_ACCESS_LICENSE'
+    value = Column(Text, nullable=False)
+    description = Column(String(255), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
     ADMIN = "ADMIN"

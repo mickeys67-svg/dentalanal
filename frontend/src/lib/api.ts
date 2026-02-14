@@ -99,7 +99,7 @@ export const getCompetitors = async (keyword: string, platform: string = 'NAVER_
     return response.data;
 };
 
-export const getRankingTrend = async (params: { keyword: string, target_hospital: string, platform?: string, days?: number }): Promise<any[]> => {
+export const getRankingTrend = async (params: { keyword: string, target_hospital: string, platform?: string, days?: number }): Promise<{ date: string, rank: number }[]> => {
     const response = await api.get('/api/v1/analyze/ranking-trend', { params });
     return response.data;
 };
@@ -135,7 +135,7 @@ export const getMetricsTrend = async (clientId?: string): Promise<any[]> => {
     const response = await api.get('/api/v1/dashboard/metrics/trend', {
         params: { client_id: clientId }
     });
-    return response.data.trend;
+    return response.data.trend || [];
 };
 
 export const getConnectors = async (): Promise<{ connectors: Connector[] }> => {
@@ -158,7 +158,7 @@ export const deleteClient = async (clientId: string): Promise<{ status: string }
     return response.data;
 };
 
-export const updateBulkTargets = async (data: { client_id: string, targets: any[] }): Promise<any> => {
+export const updateBulkTargets = async (data: { client_id: string, targets: any[] }): Promise<{ status: string, targets: any[] }> => {
     const response = await api.post('/api/v1/analyze/targets/bulk', data);
     return response.data;
 };
@@ -338,7 +338,7 @@ export const deleteUser = async (userId: string): Promise<{ status: string }> =>
     return response.data;
 };
 
-export const getSystemStatus = async (): Promise<any> => {
+export const getSystemStatus = async (): Promise<{ status: string; workers: any; scheduler: boolean }> => {
     const response = await api.get('/api/v1/status/status');
     return response.data;
 };

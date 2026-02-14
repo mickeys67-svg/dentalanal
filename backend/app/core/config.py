@@ -56,4 +56,26 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8"
     )
 
+def hydrate_settings_from_db():
+    """
+    [SELF-HEALING] DB에서 설정을 읽어와 settings 객체를 업데이트합니다.
+    환경변수가 유실되었을 때를 대비한 2중 안전장치입니다.
+    """
+    try:
+        from sqlalchemy import create_engine, text
+        # settings 객체가 이미 생성된 후이므로 get_database_url 사용 가능
+        temp_engine = create_engine(settings.get_database_url)
+        with temp_engine.connect() as conn:
+            # system_configs 테이블 존재 여부 확인 후 데이터 로드
+            result = conn.execute(text("SELECT key, value FROM system_configs"))
+            for key, value in result:
+                if hasattr(settings, key) and not getattr(settings, key):
+                    setattr(settings, key, value)
+                    # print(f"[SELF-HEAL] DB에서 {key} 설정을 복구했습니다.")
+    except Exception as e:
+        # DB가 아직 준비되지 않았거나 테이블이 없는 경우 조용히 넘어감
+        pass
+
 settings = Settings()
+# 서버 시작 시 자가 치유 실행
+hydrate_settings_from_db()

@@ -124,7 +124,7 @@ def get_funnel_analysis(client_id: str, days: int = 30, db: Session = Depends(ge
 @router.get("/cohort/{client_id}")
 def get_cohort_analysis(client_id: str, db: Session = Depends(get_db)):
     service = AnalysisService(db)
-    return service.get_cohort_data_v2(client_id)
+    return service.get_cohort_data(client_id)
 
 @router.get("/attribution/{client_id}")
 def get_attribution_analysis(client_id: str, db: Session = Depends(get_db)):
@@ -134,7 +134,7 @@ def get_attribution_analysis(client_id: str, db: Session = Depends(get_db)):
 @router.get("/segments/{client_id}")
 def get_segment_analysis(client_id: str, db: Session = Depends(get_db)):
     service = AnalysisService(db)
-    return service.get_segment_analysis_v2(client_id)
+    return service.get_segment_analysis(client_id)
 
 @router.get("/weekly-summary")
 def get_weekly_summary(

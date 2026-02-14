@@ -68,3 +68,4 @@ backend-test
 # Secrets
 manual_deploy.ps1
 deploy.ps1
+MASTER_CONFIG.md

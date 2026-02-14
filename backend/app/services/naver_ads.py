@@ -45,9 +45,16 @@ class NaverAdsService:
         path = "/ncc/campaigns"
         headers = self._get_headers("GET", path)
         
-        response = requests.get(self.base_url + path, headers=headers)
-        if response.status_code != 200:
-            logger.error(f"Naver API Error (Sync Campaigns): {response.status_code} - {response.text}")
+        try:
+            response = requests.get(self.base_url + path, headers=headers, timeout=10)
+            if response.status_code != 200:
+                logger.error(f"Naver API Error (Sync Campaigns): {response.status_code} - {response.text}")
+                return False
+        except requests.exceptions.Timeout:
+            logger.error("Naver API Timeout during sync_campaigns")
+            return False
+        except Exception as e:
+            logger.error(f"Naver API Connection Error: {e}")
             return False
 
         naver_campaigns = response.json()
@@ -116,7 +123,7 @@ class NaverAdsService:
         path = "/stats"
         headers = self._get_headers("GET", path)
         try:
-            response = requests.get(self.base_url + path, headers=headers, params=params)
+            response = requests.get(self.base_url + path, headers=headers, params=params, timeout=10)
             if response.status_code != 200:
                 logger.error(f"Naver API Stats Error: {response.status_code} - {response.text}")
                 return None
@@ -134,6 +141,9 @@ class NaverAdsService:
                 "clicks": int(stats.get("clickCnt", 0)),
                 "conversions": int(stats.get("convCnt", 0))
             }
+        except requests.exceptions.Timeout:
+            logger.error(f"Naver API Timeout for stats: {campaign_external_id}")
+            return None
         except Exception as e:
             logger.error(f"Failed to fetch real Naver API metrics: {e}")
             return None
