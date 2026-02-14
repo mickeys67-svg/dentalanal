@@ -13,10 +13,16 @@ async def run_view_scraper(keyword: str):
 
 def execute_place_sync(keyword: str):
     """Inline execution of place scraping and saving."""
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+    
+    if loop.is_running():
+        # Using nest_asyncio to allow nested loops if called from sync context within async
+        import nest_asyncio
+        nest_asyncio.apply()
     
     results = loop.run_until_complete(run_place_scraper(keyword))
     
@@ -73,14 +79,11 @@ def execute_ad_sync(keyword: str):
         db.close()
     return results
 
-@celery_app.task
 def scrape_place_task(keyword: str):
     return execute_place_sync(keyword)
 
-@celery_app.task
 def scrape_view_task(keyword: str):
     return execute_view_sync(keyword)
 
-@celery_app.task
 def scrape_ad_task(keyword: str):
     return execute_ad_sync(keyword)

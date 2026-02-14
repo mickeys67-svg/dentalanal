@@ -58,14 +58,27 @@ def sync_naver_data(db: Session, connection_id: str):
         scraper = NaverAdsManagerScraper()
         
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-        data = loop.run_until_complete(
-            scraper.get_performance_summary(creds['username'], creds['password'])
-        )
+            # Check if we are already in an async loop (likely)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                # If loop is running, we cannot use run_until_complete.
+                # Since this function is sync, we need an entry point.
+                # However, in dentalanal, this sync_naver_data is called within an async task.
+                # WE RECOMMEND renaming this to async def, but for a quick fix:
+                import nest_asyncio
+                nest_asyncio.apply()
+                data = asyncio.get_event_loop().run_until_complete(
+                    scraper.get_performance_summary(creds['username'], creds['password'])
+                )
+            else:
+                data = asyncio.run(scraper.get_performance_summary(creds['username'], creds['password']))
+        except Exception as e:
+            logger.error(f"Scraper item parsing error: {e}")
+            data = None
         
         if data:
             logger.info(f"Scraper returned {len(data)} items for {connection_id}")

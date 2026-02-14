@@ -17,15 +17,33 @@ if (-not $repoExists) {
     gcloud artifacts repositories create $REPO_NAME --repository-format=docker --location=$REGION --project $PROJECT_ID
 }
 
+# [SECURE] .env 파일에서 설정 로드 (로컬 환경변수 의존성 제거)
+$envFile = "./backend/.env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match "^([^=]+)=(.*)$") {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            if ($key -eq "DATABASE_URL") { $DB_URL = $value }
+            if ($key -eq "DATABASE_PASSWORD") { $DB_PWD = $value }
+            if ($key -eq "ADMIN_EMAIL") { $ADMIN_EMAIL = $value }
+            if ($key -eq "ADMIN_PASSWORD") { $ADMIN_PASSWORD = $value }
+        }
+    }
+}
+
+# 2차 Fallback: DATABASE_URL에서 패스워드 추출 시도 (supabase 전용)
+if ([string]::IsNullOrWhiteSpace($DB_PWD) -and $DB_URL -match "postgresql://[^:]+:([^@]+)@") {
+    $DB_PWD = $matches[1]
+}
+
+if ([string]::IsNullOrWhiteSpace($DB_URL)) {
+    Write-Error "--- 에러: .env에서 DATABASE_URL을 찾을 수 없습니다. 배포를 중단합니다. ---"
+    exit 1
+}
+
 Write-Host "--- 3. 백엔드(Backend) 이미지 빌드 및 배포 ---" -ForegroundColor Green
 gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/backend ./backend --project $PROJECT_ID
-
-# [SECURE] 기밀 정보는 이 파일에 하드코딩하지 마십시오.
-# 윈도우 환경 $env: 변수나 비밀 저장소를 사용하세요.
-$DB_PWD = $env:DATABASE_PASSWORD # 👈 환경변수 세팅 필요
-$DB_ID = "uujxtnvpqdwcjqhsoshi"
-$DB_HOST = "db.$($DB_ID).supabase.co"
-$DB_URL = "postgresql://postgres:$($DB_PWD)@$($DB_HOST):5432/postgres?sslmode=require"
 
 gcloud run deploy dentalanal-backend `
     --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/backend `
@@ -35,7 +53,7 @@ gcloud run deploy dentalanal-backend `
     --port 8080 `
     --memory 1Gi `
     --timeout 300 `
-    --set-env-vars "DATABASE_URL=$DB_URL,DATABASE_PASSWORD=$DB_PWD" `
+    --set-env-vars "DATABASE_URL=$DB_URL,DATABASE_PASSWORD=$DB_PWD,ADMIN_EMAIL=$ADMIN_EMAIL,ADMIN_PASSWORD=$ADMIN_PASSWORD" `
     --project $PROJECT_ID
 
 # 배포된 백엔드 URL 획득

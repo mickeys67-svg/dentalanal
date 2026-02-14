@@ -42,13 +42,41 @@ class Settings(BaseSettings):
 
     @property
     def get_database_url(self) -> str:
-        """Dynamically build database URL, prioritizing Supabase if password exists."""
-        if self.DATABASE_PASSWORD and 'supabase' in (self.SUPABASE_URL or ''):
-            import urllib.parse
-            safe_pwd = urllib.parse.quote_plus(self.DATABASE_PASSWORD)
-            # Reconstruct the Postgres URL for Supabase
-            return f"postgresql://postgres.uujxtnvpqdwcjqhsoshi:{safe_pwd}@aws-0-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require"
-        return self.DATABASE_URL
+        """Dynamically build database URL, prioritizing existing valid URL."""
+        import os
+        import urllib.parse
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        url = self.DATABASE_URL
+        db_pwd = self.DATABASE_PASSWORD or os.environ.get("DATABASE_PASSWORD")
+        tenant_id = "uujxtnvpqdwcjqhsoshi"
+        
+        if not url or url.startswith("sqlite"):
+            if db_pwd:
+                safe_pwd = urllib.parse.quote_plus(db_pwd)
+                # Fallback to direct stable connection
+                logger.info("[CONFIG] Falling back to default direct DB URL")
+                return f"postgresql://postgres:{safe_pwd}@db.{tenant_id}.supabase.co:5432/postgres?sslmode=require"
+            return "sqlite:///./test.db"
+            
+        # [SELF-HEALING] Handle missing password in injected URL
+        if ":@" in url and db_pwd:
+            safe_pwd = urllib.parse.quote_plus(db_pwd)
+            url = url.replace(":@", f":{safe_pwd}@", 1)
+            logger.info("[CONFIG] Patching missing password in DATABASE_URL")
+
+        # [REPAIR] Fix "Tenant or user not found" by adjusting username based on host
+        # If port 6543 (pooler) -> needs postgres.TENANT
+        # If port 5432 (direct) -> needs postgres
+        if "pooler.supabase.com" in url and "postgres." not in url:
+            url = url.replace("://postgres", f"://postgres.{tenant_id}", 1)
+            logger.info("[CONFIG] Adjusting username for Supabase Pooler")
+        elif "db.uujxtnvpqdwcjqhsoshi.supabase.co" in url and "postgres." in url:
+            url = url.replace(f"postgres.{tenant_id}", "postgres", 1)
+            logger.info("[CONFIG] Stripping tenant suffix for Direct Connection")
+            
+        return url
 
     model_config = SettingsConfigDict(
         env_file=".env",

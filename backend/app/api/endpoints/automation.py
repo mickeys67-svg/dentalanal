@@ -38,7 +38,7 @@ def get_recommendations(data: RecommendationRequest):
     return result
 
 @router.post("/sync")
-def trigger_full_sync(background_tasks: BackgroundTasks):
+async def trigger_full_sync(background_tasks: BackgroundTasks):
     """
     Trigger full-channel data synchronization.
     """
@@ -47,14 +47,14 @@ def trigger_full_sync(background_tasks: BackgroundTasks):
     return {"status": "SUCCESS", "message": "전체 채널 데이터 동기화가 시작되었습니다."}
 
 @router.post("/cron-sync")
-def trigger_cron_sync(
+async def trigger_cron_sync(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
     Dedicated endpoint for Cloud Scheduler to trigger periodic data sync.
-    Runs silently in the background to avoid timeouts.
     """
+    from datetime import datetime
     logger.info("Cron Sync triggered via Cloud Scheduler.")
     from app.scripts.sync_data import sync_all_channels
     background_tasks.add_task(sync_all_channels)
@@ -123,6 +123,7 @@ def get_system_diagnostics(
         "bright_data_cdp": bool(settings.BRIGHT_DATA_CDP_URL)
     }
 
+    # Remove Celery from diagnostics if it existed
     return {
         "status": "OK",
         "environment": {

@@ -8,10 +8,17 @@ logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
 
+def sync_wrapper():
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(sync_all_channels())
+    loop.close()
+
 def start_scheduler():
     if not scheduler.running:
         scheduler.add_job(
-            func=sync_all_channels,
+            func=sync_wrapper,
             trigger=IntervalTrigger(hours=6),
             id='sync_marketing_data',
             name='Sync all marketing channels every 6 hours',

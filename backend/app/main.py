@@ -30,22 +30,38 @@ async def run_startup_tasks():
         try:
             from sqlalchemy import text
             with engine.connect() as conn:
-                # Check source column
+                # 1. Cleanup contaminated DB config if any
+                try:
+                    conn.execute(text("DELETE FROM system_configs WHERE key = 'DATABASE_URL'"))
+                    conn.commit()
+                    logger.info("[OK] Contaminated DATABASE_URL config removed from DB.")
+                except Exception:
+                    pass
+
+                # 2. Check source column
                 col_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'source');")).fetchone()[0]
                 if not col_exists:
                     logger.info("[MIGRATE] Adding 'source' column to metrics_daily...")
                     conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN source VARCHAR DEFAULT 'API';"))
                 
-                # Check revenue column
+                # 3. Check revenue column
                 rev_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'revenue');")).fetchone()[0]
                 if not rev_exists:
                     logger.info("[MIGRATE] Adding 'revenue' column to metrics_daily...")
                     conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN revenue FLOAT DEFAULT 0.0;"))
                 
+                # 4. Check meta_info column
+                meta_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'meta_info');")).fetchone()[0]
+                if not meta_exists:
+                    logger.info("[MIGRATE] Adding 'meta_info' column to metrics_daily...")
+                    conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN meta_info JSONB;"))
+                
                 conn.commit()
                 logger.info("[OK] metrics_daily schema verified/patched.")
         except Exception as e:
-            logger.error(f"Failed to run startup migration: {e}")
+            logger.error(f"Failed to run startup migration: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
 
         # SEEDING: Ensure default Agency and Admin exist
         from sqlalchemy.orm import Session
@@ -99,7 +115,11 @@ async def run_startup_tasks():
             
             session.commit()
     except Exception as e:
-        logger.error(f"Background startup: Database schema sync or seeding failed: {e}")
+        logger.error(f"Background startup: Critical failure in schema sync/seeding: {e}")
+        # Even if this fails, we want the server to stay alive to serve /health
+        # and allow manual diagnosis or self-healing config updates.
+        import traceback
+        logger.error(traceback.format_exc())
 
     try:
         start_scheduler()
@@ -108,15 +128,20 @@ async def run_startup_tasks():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure critical startup tasks (DB init, seeding) are complete before accepting requests
-    await run_startup_tasks()
+    # CRITICAL: Start the port listener IMMEDIATELY by not awaiting heavy tasks here
+    # We create a background task for initialization to avoid Cloud Run Startup Timeout
+    init_task = asyncio.create_task(run_startup_tasks())
+    
     yield
+    
     # Shutdown logic
     from app.core.scheduler import stop_scheduler
     try:
         stop_scheduler()
     except:
         pass
+    if not init_task.done():
+        init_task.cancel()
 
 app = FastAPI(title="D-MIND API", version="1.0.0", lifespan=lifespan)
 
