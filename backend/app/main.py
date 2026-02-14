@@ -26,6 +26,27 @@ async def run_startup_tasks():
         await asyncio.to_thread(Base.metadata.create_all, bind=engine)
         logger.info("Background startup: Database schema sync successful. Tables checked/created.")
 
+        # [HOTFIX] Ensure metrics_daily has 'source' and 'revenue' columns (Self-Healing)
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                # Check source column
+                col_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'source');")).fetchone()[0]
+                if not col_exists:
+                    logger.info("[MIGRATE] Adding 'source' column to metrics_daily...")
+                    conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN source VARCHAR DEFAULT 'API';"))
+                
+                # Check revenue column
+                rev_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'revenue');")).fetchone()[0]
+                if not rev_exists:
+                    logger.info("[MIGRATE] Adding 'revenue' column to metrics_daily...")
+                    conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN revenue FLOAT DEFAULT 0.0;"))
+                
+                conn.commit()
+                logger.info("[OK] metrics_daily schema verified/patched.")
+        except Exception as e:
+            logger.error(f"Failed to run startup migration: {e}")
+
         # SEEDING: Ensure default Agency and Admin exist
         from sqlalchemy.orm import Session
         from app.models.models import Agency, User, UserRole, ReportTemplate
