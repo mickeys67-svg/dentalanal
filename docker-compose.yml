@@ -1,66 +1,33 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16
-    container_name: d_mind_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: d_mind
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7.0
-    container_name: d_mind_redis
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
   backend:
-    build: ./backend
-    container_name: d_mind_backend
-    restart: always
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - ./backend:/app
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: dentalanal-backend:latest
     ports:
-      - "8000:8000"
+      - "8080:8080"
     env_file:
       - ./backend/.env
-    depends_on:
-      - db
-      - redis
-
-  worker:
-    build: ./backend
-    container_name: d_mind_worker
+    environment:
+      - PORT=8080
     restart: always
-    command: celery -A app.core.celery_app worker --loglevel=info
-    env_file:
-      - ./backend/.env
-    depends_on:
-      - db
-      - redis
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://localhost:8000
-    container_name: d_mind_frontend
-    restart: always
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    image: dentalanal-frontend:latest
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
     depends_on:
       - backend
+    restart: always
 
-volumes:
-  postgres_data:
-  redis_data:
+# Note: Database and Redis are assumed to be managed services (Supabase/Render) 
+# as per current architecture. If needed locally, add them below.
