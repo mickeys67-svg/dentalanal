@@ -77,8 +77,15 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50">
-                                <div className="text-xs text-gray-400">
-                                    <span className="font-bold text-gray-900">3개의 타겟</span> 연동됨
+                                <div className="text-xs text-gray-400 space-y-1">
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-bold text-gray-900">3개의 타겟</span> 연동됨
+                                    </div>
+                                    {client.created_at && (
+                                        <div className="text-[10px] text-gray-300">
+                                            등록일: {new Date(client.created_at).toLocaleDateString('ko-KR')}
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={() => {

@@ -97,6 +97,8 @@ class Client(Base):
     agency_id = Column(GUID, ForeignKey("agencies.id"), nullable=False)
     name = Column(String, nullable=False)
     industry = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     agency = relationship("Agency", back_populates="clients")
     connections = relationship("PlatformConnection", back_populates="client", cascade="all, delete-orphan")

@@ -7,6 +7,7 @@ from app.api.endpoints.auth import get_current_user
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 import uuid
+import datetime
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ class ClientCreate(ClientBase):
 
 class ClientResponse(ClientBase):
     id: UUID
+    created_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=List[ClientResponse])
@@ -35,7 +37,7 @@ def get_clients(
     # Use user's agency_id if available, otherwise fallback to default agency
     agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
     
-    return db.query(Client).filter(Client.industry != None).filter(Client.agency_id == agency_id).all()
+    return db.query(Client).filter(Client.industry != None).filter(Client.agency_id == agency_id).order_by(Client.created_at.desc()).all()
 
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 def create_client(

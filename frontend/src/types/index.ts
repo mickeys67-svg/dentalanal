@@ -144,6 +144,7 @@ export interface Client {
     agency_id: string;
     name: string;
     industry: string;
+    created_at?: string;
 }
 
 export interface PlatformConnection {
