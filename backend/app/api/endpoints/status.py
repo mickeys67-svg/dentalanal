@@ -7,7 +7,34 @@ import datetime
 
 router = APIRouter(tags=["Status"])
 
-@router.get("/status") # prefix(/api/v1/status) + /status = /api/v1/status/status
+@router.post("/sync")
+async def trigger_manual_sync(db: Session = Depends(get_db)):
+    """Manually triggers the full data sync pipeline in the background."""
+    from app.scripts.sync_data import sync_all_channels
+    import asyncio
+    # Simple background task without complicating lifespan
+    asyncio.create_task(sync_all_channels())
+    return {"message": "데이터 동기화가 백그라운드에서 시작되었습니다."}
+
+@router.get("/naver-health")
+def check_naver_api_health(db: Session = Depends(get_db)):
+    """Tests if the Naver Ads API keys are valid (Checks the first active connection)."""
+    from app.models.models import PlatformConnection, PlatformType
+    from app.services.naver_ads import NaverAdsService
+    
+    conn = db.query(PlatformConnection).filter(PlatformConnection.platform == PlatformType.NAVER_AD, PlatformConnection.status == 'ACTIVE').first()
+    if not conn:
+        return {"status": "ERROR", "message": "활성화된 네이버 광고 연결이 없습니다."}
+    
+    service = NaverAdsService(db, credentials=conn.credentials)
+    result = service.validate_api()
+    return {
+        "connection_id": str(conn.id),
+        "api_status": result["status"],
+        "message": result["message"]
+    }
+
+@router.get("/status")
 def get_system_status(db: Session = Depends(get_db)):
     # 1. Check DB
     db_ok = False
