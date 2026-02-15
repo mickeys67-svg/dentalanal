@@ -8,13 +8,19 @@ import datetime
 router = APIRouter(tags=["Status"])
 
 @router.post("/sync")
-async def trigger_manual_sync(db: Session = Depends(get_db)):
-    """Manually triggers the full data sync pipeline in the background."""
+async def trigger_manual_sync(client_id: str = None, days: int = None, db: Session = Depends(get_db)):
+    """
+    Manually triggers the sync pipeline for a specific client or all clients.
+    This corresponds to the 'Start Investigation' action.
+    """
     from app.scripts.sync_data import sync_all_channels
     import asyncio
-    # Simple background task without complicating lifespan
-    asyncio.create_task(sync_all_channels())
-    return {"message": "데이터 동기화가 백그라운드에서 시작되었습니다."}
+    
+    # We pass the client_id and days to the generic sync routine
+    asyncio.create_task(sync_all_channels(client_id=client_id, days=days))
+    
+    msg = f"광고주({client_id})의 {f'{days}일치 ' if days else ''}데이터 조사가 시작되었습니다." if client_id else "전체 데이터 동기화가 시작되었습니다."
+    return {"status": "SUCCESS", "message": msg}
 
 @router.get("/naver-health")
 def check_naver_api_health(db: Session = Depends(get_db)):

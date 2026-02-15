@@ -7,19 +7,25 @@ from app.models.models import PlatformConnection, Keyword, PlatformType
 
 logger = logging.getLogger(__name__)
 
-async def sync_all_channels():
+async def sync_all_channels(client_id: str = None, days: int = None):
     """
     Unified ASYNC entry point for multi-channel synchronization.
-    Called by background tasks, management commands, or Cloud Scheduler.
-    Ensures data persistence even if some tasks fail.
+    If client_id is provided, only sync for that specific advertiser.
+    If days is provided, sync for that many past days.
     """
-    logger.info("=== Starting Async Robust Multi-Channel Data Sync Routine ===")
+    if client_id:
+        logger.info(f"=== Starting Async Data Sync Routine for Client: {client_id} (Days: {days}) ===")
+    else:
+        logger.info(f"=== Starting Async Robust Multi-Channel Data Sync Routine (Days: {days}) ===")
     
     # We use a context manager for DB session to ensure closure
     db = SessionLocal()
     try:
         # 1. Platform Performance Metrics (Supabase Tracked)
-        connections = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE").all()
+        query = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE")
+        if client_id:
+            query = query.filter(PlatformConnection.client_id == client_id)
+        connections = query.all()
         
         from app.services.sync_service import SyncService
         from app.tasks.sync_data import sync_naver_data
@@ -31,7 +37,7 @@ async def sync_all_channels():
                 if conn.platform == PlatformType.NAVER_AD:
                     # SyncService will create PENDING tasks for the backfill period
                     # sync_naver_data will correctly process these tasks through the new architecture
-                    sync_naver_data(db, str(conn.id))
+                    sync_naver_data(db, str(conn.id), days=days)
                     logger.info(f"Tracked sync cycle initiated for Naver Ads {conn.id}")
                 elif conn.platform == PlatformType.GOOGLE_ADS:
                     logger.info(f"Google Ads sync skipped (Pending implementation) for {conn.id}")

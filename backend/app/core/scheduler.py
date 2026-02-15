@@ -24,15 +24,8 @@ def start_scheduler():
             name='Sync all marketing channels every 6 hours',
             replace_existing=True
         )
-        # Add a one-time immediate job to run on startup
-        scheduler.add_job(
-            func=sync_wrapper,
-            trigger=None, # Run immediately
-            id='sync_marketing_data_initial',
-            name='Initial startup sync'
-        )
         scheduler.start()
-        logger.info("Background Scheduler started: Initial sync triggered, then every 6 hours.")
+        logger.info("Background Scheduler started: Sync scheduled every 6 hours.")
 
 def stop_scheduler():
     if scheduler.running:
