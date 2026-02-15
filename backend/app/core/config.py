@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     NAVER_AD_ACCESS_LICENSE: Optional[str] = None
     NAVER_AD_SECRET_KEY: Optional[str] = None
     
+    # Sync Optimization
+    SYNC_RAW_DAYS: int = 3       # 최근 며칠간의 원본 데이터를 매번 가져와 정합성 유지
+    SYNC_BACKFILL_DAYS: int = 7  # 누락된 RECONCILED 데이터를 채워넣는 소급 기간
+    
     # Naver Open API (Login / Trend)
     NAVER_CLIENT_ID: Optional[str] = None
     NAVER_CLIENT_SECRET: Optional[str] = None
