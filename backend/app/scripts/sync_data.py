@@ -48,13 +48,13 @@ async def sync_all_channels(client_id: str = None, days: int = None):
         # 2. SEO/Search Rank Scraping (DailyRank)
         keywords = db.query(Keyword).all()
         if not keywords:
-            logger.info("No keywords found. Seeding default keywords.")
-            seed_terms = ["임플란트", "교정치과", "송도치과"]
-            for term in seed_terms:
-                if not db.query(Keyword).filter(Keyword.term == term).first():
-                    db.add(Keyword(id=uuid.uuid4(), term=term, category="AUTO"))
-            db.commit()
-            keywords = db.query(Keyword).all()
+            logger.info("No keywords found. Skipping default seeding to avoid 'hidden' automatic data.")
+            # seed_terms = ["임플란트", "교정치과", "송도치과"]
+            # for term in seed_terms:
+            #     if not db.query(Keyword).filter(Keyword.term == term).first():
+            #         db.add(Keyword(id=uuid.uuid4(), term=term, category="AUTO"))
+            # db.commit()
+            # keywords = db.query(Keyword).all()
 
         # Import scrapers directly to bypass Celery worker dependency
         from app.worker.tasks import run_place_scraper, run_view_scraper
@@ -131,15 +131,15 @@ async def sync_all_channels(client_id: str = None, days: int = None):
             )
             if error_logs:
                 # Truncate errors if too long
-                err_text = "\\n".join(error_logs[:3])
-                if len(error_logs) > 3: err_text += f"\\n...외 {len(error_logs)-3}건"
-                summary_text += f"\\n[오류 발생]\\n{err_text}"
+                err_text = "\n".join(error_logs[:3])
+                if len(error_logs) > 3: err_text += f"\n...외 {len(error_logs)-3}건"
+                summary_text += f"\n[오류 발생]\n{err_text}"
             
             msg_title = "데이터 동기화 완료"
-            msg_content = "전체 데이터 동기화 작업이 완료되었습니다.\\n" + summary_text
+            msg_content = "전체 데이터 동기화 작업이 완료되었습니다.\n" + summary_text
             
             if client_id:
-                msg_content = f"광고주({client_id}) 데이터 동기화 완료.\\n" + summary_text
+                msg_content = f"광고주({client_id}) 데이터 동기화 완료.\n" + summary_text
             
             for admin in admins:
                 note = Notification(
