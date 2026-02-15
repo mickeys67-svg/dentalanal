@@ -91,3 +91,22 @@ def get_active_connections(client_id: str, db: Session = Depends(get_db)):
             "created_at": c.created_at
         } for c in connections
     ]
+
+@router.delete("/{connection_id}")
+def delete_connection(connection_id: str, db: Session = Depends(get_db)):
+    """
+    Delete a specific platform connection.
+    """
+    from uuid import UUID
+    try:
+        conn_uuid = UUID(connection_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid connection ID format")
+        
+    connection = db.query(PlatformConnection).filter(PlatformConnection.id == conn_uuid).first()
+    if not connection:
+        raise HTTPException(status_code=404, detail="Connection not found")
+        
+    db.delete(connection)
+    db.commit()
+    return {"status": "SUCCESS", "message": "Connection deleted"}

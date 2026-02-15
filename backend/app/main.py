@@ -92,38 +92,7 @@ async def run_startup_tasks():
                 session.add(admin)
                 logger.info(f"Seeding: Default Admin User ({admin_email}) created.")
             
-            # 3. Ensure Default Client exists
-            client_id = "00000000-0000-0000-0000-000000000001" # Fixed ID for seeding
-            client = session.query(Client).filter(Client.id == client_id).first()
-            if not client:
-                client = Client(id=client_id, agency_id=agency_id, name="Default Client")
-                session.add(client)
-                logger.info("Seeding: Default Client created.")
-
-            # 4. Ensure Naver Ads Connection exists if configured in .env
-            from app.models.models import PlatformConnection, PlatformType
-            from app.core.config import settings
-            if settings.NAVER_AD_CUSTOMER_ID:
-                connection = session.query(PlatformConnection).filter(
-                    PlatformConnection.client_id == client_id,
-                    PlatformConnection.platform == PlatformType.NAVER_AD
-                ).first()
-                if not connection:
-                    connection = PlatformConnection(
-                        client_id=client_id,
-                        platform=PlatformType.NAVER_AD,
-                        status="ACTIVE",
-                        account_id=settings.NAVER_AD_CUSTOMER_ID,
-                        credentials={
-                            "customer_id": settings.NAVER_AD_CUSTOMER_ID,
-                            "access_license": settings.NAVER_AD_ACCESS_LICENSE,
-                            "secret_key": settings.NAVER_AD_SECRET_KEY
-                        }
-                    )
-                    session.add(connection)
-                    logger.info("Seeding: Default Naver Ads connection created.")
-
-            # 5. Ensure Executive Dashboard Template exists
+            # 3. Ensure Executive Dashboard Template exists
             template_name = "Executive Dashboard"
             template = session.query(ReportTemplate).filter(ReportTemplate.name == template_name).first()
             if not template:

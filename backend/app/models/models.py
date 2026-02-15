@@ -99,12 +99,21 @@ class Client(Base):
     industry = Column(String, nullable=True)
     
     agency = relationship("Agency", back_populates="clients")
-    connections = relationship("PlatformConnection", back_populates="client")
+    connections = relationship("PlatformConnection", back_populates="client", cascade="all, delete-orphan")
+    swot_analyses = relationship("SWOTAnalysis", back_populates="client", cascade="all, delete-orphan")
+    strategy_goals = relationship("StrategyGoal", back_populates="client", cascade="all, delete-orphan")
+    tasks = relationship("CollaborativeTask", back_populates="client", cascade="all, delete-orphan")
+    reports = relationship("Report", back_populates="client", cascade="all, delete-orphan")
+    settlements = relationship("Settlement", back_populates="client", cascade="all, delete-orphan")
+    leads = relationship("Lead", back_populates="client", cascade="all, delete-orphan")
+    approval_requests = relationship("ApprovalRequest", back_populates="client", cascade="all, delete-orphan")
+    analysis_history = relationship("AnalysisHistory", back_populates="client", cascade="all, delete-orphan")
+    analytics_cache = relationship("AnalyticsCache", back_populates="client", cascade="all, delete-orphan")
 
 class PlatformConnection(Base):
     __tablename__ = "platform_connections"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
     credentials = Column(JSON, nullable=True) # encrypted or sensitive data
     access_token = Column(String(500), nullable=True)
@@ -118,23 +127,23 @@ class PlatformConnection(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     client = relationship("Client", back_populates="connections")
-    campaigns = relationship("Campaign", back_populates="connection")
+    campaigns = relationship("Campaign", back_populates="connection", cascade="all, delete-orphan")
 
 class Campaign(Base):
     __tablename__ = "campaigns"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    connection_id = Column(GUID, ForeignKey("platform_connections.id"), nullable=False)
+    connection_id = Column(GUID, ForeignKey("platform_connections.id", ondelete="CASCADE"), nullable=False)
     external_id = Column(String, nullable=True) # ID from the platform (Google/Meta ID)
     name = Column(String, nullable=False)
     status = Column(String, nullable=True)
     
     connection = relationship("PlatformConnection", back_populates="campaigns")
-    metrics = relationship("MetricsDaily", back_populates="campaign")
+    metrics = relationship("MetricsDaily", back_populates="campaign", cascade="all, delete-orphan")
 
 class MetricsDaily(Base):
     __tablename__ = "metrics_daily"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(GUID, ForeignKey("campaigns.id"), nullable=False)
+    campaign_id = Column(GUID, ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False)
     date = Column(DateTime, nullable=False)
     spend = Column(Float, default=0.0)
     impressions = Column(Integer, default=0)
@@ -197,7 +206,7 @@ class CrawlingLog(Base):
 class SWOTAnalysis(Base):
     __tablename__ = "swot_analyses"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     strengths = Column(JSON, nullable=True) # ["...", "..."]
     weaknesses = Column(JSON, nullable=True)
     opportunities = Column(JSON, nullable=True)
@@ -207,7 +216,7 @@ class SWOTAnalysis(Base):
 class StrategyGoal(Base):
     __tablename__ = "strategy_goals"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     smart_s = Column(String, nullable=True) # Specific
@@ -223,7 +232,7 @@ class StrategyGoal(Base):
 class CollaborativeTask(Base):
     __tablename__ = "collaborative_tasks"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     status = Column(String, default="PENDING") # PENDING, IN_PROGRESS, COMPLETED
@@ -247,7 +256,7 @@ class TaskComment(Base):
 class ApprovalRequest(Base):
     __tablename__ = "approval_requests"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     requester_id = Column(GUID, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
@@ -256,7 +265,7 @@ class ApprovalRequest(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     requester = relationship("User")
-    client = relationship("Client")
+    client = relationship("Client", back_populates="approval_requests")
 
 class Notice(Base):
     __tablename__ = "notices"
@@ -285,7 +294,7 @@ class Report(Base):
     __tablename__ = "reports"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     template_id = Column(GUID, ForeignKey("report_templates.id"), nullable=False)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable=False)
     data = Column(JSON, nullable=True) # Frozen data at the time of report generation
     status = Column(String, default="PENDING") # PENDING, COMPLETED, FAILED, ARCHIVED
@@ -318,7 +327,7 @@ class SettlementStatus(str, enum.Enum):
 class Settlement(Base):
     __tablename__ = "settlements"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     period = Column(String, nullable=False) # e.g., "2024-02"
     total_spend = Column(Float, default=0.0)
     fee_amount = Column(Float, default=0.0)
@@ -354,7 +363,7 @@ class Lead(Base):
     """Represents a potential patient or customer for the clinic."""
     __tablename__ = "leads"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=True)
     contact = Column(String, nullable=True)
     first_visit_date = Column(DateTime, nullable=False, server_default=func.now())
@@ -412,22 +421,24 @@ class AnalysisHistory(Base):
     """Stores metadata about each investigation/analysis performed."""
     __tablename__ = "analysis_history"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     keyword = Column(String, nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    client = relationship("Client")
+    client = relationship("Client", back_populates="analysis_history")
 
 class AnalyticsCache(Base):
     """Cache for expensive calculation results (Cohort, Segments)."""
     __tablename__ = "analytics_cache"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    client_id = Column(GUID, ForeignKey("clients.id"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     cache_key = Column(String(255), nullable=False, index=True)
     data = Column(JSON, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    client = relationship("Client", back_populates="analytics_cache")
 
 class RawScrapingLog(Base):
     """Stores unstructured scraping results in Supabase (replacing MongoDB)."""
@@ -450,7 +461,7 @@ class SyncTask(Base):
     """Tracks asynchronous synchronization tasks for robustness."""
     __tablename__ = "sync_tasks"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    connection_id = Column(GUID, ForeignKey("platform_connections.id"), nullable=False)
+    connection_id = Column(GUID, ForeignKey("platform_connections.id", ondelete="CASCADE"), nullable=False)
     target_date = Column(DateTime, nullable=False, index=True)
     status = Column(Enum(SyncTaskStatus), default=SyncTaskStatus.PENDING)
     error_message = Column(Text, nullable=True)
