@@ -8,6 +8,14 @@ env:
   PROJECT_ID: dentalanal
   REGION: us-west1
   REPO_NAME: dentalanal-repo
+  GCP_AUTH_KEY: "${{ secrets.GCP_SA_KEY }}"
+  NAVER_AD_CUSTOMER_ID: "${{ secrets.NAVER_AD_CUSTOMER_ID }}"
+  NAVER_AD_ACCESS_LICENSE: "${{ secrets.NAVER_AD_ACCESS_LICENSE }}"
+  NAVER_AD_SECRET_KEY: "${{ secrets.NAVER_AD_SECRET_KEY }}"
+  BRIGHT_DATA_CDP_URL: "${{ secrets.BRIGHT_DATA_CDP_URL }}"
+  NAVER_LOGIN_ID: "${{ secrets.NAVER_CLIENT_ID }}"
+  NAVER_LOGIN_SECRET: "${{ secrets.NAVER_CLIENT_SECRET }}"
+  NAVER_CALLBACK_URL: "${{ secrets.NAVER_REDIRECT_URI }}"
 
 jobs:
   deploy:
@@ -19,7 +27,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          credentials_json: "${{ env.GCP_AUTH_KEY }}"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -47,13 +55,13 @@ jobs:
             MONGODB_URL=mongodb+srv://mickeys67:mickeys67@cluster0.v8kxt.mongodb.net/dentalanal?retryWrites=true&w=majority
             ADMIN_EMAIL=admin@dmind.com
             ADMIN_PASSWORD=admin123!
-            NAVER_AD_CUSTOMER_ID=${{ secrets.NAVER_AD_CUSTOMER_ID }}
-            NAVER_AD_ACCESS_LICENSE=${{ secrets.NAVER_AD_ACCESS_LICENSE }}
-            NAVER_AD_SECRET_KEY=${{ secrets.NAVER_AD_SECRET_KEY }}
-            BRIGHT_DATA_CDP_URL=${{ secrets.BRIGHT_DATA_CDP_URL }}
-            NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
-            NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
-            NAVER_REDIRECT_URI=${{ secrets.NAVER_REDIRECT_URI }}
+            NAVER_AD_CUSTOMER_ID=${{ env.NAVER_AD_CUSTOMER_ID }}
+            NAVER_AD_ACCESS_LICENSE=${{ env.NAVER_AD_ACCESS_LICENSE }}
+            NAVER_AD_SECRET_KEY=${{ env.NAVER_AD_SECRET_KEY }}
+            BRIGHT_DATA_CDP_URL=${{ env.BRIGHT_DATA_CDP_URL }}
+            NAVER_CLIENT_ID=${{ env.NAVER_LOGIN_ID }}
+            NAVER_CLIENT_SECRET=${{ env.NAVER_LOGIN_SECRET }}
+            NAVER_REDIRECT_URI=${{ env.NAVER_CALLBACK_URL }}
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
 
       # Build and Push Frontend (After Backend is deployed to get the URL)

@@ -220,7 +220,7 @@ export const createTaskComment = async (taskId: string, content: string): Promis
 };
 
 export const getNotifications = async (): Promise<any[]> => {
-    const response = await api.get('/api/v1/notifications/');
+    const response = await api.get('/api/v1/notifications');
     return response.data;
 };
 

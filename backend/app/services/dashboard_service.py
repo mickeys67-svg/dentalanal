@@ -17,13 +17,21 @@ class DashboardService:
         """
         logger.info(f"Generating summary metrics for client_id: {client_id}")
         try:
+            # Determine best source (Fallback: RECONCILED > API > SCRAPER)
+            source_filter = 'RECONCILED'
+            recon_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'RECONCILED').limit(1).first()
+            if not recon_exists:
+                api_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'API').limit(1).first()
+                source_filter = 'API' if api_exists else 'SCRAPER'
+                logger.warning(f"No RECONCILED metrics found. Using {source_filter} fallback.")
+
             # KPI Query with Explicit Joins
             query = self.db.query(
                 func.sum(MetricsDaily.spend).label("total_spend"),
                 func.sum(MetricsDaily.clicks).label("total_clicks"),
                 func.sum(MetricsDaily.impressions).label("total_impressions"),
                 func.sum(MetricsDaily.conversions).label("total_conversions")
-            ).filter(MetricsDaily.source == 'RECONCILED')
+            ).filter(MetricsDaily.source == source_filter)
             
             if client_id:
                 query = query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
@@ -41,7 +49,7 @@ class DashboardService:
             logger.debug(f"KPIs - Spend: {total_spend}, Conversions: {total_conversions}")
 
             # Revenue Query with Explicit Joins
-            revenue_query = self.db.query(func.sum(MetricsDaily.revenue).label("total_revenue")).filter(MetricsDaily.source == 'RECONCILED')
+            revenue_query = self.db.query(func.sum(MetricsDaily.revenue).label("total_revenue")).filter(MetricsDaily.source == source_filter)
             if client_id:
                 revenue_query = revenue_query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
                                              .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
@@ -110,13 +118,20 @@ class DashboardService:
     def get_top_campaigns(self, client_id: str = None, limit: int = 5) -> List[Dict[str, Any]]:
         logger.info(f"Fetching top campaigns for client_id: {client_id}")
         try:
+            # Determine best source
+            source_filter = 'RECONCILED'
+            recon_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'RECONCILED').limit(1).first()
+            if not recon_exists:
+                api_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'API').limit(1).first()
+                source_filter = 'API' if api_exists else 'SCRAPER'
+
             query = self.db.query(
                 Campaign.name,
                 PlatformConnection.platform,
                 func.sum(MetricsDaily.spend).label("spend"),
                 func.sum(MetricsDaily.conversions).label("conversions")
             ).outerjoin(PlatformConnection, Campaign.connection_id == PlatformConnection.id)\
-             .outerjoin(MetricsDaily, (MetricsDaily.campaign_id == Campaign.id) & (MetricsDaily.source == 'RECONCILED'))
+             .outerjoin(MetricsDaily, (MetricsDaily.campaign_id == Campaign.id) & (MetricsDaily.source == source_filter))
             
             if client_id:
                 query = query.filter(PlatformConnection.client_id == client_id)
@@ -147,12 +162,19 @@ class DashboardService:
     def get_trend_data(self, client_id: str = None, days: int = 7) -> List[Dict[str, Any]]:
         logger.info(f"Fetching trend data for client_id: {client_id}")
         try:
+            # Trend source fallback
+            source_filter = 'RECONCILED'
+            recon_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'RECONCILED').limit(1).first()
+            if not recon_exists:
+                api_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'API').limit(1).first()
+                source_filter = 'API' if api_exists else 'SCRAPER'
+
             query = self.db.query(
                 MetricsDaily.date,
                 func.sum(MetricsDaily.spend).label("spend"),
                 func.sum(MetricsDaily.clicks).label("clicks"),
                 func.sum(MetricsDaily.conversions).label("conversions")
-            ).filter(MetricsDaily.source == 'RECONCILED')
+            ).filter(MetricsDaily.source == source_filter)
 
             if client_id:
                 query = query.join(Campaign, Campaign.id == MetricsDaily.campaign_id)\

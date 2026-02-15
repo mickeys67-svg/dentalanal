@@ -124,17 +124,24 @@ def sync_naver_data(db: Session, connection_id: str):
                     logger.error(f"Scraper item parsing error: {e}")
             db.commit()
     
-    # 3. Reconciliation Step
+    # 3. Reconciliation Step (Backfill last N days)
     if campaign_ids_to_reconcile:
-        logger.info(f"Starting reconciliation for {len(campaign_ids_to_reconcile)} campaigns...")
+        # Default to 7 days if not configured
+        backfill_days = getattr(settings, "SYNC_BACKFILL_DAYS", 7)
+        logger.info(f"Starting reconciliation backfill for last {backfill_days} days...")
         from app.services.reconciliation_service import DataReconciliationService
         recon_service = DataReconciliationService(db)
-        reconciled_count = 0
-        for cid in campaign_ids_to_reconcile:
-            res = recon_service.reconcile_metrics(cid, today)
-            if res: reconciled_count += 1
-        logger.info(f"Reconciliation completed. {reconciled_count} records finalized.")
+        
+        # Loop through configured days (including today)
+        for d_offset in range(backfill_days):
+            target_date = today - timedelta(days=d_offset)
+            reconciled_count = 0
+            for cid in campaign_ids_to_reconcile:
+                res = recon_service.reconcile_metrics(cid, target_date)
+                if res: reconciled_count += 1
+            if reconciled_count > 0:
+                logger.info(f"Finalized {reconciled_count} records for {target_date.strftime('%Y-%m-%d')}")
     else:
-        logger.warning(f"No campaigns to reconcile for {connection_id} (Check if API or Scraper returned any data for {today.strftime('%Y-%m-%d')})")
+        logger.warning(f"No campaigns to reconcile for {connection_id}")
 
     return
