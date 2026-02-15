@@ -70,11 +70,26 @@ class NaverAdsService:
                 client_id=client_id,
                 platform=PlatformType.NAVER_AD,
                 account_id=self.customer_id,
-                status="ACTIVE"
+                status="ACTIVE",
+                credentials={
+                    "customer_id": self.customer_id,
+                    "access_license": self.access_license,
+                    "secret_key": self.secret_key
+                }
             )
             self.db.add(connection)
             self.db.commit()
             self.db.refresh(connection)
+        else:
+            # Update credentials if they changed in .env/secrets
+            connection.credentials = {
+                "customer_id": self.customer_id,
+                "access_license": self.access_license,
+                "secret_key": self.secret_key
+            }
+            connection.account_id = self.customer_id
+            self.db.add(connection)
+            self.db.commit()
 
         # 2. 캠페인 동기화
         for nc in naver_campaigns:
