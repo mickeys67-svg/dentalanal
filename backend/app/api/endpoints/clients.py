@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.models import Client, Agency, User, UserRole
@@ -165,6 +166,22 @@ def delete_client(
         db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).delete(synchronize_session=False)
         db.query(AnalyticsCache).filter(AnalyticsCache.client_id == client_id).delete(synchronize_session=False)
         db.query(ApprovalRequest).filter(ApprovalRequest.client_id == client_id).delete(synchronize_session=False)
+
+        # 2.5 Try deleting from potential orphan tables (handling schema mismatch)
+        # Check information_schema to see if client_id exists before deleting, to avoid transaction errors
+        potential_orphans = ["notifications", "raw_scraping_logs", "crawling_logs", "targets", "keywords"]
+        for table in potential_orphans:
+            try:
+                # Use text() properly for the check
+                check_sql = text(f"SELECT 1 FROM information_schema.columns WHERE table_name = :tname AND column_name = 'client_id'")
+                # Pass parameters correctly
+                result = db.execute(check_sql, {"tname": table}).scalar()
+                
+                if result:
+                    db.execute(text(f"DELETE FROM {table} WHERE client_id = :cid"), {"cid": str(client_id)})
+            except Exception:
+                # If checking fails, just ignore
+                pass
 
         # 3. Finally delete the client
         db.delete(client)
