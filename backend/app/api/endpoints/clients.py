@@ -104,19 +104,71 @@ def delete_client(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Determine agency_id
-    DEFAULT_AGENCY_ID = "00000000-0000-0000-0000-000000000000"
-    agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
+    from app.models.models import (
+        Client, PlatformConnection, Campaign, MetricsDaily, 
+        SWOTAnalysis, StrategyGoal, CollaborativeTask, TaskComment,
+        Report, Settlement, SettlementDetail, Lead, LeadActivity,
+        LeadProfile, LeadEvent, AnalysisHistory, AnalyticsCache, SyncTask, SyncValidation
+    )
 
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="광고주를 찾을 수 없습니다.")
     
-    # Check permissions (except for SUPER_ADMIN)
-    if current_user.role != UserRole.SUPER_ADMIN and client.agency_id != agency_id:
+    # 1. Permission Check
+    DEFAULT_AGENCY_ID = "00000000-0000-0000-0000-000000000000"
+    agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
+    if current_user.role != UserRole.SUPER_ADMIN and str(client.agency_id) != str(agency_id):
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
 
-    # Explicitly clear any related items if SQLAlchemy cascade isn't enough at DB level
-    db.delete(client)
-    db.commit()
-    return {"status": "SUCCESS", "message": "광고주 정보와 모든 관련 데이터가 삭제되었습니다."}
+    try:
+        # 2. Manual Cleanup in reverse dependency order to workaround missing DB-level cascades
+        # Leads hierarchy
+        lead_ids = [l.id for l in db.query(Lead).filter(Lead.client_id == client_id).all()]
+        if lead_ids:
+            db.query(LeadActivity).filter(LeadActivity.lead_id.in_(lead_ids)).delete(synchronize_session=False)
+            db.query(LeadProfile).filter(LeadProfile.lead_id.in_(lead_ids)).delete(synchronize_session=False)
+            db.query(LeadEvent).filter(LeadEvent.lead_id.in_(lead_ids)).delete(synchronize_session=False)
+            db.query(Lead).filter(Lead.id.in_(lead_ids)).delete(synchronize_session=False)
+
+        # Marketing Data hierarchy
+        conn_ids = [c.id for c in db.query(PlatformConnection).filter(PlatformConnection.client_id == client_id).all()]
+        if conn_ids:
+            camp_ids = [camp.id for camp in db.query(Campaign).filter(Campaign.connection_id.in_(conn_ids)).all()]
+            if camp_ids:
+                db.query(MetricsDaily).filter(MetricsDaily.campaign_id.in_(camp_ids)).delete(synchronize_session=False)
+                db.query(Campaign).filter(Campaign.id.in_(camp_ids)).delete(synchronize_session=False)
+            
+            sync_task_ids = [s.id for s in db.query(SyncTask).filter(SyncTask.connection_id.in_(conn_ids)).all()]
+            if sync_task_ids:
+                db.query(SyncValidation).filter(SyncValidation.task_id.in_(sync_task_ids)).delete(synchronize_session=False)
+                db.query(SyncTask).filter(SyncTask.id.in_(sync_task_ids)).delete(synchronize_session=False)
+            
+            db.query(PlatformConnection).filter(PlatformConnection.id.in_(conn_ids)).delete(synchronize_session=False)
+
+        # Collaboration and Strategy
+        task_ids = [t.id for t in db.query(CollaborativeTask).filter(CollaborativeTask.client_id == client_id).all()]
+        if task_ids:
+            db.query(TaskComment).filter(TaskComment.task_id.in_(task_ids)).delete(synchronize_session=False)
+            db.query(CollaborativeTask).filter(CollaborativeTask.id.in_(task_ids)).delete(synchronize_session=False)
+
+        settlement_ids = [s.id for s in db.query(Settlement).filter(Settlement.client_id == client_id).all()]
+        if settlement_ids:
+            db.query(SettlementDetail).filter(SettlementDetail.settlement_id.in_(settlement_ids)).delete(synchronize_session=False)
+            db.query(Settlement).filter(Settlement.id.in_(settlement_ids)).delete(synchronize_session=False)
+
+        # Simple relations
+        db.query(SWOTAnalysis).filter(SWOTAnalysis.client_id == client_id).delete(synchronize_session=False)
+        db.query(StrategyGoal).filter(StrategyGoal.client_id == client_id).delete(synchronize_session=False)
+        db.query(Report).filter(Report.client_id == client_id).delete(synchronize_session=False)
+        db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).delete(synchronize_session=False)
+        db.query(AnalyticsCache).filter(AnalyticsCache.client_id == client_id).delete(synchronize_session=False)
+
+        # 3. Finally delete the client
+        db.delete(client)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"삭제 중 오류가 발생했습니다: {str(e)}")
+
+    return {"status": "SUCCESS", "message": "광고주 정보와 모든 관련 데이터가 완전히 삭제되었습니다."}

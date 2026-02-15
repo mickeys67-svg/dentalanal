@@ -480,7 +480,7 @@ class SyncValidation(Base):
     """Stores data integrity check results (Verification Layer)."""
     __tablename__ = "sync_validations"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    task_id = Column(GUID, ForeignKey("sync_tasks.id"), nullable=False)
+    task_id = Column(GUID, ForeignKey("sync_tasks.id", ondelete="CASCADE"), nullable=False)
     is_valid = Column(Integer, default=1) # 1: valid, 0: anomaly
     checks_passed = Column(JSON, nullable=True) # {"null_check": true, "anomaly_check": false}
     notes = Column(Text, nullable=True)
