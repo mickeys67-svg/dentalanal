@@ -28,8 +28,7 @@ export default function SignupPage() {
                 name,
                 password,
                 birth_date: birthDate,
-                role: UserRole.ADMIN,
-                agency_id: '00000000-0000-0000-0000-000000000000'
+                role: UserRole.ADMIN
             });
             setSuccess(true);
             setTimeout(() => {
