@@ -21,9 +21,9 @@ class NaverPlaceScraper(ScraperBase):
         # Note: Naver Map is dynamic, heavy JS. Playwright handles the rendering.
         # We look for the specific elements that represent the place list.
         
-        # Updated selectors based on debug_place.html analysis
-        # _list_item_sis14_40 is current mobile Map list item class
-        items = soup.select("li._list_item_sis14_40, li._item, li.rE4H3, li[data-id]") 
+        # Updated selectors to be more robust against dynamic class suffixes
+        # items = soup.select("li._list_item_sis14_40, li._item, li.rE4H3, li[data-id]") 
+        items = soup.select("li[class*='_list_item'], li._item, li.rE4H3, li[data-id]")
 
         if not items:
             self.logger.warning("No items found using selectors. Saving HTML to debug_place.html")
@@ -32,7 +32,7 @@ class NaverPlaceScraper(ScraperBase):
 
         for index, item in enumerate(items):
             try:
-                name_tag = item.select_one("strong._item_name_sis14_275, span.place_bluelink, span.YwYLL")
+                name_tag = item.select_one("strong[class*='_item_name'], strong._item_name_sis14_275, span.place_bluelink, span.YwYLL")
                 if name_tag:
                     name = name_tag.text.strip()
                     results.append({

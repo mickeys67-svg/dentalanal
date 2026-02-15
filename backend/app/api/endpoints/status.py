@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db, engine
 from app.models.models import Notification, User
@@ -8,18 +8,22 @@ import datetime
 router = APIRouter(tags=["Status"])
 
 @router.post("/sync")
-async def trigger_manual_sync(client_id: str = None, days: int = None, db: Session = Depends(get_db)):
+async def trigger_manual_sync(
+    background_tasks: BackgroundTasks,
+    client_id: str = None, 
+    days: int = None, 
+    db: Session = Depends(get_db)
+):
     """
     Manually triggers the sync pipeline for a specific client or all clients.
-    This corresponds to the 'Start Investigation' action.
+    Offloads to BackgroundTasks to prevent timeout.
     """
-    from app.scripts.sync_data import sync_all_channels
-    import asyncio
+    from app.scripts.sync_data import run_sync_process
     
-    # We pass the client_id and days to the generic sync routine
-    asyncio.create_task(sync_all_channels(client_id=client_id, days=days))
+    # Offload to BackgroundTasks
+    background_tasks.add_task(run_sync_process, client_id=client_id, days=days)
     
-    msg = f"광고주({client_id})의 {f'{days}일치 ' if days else ''}데이터 조사가 시작되었습니다." if client_id else "전체 데이터 동기화가 시작되었습니다."
+    msg = f"광고주({client_id})의 {f'{days}일치 ' if days else ''}데이터 조사가 시작되었습니다. 완료 시 알림이 발송됩니다." if client_id else "전체 데이터 동기화가 백그라운드에서 시작되었습니다."
     return {"status": "SUCCESS", "message": msg}
 
 @router.get("/naver-health")

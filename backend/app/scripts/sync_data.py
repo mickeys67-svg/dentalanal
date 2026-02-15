@@ -99,6 +99,41 @@ async def sync_all_channels(client_id: str = None, days: int = None):
     except Exception as e:
         logger.error(f"CRITICAL: Global sync process encountered a fatal error: {e}")
     finally:
+        # Create Completion Notification
+        try:
+            from app.models.models import User, UserRole, Notification
+            # Ensure session is active
+            admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+            msg_title = "데이터 동기화 완료"
+            msg_content = "전체 데이터 동기화 작업이 완료되었습니다."
+            if client_id:
+                msg_content = f"광고주({client_id}) 데이터 동기화 작업이 완료되었습니다."
+            
+            for admin in admins:
+                note = Notification(
+                    id=uuid.uuid4(),
+                    user_id=admin.id,
+                    title=msg_title,
+                    content=msg_content,
+                    type="NOTICE",
+                    is_read=0
+                )
+                db.add(note)
+            db.commit()
+        except Exception as notify_err:
+            logger.error(f"Failed to send completion notification: {notify_err}")
+        
         db.close()
     
     logger.info("=== Async Robust Synchronization Routine Completed ===")
+
+def run_sync_process(client_id: str = None, days: int = None):
+    """
+    Synchronous wrapper to run the async sync process in a background thread.
+    Ideal for BackgroundTasks in FastAPI.
+    """
+    try:
+        logging.getLogger(__name__).info(f"Starting sync process for client {client_id}")
+        asyncio.run(sync_all_channels(client_id, days))
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Sync process wrapper failed: {e}")
