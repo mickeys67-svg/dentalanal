@@ -64,6 +64,10 @@ async def sync_all_channels(client_id: str = None, days: int = None):
         service = AnalysisService(db)
         ad_scraper = NaverAdScraper()
 
+        # Stats tracking
+        stats = {"place": 0, "view": 0, "ad": 0}
+        error_logs = []
+
         for k in keywords:
             logger.info(f"-> Executing SEO/Ranking scraper tasks for keyword: {k.term}")
             
@@ -77,37 +81,65 @@ async def sync_all_channels(client_id: str = None, days: int = None):
                 
                 # Handling results safely
                 if not isinstance(place_results, Exception):
+                    p_count = len(place_results)
+                    stats["place"] += p_count
                     service.save_place_results(k.term, place_results)
-                    logger.info(f"VIEW rank sync completed for '{k.term}'")
+                    logger.info(f"PLACE sync completed for '{k.term}' ({p_count} items)")
                 else:
+                    error_logs.append(f"Place({k.term}): {str(place_results)}")
                     logger.error(f"PLACE sync error for {k.term}: {place_results}")
 
                 if not isinstance(view_results, Exception):
+                    v_count = len(view_results)
+                    stats["view"] += v_count
                     service.save_view_results(k.term, view_results)
-                    logger.info(f"VIEW rank sync completed for '{k.term}'")
+                    logger.info(f"VIEW sync completed for '{k.term}' ({v_count} items)")
                 else:
+                    error_logs.append(f"View({k.term}): {str(view_results)}")
                     logger.error(f"VIEW sync error for {k.term}: {view_results}")
 
                 # 2. Ad Scraping (Async)
-                ad_results = await ad_scraper.get_ad_rankings(k.term)
-                service.save_ad_results(k.term, ad_results)
-                logger.info(f"AD rank sync completed for '{k.term}'")
+                try:
+                    ad_results = await ad_scraper.get_ad_rankings(k.term)
+                    a_count = len(ad_results) if ad_results else 0
+                    stats["ad"] += a_count
+                    if ad_results:
+                        service.save_ad_results(k.term, ad_results)
+                    logger.info(f"AD rank sync completed for '{k.term}' ({a_count} items)")
+                except Exception as ad_err:
+                     error_logs.append(f"Ad({k.term}): {str(ad_err)}")
+                     logger.error(f"AD sync error for {k.term}: {ad_err}")
 
             except Exception as e:
+                error_logs.append(f"Batch({k.term}): {str(e)}")
                 logger.error(f"Scraper batch failed for '{k.term}': {e}")
 
     except Exception as e:
         logger.error(f"CRITICAL: Global sync process encountered a fatal error: {e}")
     finally:
-        # Create Completion Notification
+        db.close()
+        
+        # Create Completion Notification with Fresh Session
+        notify_db = SessionLocal()
         try:
             from app.models.models import User, UserRole, Notification
             # Ensure session is active
-            admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+            admins = notify_db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+            
+            summary_text = (
+                f"수집 결과: 플레이스 {stats['place']}건, VIEW {stats['view']}건, 광고 {stats['ad']}건.\n"
+            )
+            if error_logs:
+                # Truncate errors if too long
+                err_text = "\\n".join(error_logs[:3])
+                if len(error_logs) > 3: err_text += f"\\n...외 {len(error_logs)-3}건"
+                summary_text += f"\\n[오류 발생]\\n{err_text}"
+            
             msg_title = "데이터 동기화 완료"
-            msg_content = "전체 데이터 동기화 작업이 완료되었습니다."
+            msg_content = "전체 데이터 동기화 작업이 완료되었습니다.\\n" + summary_text
+            
             if client_id:
-                msg_content = f"광고주({client_id}) 데이터 동기화 작업이 완료되었습니다."
+                msg_content = f"광고주({client_id}) 데이터 동기화 완료.\\n" + summary_text
             
             for admin in admins:
                 note = Notification(
@@ -118,12 +150,12 @@ async def sync_all_channels(client_id: str = None, days: int = None):
                     type="NOTICE",
                     is_read=0
                 )
-                db.add(note)
-            db.commit()
+                notify_db.add(note)
+            notify_db.commit()
         except Exception as notify_err:
             logger.error(f"Failed to send completion notification: {notify_err}")
-        
-        db.close()
+        finally:
+            notify_db.close()
     
     logger.info("=== Async Robust Synchronization Routine Completed ===")
 

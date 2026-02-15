@@ -80,6 +80,11 @@ class NaverViewScraper(ScraperBase):
                 })
 
         if not results:
+             title = soup.title.string if soup.title else "No Title"
+             body_text = soup.body.get_text(separator=' ', strip=True)[:1000] if soup.body else "No Body"
+             self.logger.warning(f"No View results extracted. Title: {title}, HTML Len: {len(html)}")
+             self.logger.warning(f"Page Snippet: {body_text}")
+             
              self.logger.warning("No results extracted. Saving HTML to debug_view.html")
              with open("debug_view.html", "w", encoding="utf-8") as f:
                  f.write(html)

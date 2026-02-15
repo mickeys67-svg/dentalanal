@@ -27,9 +27,14 @@ class ScraperBase:
         async with async_playwright() as p:
             # Launch browser (Local or Remote)
             if cdp_url:
-                self.logger.info("Connecting to Bright Data Scraping Browser...")
-                browser = await p.chromium.connect_over_cdp(cdp_url)
+                self.logger.info(f"Connecting to Bright Data Scraping Browser... (URL starts with {cdp_url[:15]}...)")
+                try:
+                    browser = await p.chromium.connect_over_cdp(cdp_url)
+                except Exception as e:
+                    self.logger.error(f"Failed to connect to CDP: {e}")
+                    raise e
             else:
+                self.logger.info("Using Local Headless Browser (No CDP URL found in env)")
                 browser = await p.chromium.launch(headless=True)
             
             try:
@@ -54,8 +59,15 @@ class ScraperBase:
                 # assumed handled by cdp_url (wss://user:pass@...)
                 
                 # Navigate
-                await page.goto(url, wait_until="networkidle", timeout=60000) # Increased timeout for proxy
+                self.logger.info(f"Navigating to {url}...")
+                await page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 
+                # Explicit wait for SPA rendering (safer than networkidle for Maps)
+                await page.wait_for_timeout(5000) 
+                
+                title = await page.title()
+                self.logger.info(f"Page loaded. Title: {title}")
+
                 if scroll:
                     # Scroll down to trigger lazy loading
                     for _ in range(5):

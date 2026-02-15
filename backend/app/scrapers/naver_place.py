@@ -22,11 +22,15 @@ class NaverPlaceScraper(ScraperBase):
         # We look for the specific elements that represent the place list.
         
         # Updated selectors to be more robust against dynamic class suffixes
-        # items = soup.select("li._list_item_sis14_40, li._item, li.rE4H3, li[data-id]") 
-        items = soup.select("li[class*='_list_item'], li._item, li.rE4H3, li[data-id]")
+        items = soup.select("li[class*='_list_item'], li._item, li.rE4H3, li[data-id], .place_list li, .sc_list li")
 
         if not items:
-            self.logger.warning("No items found using selectors. Saving HTML to debug_place.html")
+            title = soup.title.string if soup.title else "No Title"
+            body_text = soup.body.get_text(separator=' ', strip=True)[:1000] if soup.body else "No Body"
+            self.logger.warning(f"No items found. Page Title: {title}, HTML Len: {len(html)}")
+            self.logger.warning(f"Page Text Snippet: {body_text}")
+            
+            # Still save to local file for local debugging if possible
             with open("debug_place.html", "w", encoding="utf-8") as f:
                 f.write(html)
 
