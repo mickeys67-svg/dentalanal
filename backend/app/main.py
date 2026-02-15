@@ -55,9 +55,23 @@ async def run_startup_tasks():
                 if not meta_exists:
                     logger.info("[MIGRATE] Adding 'meta_info' column to metrics_daily...")
                     conn.execute(text("ALTER TABLE metrics_daily ADD COLUMN meta_info JSONB;"))
+
+                # 5. Check clients columns (created_at)
+                client_created_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'clients' AND column_name = 'created_at');")).fetchone()[0]
+                if not client_created_exists:
+                    logger.info("[MIGRATE] Adding 'created_at' column to clients...")
+                    conn.execute(text("ALTER TABLE clients ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();"))
+                    conn.execute(text("ALTER TABLE clients ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();"))
+
+                # 6. Check analysis_history columns
+                hist_result_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'analysis_history' AND column_name = 'result_data');")).fetchone()[0]
+                if not hist_result_exists:
+                    logger.info("[MIGRATE] Adding 'result_data' column to analysis_history...")
+                    conn.execute(text("ALTER TABLE analysis_history ADD COLUMN result_data JSONB;"))
+                    conn.execute(text("ALTER TABLE analysis_history ADD COLUMN is_saved BOOLEAN DEFAULT FALSE;"))
                 
                 conn.commit()
-                logger.info("[OK] metrics_daily schema verified/patched.")
+                logger.info("[OK] database schema verified/patched.")
         except Exception as e:
             logger.error(f"Failed to run startup migration: {str(e)}")
             import traceback

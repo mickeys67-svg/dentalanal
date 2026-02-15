@@ -37,7 +37,7 @@ def get_clients(
     # Use user's agency_id if available, otherwise fallback to default agency
     agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
     
-    return db.query(Client).filter(Client.industry != None).filter(Client.agency_id == agency_id).order_by(Client.created_at.desc()).all()
+    return db.query(Client).filter(Client.agency_id == agency_id).order_by(Client.created_at.desc()).all()
 
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 def create_client(
@@ -99,10 +99,24 @@ def search_clients(
     ).limit(10).all()
 
 @router.delete("/{client_id}")
-def delete_client(client_id: UUID, db: Session = Depends(get_db)):
+def delete_client(
+    client_id: UUID, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Determine agency_id
+    DEFAULT_AGENCY_ID = "00000000-0000-0000-0000-000000000000"
+    agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
+
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="광고주를 찾을 수 없습니다.")
+    
+    # Check permissions (except for SUPER_ADMIN)
+    if current_user.role != UserRole.SUPER_ADMIN and client.agency_id != agency_id:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
+
+    # Explicitly clear any related items if SQLAlchemy cascade isn't enough at DB level
     db.delete(client)
     db.commit()
-    return {"status": "SUCCESS", "message": "Client deleted"}
+    return {"status": "SUCCESS", "message": "광고주 정보와 모든 관련 데이터가 삭제되었습니다."}

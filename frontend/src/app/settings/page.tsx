@@ -60,10 +60,14 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {clients.map(client => (
                         <div key={client.id} className="group bg-white border border-gray-100 rounded-3xl p-8 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-2 right-2 p-2 opacity-20 group-hover:opacity-100 transition-opacity z-10">
                                 <button
-                                    onClick={() => handleDeleteClient(client.id)}
-                                    className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteClient(client.id);
+                                    }}
+                                    className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                                    title="프로젝트 삭제"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>

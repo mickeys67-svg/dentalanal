@@ -242,12 +242,12 @@ class CollaborativeTask(Base):
     deadline = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    comments = relationship("TaskComment", back_populates="task")
+    comments = relationship("TaskComment", back_populates="task", cascade="all, delete-orphan")
 
 class TaskComment(Base):
     __tablename__ = "task_comments"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    task_id = Column(GUID, ForeignKey("collaborative_tasks.id"), nullable=False)
+    task_id = Column(GUID, ForeignKey("collaborative_tasks.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(GUID, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -349,7 +349,7 @@ class Settlement(Base):
 class SettlementDetail(Base):
     __tablename__ = "settlement_details"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    settlement_id = Column(GUID, ForeignKey("settlements.id"), nullable=False)
+    settlement_id = Column(GUID, ForeignKey("settlements.id", ondelete="CASCADE"), nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
     campaign_name = Column(String, nullable=True)
     spend = Column(Float, default=0.0)
@@ -373,15 +373,15 @@ class Lead(Base):
     channel = Column(String(50), nullable=True) # organic, paid, social, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    events = relationship("LeadEvent", back_populates="lead")
-    profile = relationship("LeadProfile", back_populates="lead", uselist=False)
-    activities = relationship("LeadActivity", back_populates="lead")
+    events = relationship("LeadEvent", back_populates="lead", cascade="all, delete-orphan")
+    profile = relationship("LeadProfile", back_populates="lead", uselist=False, cascade="all, delete-orphan")
+    activities = relationship("LeadActivity", back_populates="lead", cascade="all, delete-orphan")
 
 class LeadActivity(Base):
     """Aggregated monthly activity for a lead."""
     __tablename__ = "lead_activities"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    lead_id = Column(GUID, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
     activity_month = Column(String(7), nullable=False) # '2024-02'
     visits = Column(Integer, default=0)
     conversions = Column(Integer, default=0)
@@ -394,7 +394,7 @@ class LeadProfile(Base):
     """Detailed characteristics for segment analysis."""
     __tablename__ = "lead_profiles"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    lead_id = Column(GUID, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
     device_type = Column(String(20), nullable=True) # mobile, desktop
     region = Column(String(50), nullable=True) # Gangnam, etc.
     user_type = Column(String(20), nullable=True) # new, returning
@@ -410,7 +410,7 @@ class LeadEvent(Base):
     """Granular touchpoint events for attribution & journey analysis."""
     __tablename__ = "lead_events"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    lead_id = Column(GUID, ForeignKey("leads.id"), nullable=False)
+    lead_id = Column(GUID, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
     event_type = Column(String(50), nullable=False) # visit, click, conversion
     platform = Column(Enum(PlatformType), nullable=True)
     segment_tags = Column(JSON, nullable=True)
