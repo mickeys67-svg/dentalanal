@@ -11,8 +11,7 @@ class AnalysisService:
     def __init__(self, db: Session):
         self.db = db
         self.logger = logging.getLogger(__name__)
-        from app.services.mongo_service import MongoService
-        self.mongo = MongoService()
+        # [MIGRATE] Transitioned from MongoDB to Supabase (Option A)
 
     def _get_or_create_keyword(self, term: str) -> Keyword:
         keyword = self.db.query(Keyword).filter(Keyword.term == term).first()
@@ -34,9 +33,24 @@ class AnalysisService:
             self.db.refresh(target)
         return target
 
+    def _save_raw_log_to_supabase(self, platform: PlatformType, keyword: str, data: Any):
+        """Saves unstructured data to Supabase JSONB table (replacing MongoDB)."""
+        try:
+            from app.models.models import RawScrapingLog
+            log_entry = RawScrapingLog(
+                id=uuid4(),
+                platform=platform,
+                keyword=keyword,
+                data=data
+            )
+            self.db.add(log_entry)
+            self.db.flush() 
+        except Exception as e:
+            self.logger.error(f"Failed to save raw log to Supabase: {e}")
+
     def save_place_results(self, keyword_str: str, results: List[dict]):
-        # Save Raw Data to MongoDB
-        self.mongo.save_raw_result(PlatformType.NAVER_PLACE.value, keyword_str, results)
+        # Save Raw Data to Supabase (Option A Consolidation)
+        self._save_raw_log_to_supabase(PlatformType.NAVER_PLACE, keyword_str, results)
         
         keyword = self._get_or_create_keyword(keyword_str)
         
@@ -66,8 +80,8 @@ class AnalysisService:
         self.db.commit()
 
     def save_view_results(self, keyword_str: str, results: List[dict]):
-        # Save Raw Data to MongoDB
-        self.mongo.save_raw_result(PlatformType.NAVER_VIEW.value, keyword_str, results)
+        # Save Raw Data to Supabase (Option A Consolidation)
+        self._save_raw_log_to_supabase(PlatformType.NAVER_VIEW, keyword_str, results)
         
         keyword = self._get_or_create_keyword(keyword_str)
         
@@ -96,8 +110,8 @@ class AnalysisService:
         self.db.commit()
 
     def save_ad_results(self, keyword_str: str, results: List[dict]):
-        # Save Raw Data to MongoDB
-        self.mongo.save_raw_result(PlatformType.NAVER_AD.value, keyword_str, results)
+        # Save Raw Data to Supabase (Option A Consolidation)
+        self._save_raw_log_to_supabase(PlatformType.NAVER_AD, keyword_str, results)
         
         keyword = self._get_or_create_keyword(keyword_str)
         

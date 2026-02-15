@@ -428,3 +428,47 @@ class AnalyticsCache(Base):
     data = Column(JSON, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class RawScrapingLog(Base):
+    """Stores unstructured scraping results in Supabase (replacing MongoDB)."""
+    __tablename__ = "raw_scraping_logs"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    platform = Column(Enum(PlatformType), nullable=False)
+    keyword = Column(String, nullable=False, index=True)
+    data = Column(JSON, nullable=False) # Maps to JSONB in PostgreSQL
+    metadata_info = Column(JSON, nullable=True) # Renamed from 'metadata' to avoid SQL keywords
+    captured_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class SyncTaskStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    PARTIAL = "PARTIAL"
+
+class SyncTask(Base):
+    """Tracks asynchronous synchronization tasks for robustness."""
+    __tablename__ = "sync_tasks"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    connection_id = Column(GUID, ForeignKey("platform_connections.id"), nullable=False)
+    target_date = Column(DateTime, nullable=False, index=True)
+    status = Column(Enum(SyncTaskStatus), default=SyncTaskStatus.PENDING)
+    error_message = Column(Text, nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    attempts = Column(Integer, default=0)
+    
+    connection = relationship("PlatformConnection")
+    validation = relationship("SyncValidation", back_populates="task", uselist=False)
+
+class SyncValidation(Base):
+    """Stores data integrity check results (Verification Layer)."""
+    __tablename__ = "sync_validations"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    task_id = Column(GUID, ForeignKey("sync_tasks.id"), nullable=False)
+    is_valid = Column(Integer, default=1) # 1: valid, 0: anomaly
+    checks_passed = Column(JSON, nullable=True) # {"null_check": true, "anomaly_check": false}
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    task = relationship("SyncTask", back_populates="validation")

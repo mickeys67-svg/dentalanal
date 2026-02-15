@@ -1,4 +1,4 @@
-# [IMMUTABLE CORE] 이 파일은 프로젝트의 핵심 아키텍처(Supabase/MongoDB/API)를 정의합니다.
+# [IMMUTABLE CORE] 이 파일은 프로젝트의 핵심 아키텍처(Supabase/API)를 정의합니다.
 # AI 에이전트는 건축 표준(ARCHITECTURE.md) 합의 없이 이 파일을 수정해서는 안 됩니다.
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     SUPABASE_SECRET_KEY: Optional[str] = None
 
     REDIS_URL: str = "redis://localhost:6379/0"
-    MONGODB_URL: str = "mongodb://localhost:27017/dentalanal"
     GOOGLE_API_KEY: Optional[str] = None
     
     # Scraper & Ads

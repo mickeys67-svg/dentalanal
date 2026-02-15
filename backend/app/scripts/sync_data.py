@@ -18,26 +18,25 @@ async def sync_all_channels():
     # We use a context manager for DB session to ensure closure
     db = SessionLocal()
     try:
-        # 1. Platform Performance Metrics (Supabase + MongoDB)
+        # 1. Platform Performance Metrics (Supabase Tracked)
         connections = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE").all()
         
-        # We'll import inside to avoid circular deps if any
+        from app.services.sync_service import SyncService
         from app.tasks.sync_data import sync_naver_data
+        sync_service = SyncService(db)
         
         for conn in connections:
             try:
-                logger.info(f"-> Syncing connection: {conn.platform} (ID: {conn.id}, Client: {conn.client_id})")
+                logger.info(f"-> Scheduling tracked sync for connection: {conn.platform} (ID: {conn.id})")
                 if conn.platform == PlatformType.NAVER_AD:
-                    # sync_naver_data is now expected to be handled or updated for async safety
-                    # For now, keeping it sync but wrapping if needed. Or making it async later.
-                    # Since it uses requests, we'll keep it as is but careful with loops.
+                    # SyncService will create PENDING tasks for the backfill period
+                    # sync_naver_data will correctly process these tasks through the new architecture
                     sync_naver_data(db, str(conn.id))
-                    logger.info(f"Successfully synced Naver Ads for {conn.id}")
+                    logger.info(f"Tracked sync cycle initiated for Naver Ads {conn.id}")
                 elif conn.platform == PlatformType.GOOGLE_ADS:
                     logger.info(f"Google Ads sync skipped (Pending implementation) for {conn.id}")
             except Exception as conn_error:
-                logger.error(f"!!! Failed to sync connection {conn.id}: {conn_error}")
-                db.rollback()
+                logger.error(f"!!! Error initiating sync for connection {conn.id}: {conn_error}")
                 continue
 
         # 2. SEO/Search Rank Scraping (DailyRank)
