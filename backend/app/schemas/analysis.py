@@ -20,3 +20,5 @@ class EfficiencyReviewResponse(BaseModel):
     total_conversions: int
     ai_review: Optional[str] = None
     period: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None

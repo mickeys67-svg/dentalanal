@@ -175,20 +175,23 @@ class AnalysisService:
                 DailyRank.rank <= top_n
             ).count()
             
-            # Find top rank for target
-            best_rank_row = self.db.query(func.min(DailyRank.rank)).filter(
-                DailyRank.keyword_id == keyword.id,
-                DailyRank.platform == platform,
-                DailyRank.target_id == target.id
-            ).first()
-            top_rank = best_rank_row[0] if best_rank_row else None
+        # Find actual period for this keyword/platform ranks
+        # For a single snapshot, we find the latest capture time
+        latest_capture = self.db.query(func.max(DailyRank.captured_at)).filter(
+            DailyRank.keyword_id == keyword.id,
+            DailyRank.platform == platform
+        ).scalar()
+        
+        period_str = latest_capture.strftime("%Y-%m-%d %H:%M") if latest_capture else None
 
         return {
             "sov": (hits / denominator) * 100 if denominator > 0 else 0,
             "total": denominator,
             "hits": hits,
             "keyword": keyword_str,
-            "top_rank": top_rank
+            "top_rank": top_rank,
+            "period_start": period_str,
+            "period_end": period_str
         }
 
     def get_daily_ranks(self, keyword_str: str, platform: PlatformType) -> List[dict]:
@@ -281,11 +284,15 @@ class AnalysisService:
         # Sort by rank_count desc, then avg_rank asc
         competitors.sort(key=lambda x: (-x["rank_count"], x["avg_rank"]))
         
+        period_str = latest_time.strftime("%Y-%m-%d %H:%M") if latest_time else None
+
         return {
             "keyword": keyword_str,
             "platform": platform.value,
             "top_n": top_n,
-            "competitors": competitors
+            "competitors": competitors,
+            "period_start": period_str,
+            "period_end": period_str
         }
 
     def get_weekly_sov_summary(self, target_name: str, keywords: List[str], platform: PlatformType) -> dict:
@@ -310,22 +317,45 @@ class AnalysisService:
             
         avg_sov = total_sov / len(keywords) if keywords else 0
         
+        period_start_str = start_date.strftime("%Y-%m-%d")
+        period_end_str = end_date.strftime("%Y-%m-%d")
+
         return {
             "target": target_name,
             "avg_sov": avg_sov,
-            "period": f"{start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}",
+            "period_start": period_start_str,
+            "period_end": period_end_str,
+            "period": f"{period_start_str} ~ {period_end_str}",
             "keyword_details": details
         }
 
-    def get_funnel_data(self, client_id: str, days: int = 30) -> List[dict]:
+    def get_funnel_data(self, client_id: str, start_date: datetime.date = None, end_date: datetime.date = None, days: int = 30) -> dict:
         """
         Calculate funnel stages: Impressions -> Clicks -> Conversions with rates.
         """
         from app.models.models import MetricsDaily, Campaign, PlatformConnection
         
-        start_date = datetime.datetime.now() - datetime.timedelta(days=days)
+        # Determine date range
+        if not end_date:
+            end_date = datetime.date.today()
+        if not start_date:
+            start_date = end_date - datetime.timedelta(days=days)
         
-        # Aggregate metrics for the client with date filtering
+        # Base query with filters
+        query_base = self.db.query(MetricsDaily).join(Campaign).join(PlatformConnection).filter(
+            PlatformConnection.client_id == client_id,
+            MetricsDaily.date >= start_date,
+            MetricsDaily.date <= end_date,
+            MetricsDaily.source == 'RECONCILED'
+        )
+
+        # Get actual period found in DB
+        actual_period = self.db.query(
+            func.min(MetricsDaily.date),
+            func.max(MetricsDaily.date)
+        ).select_from(query_base.subquery()).first()
+        
+        # Aggregate metrics
         results = self.db.query(
             func.sum(MetricsDaily.impressions).label("impressions"),
             func.sum(MetricsDaily.clicks).label("clicks"),
@@ -336,6 +366,7 @@ class AnalysisService:
          .filter(
             PlatformConnection.client_id == client_id,
             MetricsDaily.date >= start_date,
+            MetricsDaily.date <= end_date,
             MetricsDaily.source == 'RECONCILED'
         ).first()
 
@@ -343,17 +374,22 @@ class AnalysisService:
         clicks = int(results.clicks or 0)
         conversions = int(results.conversions or 0)
         
-        if impressions == 0:
-            self.logger.info("No funnel data found for client_id: %s", client_id)
-
         ctr = (clicks / impressions * 100) if impressions > 0 else 0
         cvr = (conversions / clicks * 100) if clicks > 0 else 0
 
-        return [
-            {"stage": "노출 (Impressions)", "value": impressions, "rate": None},
-            {"stage": "클릭 (Clicks)", "value": clicks, "rate": round(ctr, 2), "unit": "% (CTR)"},
-            {"stage": "전환 (Conversions)", "value": conversions, "rate": round(cvr, 2), "unit": "% (CVR)"}
-        ]
+        period_start_str = actual_period[0].strftime("%Y-%m-%d") if actual_period and actual_period[0] else None
+        period_end_str = actual_period[1].strftime("%Y-%m-%d") if actual_period and actual_period[1] else None
+
+        return {
+            "items": [
+                {"stage": "노출 (Impressions)", "value": impressions, "rate": None},
+                {"stage": "클릭 (Clicks)", "value": clicks, "rate": round(ctr, 2), "unit": "% (CTR)"},
+                {"stage": "전환 (Conversions)", "value": conversions, "rate": round(cvr, 2), "unit": "% (CVR)"}
+            ],
+            "period_start": period_start_str,
+            "period_end": period_end_str,
+            "period": f"{period_start_str} ~ {period_end_str}" if period_start_str else "측정 기간 데이터 없음"
+        }
 
     def get_cohort_data(self, client_id: str) -> List[dict]:
         """Calculates real cohort retention data using Leads and LeadActivities tables."""
@@ -476,29 +512,43 @@ class AnalysisService:
         elif w_type == "SOV": return self.get_weekly_sov_summary(report.client.name, widget.get("keywords", []), PlatformType.NAVER_PLACE)
         return None
 
-    def get_efficiency_data(self, client_id: str, days: int = 30) -> dict:
+    def get_efficiency_data(self, client_id: str, start_date: datetime.date = None, end_date: datetime.date = None, days: int = 30) -> dict:
         """
         Extract spend and conversion data per campaign/platform to analyze efficiency.
         """
         from app.models.models import MetricsDaily, Campaign, PlatformConnection
         
-        start_date = datetime.datetime.now() - datetime.timedelta(days=days)
+        # Determine date range
+        if not end_date:
+            end_date = datetime.date.today()
+        if not start_date:
+            start_date = end_date - datetime.timedelta(days=days)
         
+        # Base query with filters
+        query_base = self.db.query(MetricsDaily).join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
+         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
+         .filter(
+             PlatformConnection.client_id == client_id,
+             MetricsDaily.date >= start_date,
+             MetricsDaily.date <= end_date,
+             MetricsDaily.source == 'RECONCILED'
+         )
+
+        # Get actual period found in DB
+        actual_period = self.db.query(
+            func.min(MetricsDaily.date),
+            func.max(MetricsDaily.date)
+        ).select_from(query_base.subquery()).first()
+
         # Get metrics aggregated by campaign
-        results = self.db.query(
+        results = query_base.with_entities(
             Campaign.name,
             PlatformConnection.platform,
             func.sum(MetricsDaily.spend).label("spend"),
             func.sum(MetricsDaily.clicks).label("clicks"),
             func.sum(MetricsDaily.conversions).label("conversions"),
             func.sum(MetricsDaily.impressions).label("impressions")
-        ).join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
-         .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
-         .filter(
-             PlatformConnection.client_id == client_id,
-             MetricsDaily.date >= start_date,
-             MetricsDaily.source == 'RECONCILED'
-         ).group_by(Campaign.name, PlatformConnection.platform).all()
+        ).group_by(Campaign.name, PlatformConnection.platform).all()
 
         items = []
         total_spend = 0
@@ -531,10 +581,15 @@ class AnalysisService:
             
         overall_roas = (total_conv * 50000 / total_spend * 100) if total_spend > 0 else 0
         
+        period_start_str = actual_period[0].strftime("%Y-%m-%d") if actual_period and actual_period[0] else None
+        period_end_str = actual_period[1].strftime("%Y-%m-%d") if actual_period and actual_period[1] else None
+
         return {
             "items": items,
             "overall_roas": round(overall_roas, 1),
             "total_spend": total_spend,
             "total_conversions": total_conv,
-            "period": f"최근 {days}일 ({start_date.strftime('%Y-%m-%d')} ~ 현재)"
+            "period": f"{period_start_str} ~ {period_end_str}" if period_start_str else f"최근 {days}일 (데이터 없음)",
+            "period_start": period_start_str,
+            "period_end": period_end_str
         }

@@ -58,6 +58,8 @@ class CompetitorAnalysisResult(BaseModel):
     platform: str
     top_n: int
     competitors: List[CompetitorRankItem]
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
 
 class AIAnalysisRequest(BaseModel):
     keyword: str
@@ -74,3 +76,5 @@ class SOVAnalysisResult(BaseModel):
     target_hits: int
     sov_score: float # Percentage
     top_rank: Optional[int] = None
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None

@@ -117,9 +117,20 @@ def analyze_sov(
     return results
 
 @router.get("/funnel/{client_id}")
-def get_funnel_analysis(client_id: str, days: int = 30, db: Session = Depends(get_db)):
+def get_funnel_analysis(
+    client_id: str, 
+    days: int = 30, 
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
     service = AnalysisService(db)
-    return service.get_funnel_data(client_id, days)
+    
+    # Parse dates if provided
+    s_date = datetime.strptime(start_date, "%Y-%m-%d").date() if start_date else None
+    e_date = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+    
+    return service.get_funnel_data(client_id, start_date=s_date, end_date=e_date, days=days)
 
 @router.get("/cohort/{client_id}")
 def get_cohort_analysis(client_id: str, db: Session = Depends(get_db)):
@@ -165,6 +176,8 @@ def get_efficiency_review(
     client_id: str,
     background_tasks: BackgroundTasks,
     days: int = 30,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     # Trigger Sync to ensure fresh ROAS/Spend data
@@ -190,8 +203,12 @@ def get_efficiency_review(
     service = AnalysisService(db)
     ai_service = AIService()
     
+    # Parse dates if provided
+    s_date = datetime.strptime(start_date, "%Y-%m-%d").date() if start_date else None
+    e_date = datetime.strptime(end_date, "%Y-%m-%d").date() if end_date else None
+
     # 1. Get raw efficiency data
-    data = service.get_efficiency_data(validated_id, days)
+    data = service.get_efficiency_data(validated_id, start_date=s_date, end_date=e_date, days=days)
     
     # 2. Generate AI review (structured)
     if data["items"]:
