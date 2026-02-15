@@ -426,6 +426,8 @@ class AnalysisHistory(Base):
     client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     keyword = Column(String, nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
+    result_data = Column(JSON, nullable=True) # Actual analysis content (reports, ranks, etc.)
+    is_saved = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     client = relationship("Client", back_populates="analysis_history")

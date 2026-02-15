@@ -16,6 +16,10 @@ from app.services.ai_service import AIService
 from app.services.benchmark_service import BenchmarkService
 from app.models.models import PlatformType, User, DailyRank, Target, Keyword, TargetType, Client
 from app.api.endpoints.auth import get_current_user
+from fastapi.responses import StreamingResponse
+import io
+import json
+import csv
 from pydantic import BaseModel, Field
 from uuid import uuid4
 from typing import List, Union, Optional, Dict
@@ -28,10 +32,6 @@ def get_ai_report(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    # 0. Trigger Sync in background
-    from app.scripts.sync_data import sync_all_channels
-    background_tasks.add_task(sync_all_channels)
-    
     analysis_service = AnalysisService(db)
     ai_service = AIService()
     
@@ -181,10 +181,6 @@ def get_efficiency_review(
     end_date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    # Trigger Sync to ensure fresh ROAS/Spend data
-    from app.scripts.sync_data import sync_all_channels
-    background_tasks.add_task(sync_all_channels)
-    
     # Handle "undefined" or other invalid strings
     if client_id == "undefined" or client_id == "null":
         return {
@@ -324,6 +320,8 @@ class HistoryCreate(BaseModel):
     client_id: UUID
     keyword: str
     platform: str
+    result_data: Optional[Dict] = None
+    is_saved: bool = False
 
 @router.post("/history")
 def save_analysis_history(
@@ -331,17 +329,74 @@ def save_analysis_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Save record of analysis execution."""
+    """Save record of analysis execution, potentially with results."""
     from app.models.models import AnalysisHistory
     history = AnalysisHistory(
         id=uuid4(),
         client_id=request.client_id,
         keyword=request.keyword,
-        platform=request.platform
+        platform=request.platform,
+        result_data=request.result_data,
+        is_saved=request.is_saved
     )
     db.add(history)
     db.commit()
     return {"status": "SUCCESS", "id": str(history.id)}
+
+@router.put("/history/{history_id}/save")
+def finalize_and_save_history(
+    history_id: UUID,
+    result_data: Dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Manually finalize and save the investigation results."""
+    from app.models.models import AnalysisHistory
+    history = db.query(AnalysisHistory).filter(AnalysisHistory.id == history_id).first()
+    if not history:
+        raise HTTPException(status_code=404, detail="조사 기록을 찾을 수 없습니다.")
+    
+    history.result_data = result_data
+    history.is_saved = True
+    db.commit()
+    return {"status": "SUCCESS", "message": "결과가 성공적으로 저장되었습니다."}
+
+@router.get("/history/{history_id}/download")
+def download_analysis_result(
+    history_id: UUID,
+    format: str = "json", # json or csv
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Download the saved analysis result."""
+    from app.models.models import AnalysisHistory
+    history = db.query(AnalysisHistory).filter(AnalysisHistory.id == history_id).first()
+    if not history or not history.result_data:
+        raise HTTPException(status_code=404, detail="저장된 결과 데이터가 없습니다.")
+
+    filename = f"analysis_{history.keyword}_{history.created_at.strftime('%Y%m%d')}"
+    
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        # Assuming result_data is a dict, we flatten it a bit or just dump as rows
+        writer.writerow(["Field", "Value"])
+        for k, v in history.result_data.items():
+            writer.writerow([k, str(v)])
+        
+        output.seek(0)
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode('utf-8-sig')),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}.csv"}
+        )
+    
+    # Default to JSON
+    return StreamingResponse(
+        io.BytesIO(json.dumps(history.result_data, indent=2, ensure_ascii=False).encode('utf-8')),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}.json"}
+    )
 
 @router.get("/history/{client_id}")
 def get_analysis_history(
