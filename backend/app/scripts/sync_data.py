@@ -124,7 +124,7 @@ async def sync_all_channels(client_id: str = None, days: int = None):
         try:
             from app.models.models import User, UserRole, Notification
             # Ensure session is active
-            admins = notify_db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+            admins = notify_db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
             
             summary_text = (
                 f"수집 결과: 플레이스 {stats['place']}건, VIEW {stats['view']}건, 광고 {stats['ad']}건.\n"

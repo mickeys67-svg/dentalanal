@@ -38,7 +38,7 @@ def execute_place_sync(keyword: str):
             service.save_place_results(keyword, results)
         
         # Notify Admins
-        admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
         count = len(results) if results else 0
         
         if error_msg:
@@ -97,7 +97,7 @@ def execute_view_sync(keyword: str):
             service.save_view_results(keyword, results)
         
         # Notify Admins
-        admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
         count = len(results) if results else 0
         
         if error_msg:
@@ -157,7 +157,7 @@ def execute_ad_sync(keyword: str):
             service.save_ad_results(keyword, results)
         
         # Notify Admins
-        admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
+        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
         count = len(results) if results else 0
         
         if error_msg:

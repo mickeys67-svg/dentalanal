@@ -198,6 +198,23 @@ def delete_client(
     except Exception as e:
         db.rollback()
         logging.getLogger(__name__).error(f"Client deletion failed: {e}")
+        
+        # Log failure to Notifications so user can see what happened
+        try:
+            from app.models.models import Notification
+            err_note = Notification(
+                id=uuid.uuid4(),
+                user_id=current_user.id,
+                title="광고주 삭제 실패",
+                content=f"삭제 중 오류가 발생했습니다: {str(e)}",
+                type="NOTICE",
+                is_read=0
+            )
+            db.add(err_note)
+            db.commit()
+        except:
+            pass
+
         # Return exact error for debugging
         raise HTTPException(status_code=500, detail=f"Data Deletion Error: {str(e)}")
 
