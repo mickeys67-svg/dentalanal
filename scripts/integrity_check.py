@@ -9,7 +9,6 @@ CRITICAL_FILES = [
     "backend/app/tasks/sync_data.py",
     "backend/app/services/naver_ads.py",
     "backend/app/services/reconciliation_service.py",
-    "backend/app/services/mongo_service.py",
     "ARCHITECTURE.md",
     "backend/requirements.txt"
 ]
@@ -62,7 +61,7 @@ def check_integrity(save_new=False):
         print("[Integrity Violation] Critical files have been modified!")
         for v in violations:
             print(f"   - {v}")
-        print("\nThese files control core architecture (Supabase, MongoDB, API Reconciliation).")
+        print("\nThese files control core architecture (Supabase, API Reconciliation).")
         print("Use ARCHITECTURE.md for consensus before making changes.")
         # 에이전트가 이 오류를 보고 멈추게 하기 위해 0이 아닌 종료 코드 반환
         sys.exit(1)

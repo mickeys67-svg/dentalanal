@@ -30,8 +30,7 @@ def start_dev_session():
 
     # 3. 아키텍처 원칙 강제 출력
     print("\n💡 [기억하십시오] 핵심 아키텍처 원칙:")
-    print("   - 정형 데이터: Supabase (PostgreSQL)")
-    print("   - 비정형 데이터: MongoDB (Atlas)")
+    print("   - 모든 데이터: Supabase (PostgreSQL)")
     print("   - 데이터 정합성: API 우선, Scraper 백업 -> RECONCILED 생성")
     print("   - 타임존: 모든 마케팅 데이터는 KST(UTC+9) 고정")
     

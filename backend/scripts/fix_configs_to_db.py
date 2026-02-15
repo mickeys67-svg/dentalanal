@@ -29,7 +29,6 @@ def init_system_configs():
         "NAVER_CLIENT_SECRET",
         "BRIGHT_DATA_CDP_URL",
         "DATABASE_URL",
-        "MONGODB_URL"
     ]
     
     for key in important_keys:

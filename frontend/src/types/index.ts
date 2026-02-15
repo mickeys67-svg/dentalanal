@@ -236,6 +236,7 @@ export interface ReportTemplate {
     name: string;
     description?: string;
     config: {
+        layout?: string;
         widgets: ReportWidget[];
     };
     created_at: string;

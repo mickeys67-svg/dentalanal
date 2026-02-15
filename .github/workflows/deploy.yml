@@ -52,7 +52,6 @@ jobs:
           env_vars: |
             DATABASE_PASSWORD=3AiLcoNojCHgZpTw
             SUPABASE_URL=https://uujxtnvpqdwcjqhsoshi.supabase.co
-            MONGODB_URL=mongodb+srv://mickeys67:mickeys67@cluster0.v8kxt.mongodb.net/dentalanal?retryWrites=true&w=majority
             ADMIN_EMAIL=admin@dmind.com
             ADMIN_PASSWORD=admin123!
             NAVER_AD_CUSTOMER_ID=${{ env.NAVER_AD_CUSTOMER_ID }}
