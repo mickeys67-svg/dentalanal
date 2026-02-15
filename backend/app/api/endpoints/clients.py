@@ -124,10 +124,13 @@ def delete_client(
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
 
     try:
-        # 2. Manual Cleanup in reverse dependency order to workaround missing DB-level cascades
+        logging.getLogger(__name__).info(f"Starting deletion for client {client_id}")
+        
+        # 2. Manual Cleanup in reverse dependency order
         # Leads hierarchy
         lead_ids = [l.id for l in db.query(Lead).filter(Lead.client_id == client_id).all()]
         if lead_ids:
+            logging.getLogger(__name__).info(f"Deleting {len(lead_ids)} leads and related activities/profiles/events")
             db.query(LeadActivity).filter(LeadActivity.lead_id.in_(lead_ids)).delete(synchronize_session=False)
             db.query(LeadProfile).filter(LeadProfile.lead_id.in_(lead_ids)).delete(synchronize_session=False)
             db.query(LeadEvent).filter(LeadEvent.lead_id.in_(lead_ids)).delete(synchronize_session=False)
@@ -136,6 +139,7 @@ def delete_client(
         # Marketing Data hierarchy
         conn_ids = [c.id for c in db.query(PlatformConnection).filter(PlatformConnection.client_id == client_id).all()]
         if conn_ids:
+            logging.getLogger(__name__).info(f"Deleting {len(conn_ids)} connections and related campaigns/metrics")
             camp_ids = [camp.id for camp in db.query(Campaign).filter(Campaign.connection_id.in_(conn_ids)).all()]
             if camp_ids:
                 db.query(MetricsDaily).filter(MetricsDaily.campaign_id.in_(camp_ids)).delete(synchronize_session=False)
@@ -149,6 +153,7 @@ def delete_client(
             db.query(PlatformConnection).filter(PlatformConnection.id.in_(conn_ids)).delete(synchronize_session=False)
 
         # Collaboration and Strategy
+        logging.getLogger(__name__).info("Deleting tasks, comments, settlements, reports, analysis history, etc.")
         task_ids = [t.id for t in db.query(CollaborativeTask).filter(CollaborativeTask.client_id == client_id).all()]
         if task_ids:
             db.query(TaskComment).filter(TaskComment.task_id.in_(task_ids)).delete(synchronize_session=False)
@@ -174,20 +179,26 @@ def delete_client(
             try:
                 # Use text() properly for the check
                 check_sql = text(f"SELECT 1 FROM information_schema.columns WHERE table_name = :tname AND column_name = 'client_id'")
-                # Pass parameters correctly
                 result = db.execute(check_sql, {"tname": table}).scalar()
                 
                 if result:
+                    logging.getLogger(__name__).info(f"Attempting valid cleanup for potential orphan table: {table}")
                     db.execute(text(f"DELETE FROM {table} WHERE client_id = :cid"), {"cid": str(client_id)})
-            except Exception:
+            except Exception as e:
                 # If checking fails, just ignore
+                logging.getLogger(__name__).warning(f"Orphan cleanup check failed for {table}: {e}")
                 pass
 
         # 3. Finally delete the client
+        logging.getLogger(__name__).info("Deleting client record...")
         db.delete(client)
         db.commit()
+        logging.getLogger(__name__).info("Deletion completed successfully.")
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"삭제 중 오류가 발생했습니다: {str(e)}")
+        logging.getLogger(__name__).error(f"Client deletion failed: {e}")
+        # Return exact error for debugging
+        raise HTTPException(status_code=500, detail=f"Data Deletion Error: {str(e)}")
 
     return {"status": "SUCCESS", "message": "광고주 정보와 모든 관련 데이터가 완전히 삭제되었습니다."}

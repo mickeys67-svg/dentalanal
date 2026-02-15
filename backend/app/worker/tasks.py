@@ -21,28 +21,42 @@ def execute_place_sync(keyword: str):
     from uuid import uuid4
 
     logger = logging.getLogger("worker")
+    error_msg = None
     
     try:
         # Use asyncio.run for a fresh loop in this thread
         results = asyncio.run(run_place_scraper(keyword))
     except Exception as e:
         logger.error(f"Scraping failed for {keyword}: {e}")
+        error_msg = str(e)
         results = []
 
     db = SessionLocal()
     try:
         service = AnalysisService(db)
-        service.save_place_results(keyword, results)
+        if results:
+            service.save_place_results(keyword, results)
         
         # Notify Admins
         admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
         count = len(results) if results else 0
+        
+        if error_msg:
+            title = "플레이스 조사 실패"
+            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
+        elif count == 0:
+             title = "플레이스 조사 결과 없음"
+             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
+        else:
+            title = "플레이스 조사 완료"
+            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
+
         for admin in admins:
             note = Notification(
                 id=uuid4(),
                 user_id=admin.id,
-                title="플레이스 조사 완료",
-                content=f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)",
+                title=title,
+                content=content,
                 type="NOTICE",
                 is_read=0
             )
@@ -67,27 +81,41 @@ def execute_view_sync(keyword: str):
     from uuid import uuid4
     
     logger = logging.getLogger("worker")
+    error_msg = None
 
     try:
         results = asyncio.run(run_view_scraper(keyword))
     except Exception as e:
         logger.error(f"View scraping failed for {keyword}: {e}")
+        error_msg = str(e)
         results = []
     
     db = SessionLocal()
     try:
         service = AnalysisService(db)
-        service.save_view_results(keyword, results)
+        if results:
+            service.save_view_results(keyword, results)
         
         # Notify Admins
         admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
         count = len(results) if results else 0
+        
+        if error_msg:
+            title = "VIEW 조사 실패"
+            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
+        elif count == 0:
+             title = "VIEW 조사 결과 없음"
+             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
+        else:
+            title = "VIEW 조사 완료"
+            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
+
         for admin in admins:
             note = Notification(
                 id=uuid4(),
                 user_id=admin.id,
-                title="VIEW 조사 완료",
-                content=f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)",
+                title=title,
+                content=content,
                 type="NOTICE",
                 is_read=0
             )
@@ -113,27 +141,41 @@ def execute_ad_sync(keyword: str):
     
     logger = logging.getLogger("worker")
     scraper = NaverAdScraper()
+    error_msg = None
 
     try:
         results = asyncio.run(scraper.get_ad_rankings(keyword))
     except Exception as e:
         logger.error(f"Ad scraping failed for {keyword}: {e}")
+        error_msg = str(e)
         results = []
     
     db = SessionLocal()
     try:
         service = AnalysisService(db)
-        service.save_ad_results(keyword, results)
+        if results:
+            service.save_ad_results(keyword, results)
         
         # Notify Admins
         admins = db.query(User).filter(User.role == UserRole.SUPER_ADMIN).all()
         count = len(results) if results else 0
+        
+        if error_msg:
+            title = "광고 조사 실패"
+            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
+        elif count == 0:
+             title = "광고 조사 결과 없음"
+             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
+        else:
+            title = "광고 조사 완료"
+            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
+
         for admin in admins:
             note = Notification(
                 id=uuid4(),
                 user_id=admin.id,
-                title="광고 조사 완료",
-                content=f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)",
+                title=title,
+                content=content,
                 type="NOTICE",
                 is_read=0
             )
