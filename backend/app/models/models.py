@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, DateTime, JSON, Enum, CHAR, Text
+from sqlalchemy import Column, String, Integer, Float, ForeignKey, DateTime, JSON, Enum, CHAR, Text, Boolean
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
@@ -214,6 +214,8 @@ class SWOTAnalysis(Base):
     opportunities = Column(JSON, nullable=True)
     threats = Column(JSON, nullable=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), default=func.now())
+    
+    client = relationship("Client", back_populates="swot_analyses")
 
 class StrategyGoal(Base):
     __tablename__ = "strategy_goals"
@@ -229,6 +231,8 @@ class StrategyGoal(Base):
     status = Column(String, default="IN_PROGRESS") # COMPLETED, ABANDONED
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    client = relationship("Client", back_populates="strategy_goals")
+
 # --- Collaboration Models ---
 
 class CollaborativeTask(Base):
@@ -242,6 +246,7 @@ class CollaborativeTask(Base):
     deadline = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
+    client = relationship("Client", back_populates="tasks")
     comments = relationship("TaskComment", back_populates="task", cascade="all, delete-orphan")
 
 class TaskComment(Base):
@@ -373,6 +378,7 @@ class Lead(Base):
     channel = Column(String(50), nullable=True) # organic, paid, social, etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
+    client = relationship("Client", back_populates="leads")
     events = relationship("LeadEvent", back_populates="lead", cascade="all, delete-orphan")
     profile = relationship("LeadProfile", back_populates="lead", uselist=False, cascade="all, delete-orphan")
     activities = relationship("LeadActivity", back_populates="lead", cascade="all, delete-orphan")

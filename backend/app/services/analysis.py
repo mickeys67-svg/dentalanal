@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType, MetricsDaily, Campaign, PlatformConnection, Lead, LeadActivity, LeadProfile, Report
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any
 from uuid import uuid4, UUID
 import random
 import datetime
