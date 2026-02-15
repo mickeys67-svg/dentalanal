@@ -108,7 +108,8 @@ def delete_client(
         Client, PlatformConnection, Campaign, MetricsDaily, 
         SWOTAnalysis, StrategyGoal, CollaborativeTask, TaskComment,
         Report, Settlement, SettlementDetail, Lead, LeadActivity,
-        LeadProfile, LeadEvent, AnalysisHistory, AnalyticsCache, SyncTask, SyncValidation
+        LeadProfile, LeadEvent, AnalysisHistory, AnalyticsCache, SyncTask, SyncValidation,
+        ApprovalRequest
     )
 
     client = db.query(Client).filter(Client.id == client_id).first()
@@ -163,6 +164,7 @@ def delete_client(
         db.query(Report).filter(Report.client_id == client_id).delete(synchronize_session=False)
         db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).delete(synchronize_session=False)
         db.query(AnalyticsCache).filter(AnalyticsCache.client_id == client_id).delete(synchronize_session=False)
+        db.query(ApprovalRequest).filter(ApprovalRequest.client_id == client_id).delete(synchronize_session=False)
 
         # 3. Finally delete the client
         db.delete(client)
