@@ -504,3 +504,18 @@ def migrate_ad_tables(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         return {"status": "FAILED", "error": str(e)}
+
+@router.get("/inspect-system-configs")
+def inspect_system_configs(db: Session = Depends(get_db)):
+    """system_configs 테이블의 내용을 조회합니다."""
+    try:
+        # Check if table exists
+        exists = db.execute(text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'system_configs');")).fetchone()[0]
+        if exists:
+            rows = db.execute(text("SELECT * FROM system_configs;")).fetchall()
+            result = [dict(row._mapping) for row in rows]
+            return {"status": "SUCCESS", "data": result}
+        else:
+            return {"status": "EMPTY", "message": "system_configs 테이블이 존재하지 않습니다."}
+    except Exception as e:
+        return {"status": "ERROR", "message": str(e)}
