@@ -426,10 +426,14 @@ def test_official_api(db: Session = Depends(get_db)):
     try:
         service = NaverAdsService(db)
         # Check what keys are being used (masked)
+        import os
+        raw_env_id = os.getenv("NAVER_AD_CUSTOMER_ID", "NOT_SET")
+        
         key_status = {
             "license_configured": bool(service.access_license),
             "secret_configured": bool(service.secret_key),
-            "customer_id": service.customer_id
+            "customer_id": service.customer_id,
+            "raw_env_var": raw_env_id  # <--- Added debug info
         }
         
         # Perform actual API call
