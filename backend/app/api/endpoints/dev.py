@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import User, UserRole, Client, Target, Keyword, DailyRank, PlatformType, Settlement, SettlementStatus
@@ -150,3 +150,72 @@ def seed_demo_data(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Seeding failed: {str(e)}")
+
+@router.get("/kickstart")
+def manual_kickstart_sync(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    [Emergency] Manually trigger Full Sync via GET request (Browser Address Bar Friendly).
+    """
+    # Reuse the logic from automation.py
+    from app.api.endpoints.automation import trigger_full_sync
+    
+    # We need to call it as a regular function, not await if it were async, 
+    # but automation.trigger_full_sync is async. 
+    # However, since we are in a sync context here (def, not async def), 
+    # we can use background_tasks directly.
+    
+    # 1. Auto-Connect Logic (Duplicated for safety here)
+    from app.models.models import PlatformConnection, PlatformType, Client
+    from app.core.config import settings
+    
+    msg = []
+    
+    # Check Connection
+    existing_conn = db.query(PlatformConnection).first()
+    if not existing_conn:
+        if settings.NAVER_AD_CUSTOMER_ID:
+            client = db.query(Client).order_by(Client.created_at.asc()).first()
+            if client:
+                new_conn = PlatformConnection(
+                    client_id=client.id,
+                    platform=PlatformType.NAVER_AD,
+                    status="ACTIVE",
+                    credentials={}
+                )
+                db.add(new_conn)
+                db.commit()
+                msg.append(f"Auto-Created Connection for Client {client.name}")
+            else:
+                msg.append("No Client found to attach connection!")
+        else:
+            msg.append("No NAVER keys in env to auto-connect.")
+    else:
+        msg.append("Connection already exists.")
+
+    # 2. Trigger Sync
+    from app.tasks.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels, db)
+    msg.append("Sync Task dispatched to background.")
+    
+    return {"status": "KICKSTARTED", "details": msg}
+
+@router.get("/logs")
+def view_server_logs(lines: int = 50):
+    """
+    View recent server logs (if written to file). 
+    Cloud Run logs are usually stdout, but this might catch file logs if configured.
+    """
+    import os
+    log_file = "app.log" # Assuming file logging is enabled
+    if not os.path.exists(log_file):
+        return {"error": "Log file not found (Logs are likely streaming to Cloud Logging only)"}
+        
+    try:
+        with open(log_file, "r", encoding="utf-8") as f:
+            content = f.readlines()[-lines:]
+        return {"logs": content}
+    except Exception as e:
+        return {"error": str(e)}
