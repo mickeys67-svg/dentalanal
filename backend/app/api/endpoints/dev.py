@@ -348,3 +348,69 @@ async def test_scraping_connection(
             "error": str(e),
             "logs": logs
         }
+
+@router.get("/system-diag")
+async def system_diagnosis():
+    """
+    Comprehensive System Health Check (Network, DNS, Env, Filesystem).
+    Used for Phase 2 Analysis.
+    """
+    import socket
+    import requests
+    import os
+    import sys
+    
+    report = {
+        "hostname": socket.gethostname(),
+        "platform": sys.platform,
+        "python_version": sys.version,
+        "network": {},
+        "env": {},
+        "playwright": {}
+    }
+
+    # 1. DNS Check
+    try:
+        report["network"]["dns_naver"] = socket.gethostbyname("naver.com")
+        report["network"]["dns_google"] = socket.gethostbyname("google.com")
+        report["network"]["dns_status"] = "OK"
+    except Exception as e:
+        report["network"]["dns_status"] = f"FAIL: {str(e)}"
+
+    # 2. Outbound HTTP Check (Simple Request)
+    try:
+        # distinct from scraping, just checking basic connectivity
+        resp = requests.get("https://www.google.com", timeout=5)
+        report["network"]["http_google_status"] = resp.status_code
+        
+        # Check Public IP
+        # use a reliable echo service
+        try:
+            ip_resp = requests.get("https://api.ipify.org?format=json", timeout=5)
+            if ip_resp.status_code == 200:
+                report["network"]["public_ip"] = ip_resp.json().get("ip")
+        except:
+             report["network"]["public_ip_check"] = "Failed"
+
+    except Exception as e:
+        report["network"]["http_status"] = f"FAIL: {str(e)}"
+
+    # 3. Environment Check (Masked)
+    cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
+    report["env"]["BRIGHT_DATA_CDP_URL_EXISTS"] = bool(cdp_url)
+    if cdp_url:
+        report["env"]["BRIGHT_DATA_CDP_URL_LEN"] = len(cdp_url)
+        report["env"]["BRIGHT_DATA_CDP_URL_VAL_REPR"] = repr(cdp_url) # Check for quotes/spaces
+    
+    # 4. Playwright Browser Check
+    # Cloud Run default path for playwright browsers
+    # Usually ~/.cache/ms-playwright
+    import pathlib
+    home = pathlib.Path.home()
+    cache_dir = home / ".cache" / "ms-playwright"
+    report["playwright"]["cache_dir"] = str(cache_dir)
+    report["playwright"]["exists"] = cache_dir.exists()
+    if cache_dir.exists():
+        report["playwright"]["content"] = [f.name for f in cache_dir.iterdir()]
+
+    return report
