@@ -270,3 +270,75 @@ def view_server_logs(lines: int = 50):
         return {"logs": content}
     except Exception as e:
         return {"error": str(e)}
+
+@router.get("/test-scrape")
+async def test_scraping_connection(
+    url: str = "https://www.naver.com",
+    use_proxy: bool = True
+):
+    """
+    Diagnostic Endpoint: Test Scraper Connectivity.
+    Attempts to fetch a URL using the BaseScraper logic (Playwright + Bright Data).
+    """
+    import asyncio
+    from app.scrapers.base import BaseScraper
+    from playwright.async_api import async_playwright
+
+    logs = []
+    
+    try:
+        scraper = BaseScraper()
+        # Manually verify env var first
+        import os
+        cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
+        logs.append(f"CDP_URL Configured: {'Yes' if cdp_url else 'No'}")
+        if cdp_url:
+             # Masking for safety in response
+            masked_url = cdp_url.replace(cdp_url.split('@')[0], '***')
+            logs.append(f"CDP_URL (Masked): {masked_url}")
+
+        # Try scraping
+        logs.append(f"Attempting to fetch {url}...")
+        
+        async with async_playwright() as p:
+            browser = None
+            try:
+                if use_proxy and cdp_url:
+                    logs.append("Connecting to Bright Data CDP...")
+                    browser = await p.chromium.connect_over_cdp(cdp_url)
+                else:
+                    logs.append("Launching local browser (No Proxy)...")
+                    browser = await p.chromium.launch(headless=True)
+                
+                context = browser.contexts[0] if browser.contexts else await browser.new_context()
+                page = await context.new_page()
+                
+                logs.append("Page created. Navigating...")
+                await page.goto(url, timeout=30000)
+                
+                title = await page.title()
+                content = await page.content()
+                logs.append(f"Success! Title: {title}")
+                logs.append(f"Content Length: {len(content)}")
+                
+                return {
+                    "status": "SUCCESS",
+                    "url": url,
+                    "title": title,
+                    "logs": logs
+                }
+                
+            except Exception as e:
+                logs.append(f"Browser Error: {str(e)}")
+                # Re-raise to catch in outer block or return error
+                raise e
+            finally:
+                if browser:
+                    await browser.close()
+                    
+    except Exception as e:
+        return {
+            "status": "FAILED",
+            "error": str(e),
+            "logs": logs
+        }
