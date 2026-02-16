@@ -59,7 +59,7 @@ jobs:
             NAVER_AD_ACCESS_LICENSE=${{ env.NAVER_AD_ACCESS_LICENSE }}
             NAVER_AD_SECRET_KEY=${{ env.NAVER_AD_SECRET_KEY }}
             BRIGHT_DATA_CDP_URL=""
-            CACHE_BUST=${{ github.run_number }}-revert-to-secrets
+            CACHE_BUST=${{ github.run_number }}-force-refresh-secrets
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
 
       # Build and Push Frontend (After Backend is deployed to get the URL)
