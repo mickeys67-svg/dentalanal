@@ -1,92 +1,69 @@
-from bs4 import BeautifulSoup
+import json
 from app.scrapers.base import ScraperBase
 import urllib.parse
+from bs4 import BeautifulSoup
 
 class NaverViewScraper(ScraperBase):
-    BASE_URL = "https://search.naver.com/search.naver?ssc=tab.blog.all&query={}&sm=tab_jum"
+    # Hidden API endpoint used by Naver Search (Mobile)
+    # Returns JSON data directly!
+    BASE_URL = "https://s.search.naver.com/p/review/search.naver?rev=44&where=view&api_type=11&start=1&query={}&nlu_query=%7B%22r_category%22%3A%2225%22%7D&mod=2"
 
     async def get_rankings(self, keyword: str):
         encoded_keyword = urllib.parse.quote(keyword)
         url = self.BASE_URL.format(encoded_keyword)
         
-        # Force PC version
-        html = await self.fetch_page_content(url, scroll=True, is_mobile=False)
-        if not html:
+        # We need a mobile user agent for this API usually, 
+        # but the base Fetcher handles rotation.
+        # This API returns a JSON-like structure or JSON with padding (JSONP).
+        
+        # Note: The response is actually JSON, so we just text() it and parse.
+        response_text = await self.fetch_page_content(url, scroll=False)
+        
+        if not response_text:
             return []
 
-        soup = BeautifulSoup(html, 'html.parser')
-        results = []
-        
-        # Robust extraction based on URL patterns
-        # Identify all links to blog posts
-        all_links = soup.find_all('a', href=lambda h: h and 'blog.naver.com' in h)
-        
-        import re
-        processed_links = set()
-
-        for link in all_links:
-            href = link['href']
+        try:
+            # Naver sometimes wraps valid JSON in parentheses or callback if JSONP
+            # But this specific endpoint usually returns pure JSON.
+            # Let's try parsing directly first.
+            data = json.loads(response_text)
             
-            # Pattern: blog.naver.com/blogId/postId (Post)
-            # Pattern: blog.naver.com/blogId (Profile)
+            # The structure is usually:
+            # { "n_total": 1234, "contents": [ ... ] }
             
-            # Match Post URL
-            match = re.search(r'blog\.naver\.com/([a-zA-Z0-9_\-]+)/([0-9]+)', href)
-            if match:
-                blog_id = match.group(1)
-                post_id = match.group(2)
+            if 'contents' not in data:
+                self.logger.warning(f"Naver View API returned unexpected JSON structure for {keyword}")
+                return []
                 
-                if href in processed_links:
-                    continue
-                processed_links.add(href)
+            items = data['contents']
+            results = []
+            
+            for index, item in enumerate(items):
+                # Extract fields safely
+                title = item.get('title', '').replace('<b>', '').replace('</b>', '') # Remove bold tags
+                link = item.get('title_link', '')
+                blog_name = item.get('writer_name', '')
+                date = item.get('date', '')
                 
-                title = link.get_text(strip=True)
-                # If title is empty/short (e.g. image link), skip or look for nested text
-                if len(title) < 2: 
-                    continue
-
-                # Find Blog Name by searching nearby profile link
-                blog_name = "Unknown"
-                container = link.parent
-                found_profile = False
-                
-                # Traverse up to find a container that includes the profile link
-                for _ in range(6): # Go up 6 levels max
-                    if not container or container.name == 'body': break
-                    
-                    # Search for profile link (blog.naver.com/blogId without postId)
-                    # We look for a link that has blog_id but NOT post_id
-                    candidates = container.find_all('a', href=lambda h: h and blog_id in h)
-                    
-                    for cand in candidates:
-                         cand_href = cand.get('href', '')
-                         if post_id not in cand_href:
-                             # This is likely the profile link
-                             text = cand.get_text(strip=True)
-                             if text:
-                                 blog_name = text
-                                 found_profile = True
-                                 break
-                    
-                    if found_profile: break
-                    container = container.parent
+                # Check for Ad (sometimes included)
+                is_ad = item.get('is_ad', False)
                 
                 results.append({
-                    "rank": len(results) + 1,
+                    "rank": index + 1,
                     "title": title,
                     "blog_name": blog_name,
-                    "link": href,
-                    "keyword": keyword
+                    "link": link,
+                    "keyword": keyword,
+                    "created_at": date,
+                    "is_ad": is_ad
                 })
+                
+            return results
 
-        if not results:
-             title = soup.title.string if soup.title else "No Title"
-             body_text = soup.body.get_text(separator=' ', strip=True)[:1000] if soup.body else "No Body"
-             self.logger.warning(f"No View results extracted. Title: {title}, HTML Len: {len(html)}")
-             self.logger.warning(f"Page Snippet: {body_text}")
-             
-             self.logger.warning("No results extracted. Saving HTML to debug_view.html")
-             with open("debug_view.html", "w", encoding="utf-8") as f:
-                 f.write(html)
-
-        return results
+        except json.JSONDecodeError:
+            # Fallback (Just in case it returns HTML for some reason or IP block page)
+            self.logger.error(f"Failed to parse Naver View JSON. Response might be HTML (Blocked?). Len: {len(response_text)}")
+            return []
+        except Exception as e:
+            self.logger.error(f"Error parsing Naver View API: {e}")
+            return []
