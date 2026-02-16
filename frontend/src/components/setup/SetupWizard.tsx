@@ -214,9 +214,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 // Trigger immediate scraping - Don't await here to prevent navigation block
                 if (platform === 'NAVER_PLACE') {
-                    scrapePlace(keyword).catch(console.error);
+                    scrapePlace(keyword, newClientId!).catch(console.error);
                 } else if (platform === 'NAVER_VIEW') {
-                    scrapeView(keyword).catch(console.error);
+                    scrapeView(keyword, newClientId!).catch(console.error);
                 }
 
                 // Small delay to ensure state/history is updated on backend

@@ -25,12 +25,12 @@ export function useDashboard(clientId?: string | null) {
     });
 
     const placeMutation = useMutation({
-        mutationFn: (keyword: string) => scrapePlace(keyword),
+        mutationFn: (keyword: string) => scrapePlace(keyword, clientId || undefined),
         onSuccess: () => refetchSummary()
     });
 
     const viewMutation = useMutation({
-        mutationFn: (keyword: string) => scrapeView(keyword),
+        mutationFn: (keyword: string) => scrapeView(keyword, clientId || undefined),
         onSuccess: () => refetchSummary()
     });
 

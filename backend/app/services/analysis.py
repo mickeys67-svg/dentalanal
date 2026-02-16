@@ -13,10 +13,15 @@ class AnalysisService:
         self.logger = logging.getLogger(__name__)
         # [MIGRATE] Transitioned from MongoDB to Supabase (Option A)
 
-    def _get_or_create_keyword(self, term: str) -> Keyword:
-        keyword = self.db.query(Keyword).filter(Keyword.term == term).first()
+    def _get_or_create_keyword(self, term: str, client_id: Optional[UUID] = None) -> Keyword:
+        query = self.db.query(Keyword).filter(Keyword.term == term)
+        if client_id:
+            query = query.filter(Keyword.client_id == client_id)
+        
+        keyword = query.first()
+        
         if not keyword:
-            keyword = Keyword(id=uuid4(), term=term)
+            keyword = Keyword(id=uuid4(), term=term, client_id=client_id)
             self.db.add(keyword)
             self.db.commit()
             self.db.refresh(keyword)
@@ -48,11 +53,11 @@ class AnalysisService:
         except Exception as e:
             self.logger.error(f"Failed to save raw log to Supabase: {e}")
 
-    def save_place_results(self, keyword_str: str, results: List[dict]):
+    def save_place_results(self, keyword_str: str, results: List[dict], client_id: Optional[UUID] = None):
         # Save Raw Data to Supabase (Option A Consolidation)
         self._save_raw_log_to_supabase(PlatformType.NAVER_PLACE, keyword_str, results)
         
-        keyword = self._get_or_create_keyword(keyword_str)
+        keyword = self._get_or_create_keyword(keyword_str, client_id)
         
         # Optimization: Pre-fetch all targets to avoid N+1
         target_names = [item.get("name") for item in results if item.get("name")]
@@ -71,6 +76,7 @@ class AnalysisService:
             
             rank = DailyRank(
                 id=uuid4(),
+                client_id=client_id,
                 target_id=target.id,
                 keyword_id=keyword.id,
                 platform=PlatformType.NAVER_PLACE,
@@ -79,11 +85,11 @@ class AnalysisService:
             self.db.add(rank)
         self.db.commit()
 
-    def save_view_results(self, keyword_str: str, results: List[dict]):
+    def save_view_results(self, keyword_str: str, results: List[dict], client_id: Optional[UUID] = None):
         # Save Raw Data to Supabase (Option A Consolidation)
         self._save_raw_log_to_supabase(PlatformType.NAVER_VIEW, keyword_str, results)
         
-        keyword = self._get_or_create_keyword(keyword_str)
+        keyword = self._get_or_create_keyword(keyword_str, client_id)
         
         target_names = [item.get("blog_name") for item in results if item.get("blog_name")]
         existing_targets = {t.name: t for t in self.db.query(Target).filter(Target.name.in_(target_names)).all()}
@@ -101,6 +107,7 @@ class AnalysisService:
             
             rank = DailyRank(
                 id=uuid4(),
+                client_id=client_id,
                 target_id=target.id,
                 keyword_id=keyword.id,
                 platform=PlatformType.NAVER_VIEW,
@@ -109,11 +116,11 @@ class AnalysisService:
             self.db.add(rank)
         self.db.commit()
 
-    def save_ad_results(self, keyword_str: str, results: List[dict]):
+    def save_ad_results(self, keyword_str: str, results: List[dict], client_id: Optional[UUID] = None):
         # Save Raw Data to Supabase (Option A Consolidation)
         self._save_raw_log_to_supabase(PlatformType.NAVER_AD, keyword_str, results)
         
-        keyword = self._get_or_create_keyword(keyword_str)
+        keyword = self._get_or_create_keyword(keyword_str, client_id)
         
         target_names = [item.get("advertiser") for item in results if item.get("advertiser")]
         existing_targets = {t.name: t for t in self.db.query(Target).filter(Target.name.in_(target_names)).all()}
@@ -131,6 +138,7 @@ class AnalysisService:
             
             rank = DailyRank(
                 id=uuid4(),
+                client_id=client_id,
                 target_id=target.id,
                 keyword_id=keyword.id,
                 platform=PlatformType.NAVER_AD,

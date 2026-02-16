@@ -28,17 +28,20 @@ async def run_view_scraper(keyword: str):
         return response.data
     return []
 
-def execute_place_sync(keyword: str):
+def execute_place_sync(keyword: str, client_id_str: str = None):
     """Inline execution of place scraping and saving."""
     import asyncio
     import logging
     from app.core.database import SessionLocal
     from app.services.analysis import AnalysisService
     from app.models.models import Notification, User, UserRole
-    from uuid import uuid4
+    from uuid import UUID, uuid4
 
     logger = logging.getLogger("worker")
     error_msg = None
+    
+    # Convert string ID to UUID safely
+    client_uuid = UUID(client_id_str) if client_id_str else None
     
     try:
         # Use asyncio.run for a fresh loop in this thread
@@ -52,7 +55,7 @@ def execute_place_sync(keyword: str):
     try:
         service = AnalysisService(db)
         if results:
-            service.save_place_results(keyword, results)
+            service.save_place_results(keyword, results, client_uuid)
         
         # Notify Admins
         admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
@@ -88,17 +91,19 @@ def execute_place_sync(keyword: str):
         db.close()
     return results
 
-def execute_view_sync(keyword: str):
+def execute_view_sync(keyword: str, client_id_str: str = None):
     """Inline execution of view scraping and saving."""
     import asyncio
     import logging
     from app.core.database import SessionLocal
     from app.services.analysis import AnalysisService
     from app.models.models import Notification, User, UserRole
-    from uuid import uuid4
+    from uuid import UUID, uuid4
     
     logger = logging.getLogger("worker")
     error_msg = None
+    
+    client_uuid = UUID(client_id_str) if client_id_str else None
 
     try:
         results = asyncio.run(run_view_scraper(keyword))
@@ -111,7 +116,7 @@ def execute_view_sync(keyword: str):
     try:
         service = AnalysisService(db)
         if results:
-            service.save_view_results(keyword, results)
+            service.save_view_results(keyword, results, client_uuid)
         
         # Notify Admins
         admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
@@ -146,7 +151,7 @@ def execute_view_sync(keyword: str):
         db.close()
     return results
 
-def execute_ad_sync(keyword: str):
+def execute_ad_sync(keyword: str, client_id_str: str = None):
     """Inline execution of ad scraping and saving."""
     from app.scrapers.naver_ad import NaverAdScraper
     import asyncio
@@ -154,12 +159,14 @@ def execute_ad_sync(keyword: str):
     from app.core.database import SessionLocal
     from app.services.analysis import AnalysisService
     from app.models.models import Notification, User, UserRole
-    from uuid import uuid4
+    from uuid import UUID, uuid4
     
     logger = logging.getLogger("worker")
     scraper = NaverAdScraper()
     wrapper = SafeScraperWrapper(scraper)
     error_msg = None
+    
+    client_uuid = UUID(client_id_str) if client_id_str else None
 
     try:
         response = asyncio.run(wrapper.run("get_ad_rankings", keyword))
@@ -178,7 +185,7 @@ def execute_ad_sync(keyword: str):
     try:
         service = AnalysisService(db)
         if results:
-            service.save_ad_results(keyword, results)
+            service.save_ad_results(keyword, results, client_uuid)
         
         # Notify Admins
         admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
@@ -213,11 +220,11 @@ def execute_ad_sync(keyword: str):
         db.close()
     return results
 
-def scrape_place_task(keyword: str):
-    return execute_place_sync(keyword)
+def scrape_place_task(keyword: str, client_id: str = None):
+    return execute_place_sync(keyword, client_id)
 
-def scrape_view_task(keyword: str):
-    return execute_view_sync(keyword)
+def scrape_view_task(keyword: str, client_id: str = None):
+    return execute_view_sync(keyword, client_id)
 
-def scrape_ad_task(keyword: str):
-    return execute_ad_sync(keyword)
+def scrape_ad_task(keyword: str, client_id: str = None):
+    return execute_ad_sync(keyword, client_id)

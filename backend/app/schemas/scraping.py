@@ -5,6 +5,7 @@ from datetime import datetime
 class ScrapeRequest(BaseModel):
     keyword: str
     hospital_name: Optional[str] = None
+    client_id: Optional[str] = None  # [Fix] To link data to client
 
 class ScrapeResponse(BaseModel):
     task_id: str

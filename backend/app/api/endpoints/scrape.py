@@ -15,7 +15,7 @@ def trigger_place_scrape(
 ):
     task_id = str(uuid.uuid4())
     # Offload to BackgroundTasks ( Celery delay is mocked out/unstable in this env )
-    background_tasks.add_task(scrape_place_task, request.keyword)
+    background_tasks.add_task(scrape_place_task, request.keyword, request.client_id)
     
     return ScrapeResponse(
         task_id=task_id,
@@ -30,7 +30,7 @@ def trigger_view_scrape(
 ):
     task_id = str(uuid.uuid4())
     # Offload to BackgroundTasks
-    background_tasks.add_task(scrape_view_task, request.keyword)
+    background_tasks.add_task(scrape_view_task, request.keyword, request.client_id)
     
     return ScrapeResponse(
         task_id=task_id,
@@ -46,7 +46,7 @@ def trigger_ad_scrape(
     task_id = str(uuid.uuid4())
     from app.worker.tasks import scrape_ad_task
     # Offload to BackgroundTasks
-    background_tasks.add_task(scrape_ad_task, request.keyword)
+    background_tasks.add_task(scrape_ad_task, request.keyword, request.client_id)
     
     return ScrapeResponse(
         task_id=task_id,

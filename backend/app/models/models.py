@@ -111,6 +111,8 @@ class Client(Base):
     approval_requests = relationship("ApprovalRequest", back_populates="client", cascade="all, delete-orphan")
     analysis_history = relationship("AnalysisHistory", back_populates="client", cascade="all, delete-orphan")
     analytics_cache = relationship("AnalyticsCache", back_populates="client", cascade="all, delete-orphan")
+    keywords = relationship("Keyword", back_populates="client", cascade="all, delete-orphan")
+    daily_ranks = relationship("DailyRank", back_populates="client", cascade="all, delete-orphan")
 
 class PlatformConnection(Base):
     __tablename__ = "platform_connections"
@@ -169,13 +171,16 @@ class Target(Base):
 class Keyword(Base):
     __tablename__ = "keywords"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=True)  # [Fix] Added owner
     term = Column(String, nullable=False)
     category = Column(String, nullable=True)
     daily_ranks = relationship("DailyRank", back_populates="keyword")
+    client = relationship("Client", back_populates="keywords")
 
 class DailyRank(Base):
     __tablename__ = "daily_ranks"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=True)  # [Fix] Added owner
     target_id = Column(GUID, ForeignKey("targets.id"), nullable=False)
     keyword_id = Column(GUID, ForeignKey("keywords.id"), nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
@@ -183,6 +188,7 @@ class DailyRank(Base):
     captured_at = Column(DateTime(timezone=True), server_default=func.now())
     target = relationship("Target", back_populates="daily_ranks")
     keyword = relationship("Keyword", back_populates="daily_ranks")
+    client = relationship("Client", back_populates="daily_ranks")
 
 class ContentsMetric(Base):
     __tablename__ = "contents_metrics"

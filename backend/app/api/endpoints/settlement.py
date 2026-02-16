@@ -35,6 +35,12 @@ def get_client_settlements(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Authorization Check
+    if current_user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN]:
+        # Regular users can only see their own settlements
+        if not current_user.client_id or str(current_user.client_id) != str(client_id):
+             raise HTTPException(status_code=403, detail="권한이 없습니다. 본인의 정산 내역만 조회할 수 있습니다.")
+
     service = SettlementService(db)
     return service.get_client_settlements(str(client_id))
 

@@ -67,13 +67,13 @@ api.interceptors.response.use(
     }
 );
 
-export const scrapePlace = async (keyword: string): Promise<{ message: string }> => {
-    const response = await api.post('/api/v1/scrape/place', { keyword });
+export const scrapePlace = async (keyword: string, clientId?: string): Promise<{ message: string }> => {
+    const response = await api.post('/api/v1/scrape/place', { keyword, client_id: clientId });
     return response.data;
 };
 
-export const scrapeView = async (keyword: string): Promise<{ message: string }> => {
-    const response = await api.post('/api/v1/scrape/view', { keyword });
+export const scrapeView = async (keyword: string, clientId?: string): Promise<{ message: string }> => {
+    const response = await api.post('/api/v1/scrape/view', { keyword, client_id: clientId });
     return response.data;
 };
 
