@@ -56,7 +56,7 @@ class Settings(BaseSettings):
         
         url = self.DATABASE_URL
         db_pwd = self.DATABASE_PASSWORD or os.environ.get("DATABASE_PASSWORD")
-        tenant_id = "uujxtnvpqdwcjqhsoshi"
+        tenant_id = "xklppnykoeezgtxmomrl"
         
         if not url or url.startswith("sqlite"):
             if db_pwd:
@@ -78,7 +78,7 @@ class Settings(BaseSettings):
         if "pooler.supabase.com" in url and "postgres." not in url:
             url = url.replace("://postgres", f"://postgres.{tenant_id}", 1)
             logger.info("[CONFIG] Adjusting username for Supabase Pooler")
-        elif "db.uujxtnvpqdwcjqhsoshi.supabase.co" in url and "postgres." in url:
+        elif "db.xklppnykoeezgtxmomrl.supabase.co" in url and "postgres." in url:
             url = url.replace(f"postgres.{tenant_id}", "postgres", 1)
             logger.info("[CONFIG] Stripping tenant suffix for Direct Connection")
             
