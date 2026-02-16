@@ -414,3 +414,30 @@ async def system_diagnosis():
         report["playwright"]["content"] = [f.name for f in cache_dir.iterdir()]
 
     return report
+
+@router.get("/test-api")
+def test_official_api(db: Session = Depends(get_db)):
+    """
+    Diagnostic Endpoint: Test Official Naver Ads API.
+    Verifies if NAVER_AD_ACCESS_LICENSE and SECRET_KEY are valid.
+    """
+    from app.services.naver_ads import NaverAdsService
+    
+    try:
+        service = NaverAdsService(db)
+        # Check what keys are being used (masked)
+        key_status = {
+            "license_configured": bool(service.access_license),
+            "secret_configured": bool(service.secret_key),
+            "customer_id": service.customer_id
+        }
+        
+        # Perform actual API call
+        result = service.validate_api()
+        
+        return {
+            "configuration": key_status,
+            "api_result": result
+        }
+    except Exception as e:
+        return {"status": "FAILED", "error": str(e)}

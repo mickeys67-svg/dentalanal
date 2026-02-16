@@ -41,50 +41,19 @@ def sync_naver_date_metrics(db: Session, conn: PlatformConnection, target_date: 
                 campaigns = db.query(Campaign).filter(Campaign.connection_id == conn.id).all()
                 for cp in campaigns: campaign_ids_to_reconcile.add(cp.id)
 
-        # 2. Scraper Sync (Priority 2) - Only if it's "today" (offset 0)
-        from datetime import timedelta
-        is_today = (target_date.date() == (datetime.utcnow() + timedelta(hours=9)).date())
+        # 2. Scraper Sync (Priority 2) - DISABLED (API ONLY STRATEGY)
+        # from datetime import timedelta
+        # is_today = (target_date.date() == (datetime.utcnow() + timedelta(hours=9)).date())
         
-        if is_today and 'username' in creds and 'password' in creds:
-            from app.scrapers.naver_ads_manager import NaverAdsManagerScraper
-            scraper = NaverAdsManagerScraper()
-            try:
-                # [QC] Strict async handling to avoid loop conflicts
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = None
-                
-                if loop and loop.is_running():
-                    import nest_asyncio
-                    nest_asyncio.apply()
-                    data = asyncio.get_event_loop().run_until_complete(
-                        scraper.get_performance_summary(creds['username'], creds['password'])
-                    )
-                else:
-                    data = asyncio.run(scraper.get_performance_summary(creds['username'], creds['password']))
-                
-                if data:
-                    for item in data:
-                        # Find campaign and save SCRAPER metrics
-                        campaign = db.query(Campaign).filter(Campaign.connection_id == conn.id, Campaign.external_id == item["id"]).first()
-                        if not campaign:
-                            campaign = db.query(Campaign).filter(Campaign.connection_id == conn.id, Campaign.name == item["name"]).first()
-                        
-                        if campaign:
-                            metrics = db.query(MetricsDaily).filter(MetricsDaily.campaign_id == campaign.id, MetricsDaily.date == target_date, MetricsDaily.source == 'SCRAPER').first()
-                            if not metrics:
-                                metrics = MetricsDaily(id=uuid.uuid4(), campaign_id=campaign.id, date=target_date, source='SCRAPER')
-                                db.add(metrics)
-                            
-                            metrics.spend = float(item.get("spend", 0))
-                            metrics.impressions = int(item.get("impressions", 0))
-                            metrics.clicks = int(item.get("clicks", 0))
-                            metrics.conversions = int(item.get("conversions", 0))
-                            campaign_ids_to_reconcile.add(campaign.id)
-                    db.commit()
-            except Exception as e:
-                logger.error(f"Scraper failed for {conn.id}: {e}")
+        # if is_today and 'username' in creds and 'password' in creds:
+        #     # [Strategy Fix] Disable Scraper to rely on Official API only (Adriel Benchmark)
+        #     pass
+        #     # from app.scrapers.naver_ads_manager import NaverAdsManagerScraper
+        #     # scraper = NaverAdsManagerScraper()
+        #     # try:
+        #     #     # ... (Scraper Logic Hidden) ...
+        #     # except Exception as e:
+        #     #     logger.error(f"Scraper failed for {conn.id}: {e}")
         # 3. Reconciliation for this specific date
         if campaign_ids_to_reconcile:
             from app.services.reconciliation_service import DataReconciliationService
