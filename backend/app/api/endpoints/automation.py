@@ -48,27 +48,12 @@ async def trigger_full_sync(
     """
     # 1. Check if any connection exists
     from app.models.models import PlatformConnection, PlatformType, Client
-    existing_conn = db.query(PlatformConnection).first()
+    existing_conn = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE").all()
     
     if not existing_conn:
-        # 2. Check if we have env vars to create one
-        from app.core.config import settings
-        if settings.NAVER_AD_CUSTOMER_ID and settings.NAVER_AD_ACCESS_LICENSE:
-            # 3. Find a client to attach to (e.g., the first one created)
-            client = db.query(Client).order_by(Client.created_at.asc()).first()
-            if client:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"[Auto-Connect] Creating default Naver Ads connection for client {client.id}")
-                
-                new_conn = PlatformConnection(
-                    client_id=client.id,
-                    platform=PlatformType.NAVER_AD,
-                    status="ACTIVE",
-                    credentials={} # Will use env vars by default in service
-                )
-                db.add(new_conn)
-                db.commit()
+        # [MODIFIED] No more auto-connect to random client. 
+        # Just return message asking user to connect manually.
+        return {"status": "SKIPPED", "message": "활성화된 플랫폼 연결이 없습니다. 설정 > 데이터 연결에서 연동을 먼저 진행해주세요."}
     
     from app.tasks.sync_data import sync_all_channels
     background_tasks.add_task(sync_all_channels, db)

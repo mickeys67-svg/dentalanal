@@ -61,17 +61,36 @@ def create_client(
         logger.info(f"Using Agency ID: {agency_id} for User: {current_user.email}")
     
     # Check if agency exists
+    # Check if agency exists
     agency = db.query(Agency).filter(Agency.id == agency_id).first()
     if not agency:
-        if current_user.role == UserRole.SUPER_ADMIN or str(agency_id) == DEFAULT_AGENCY_ID:
-             # Auto-create dummy/default agency if not exists (for dev/simplicity)
-            agency = Agency(id=agency_id, name="D-MIND Default Agency" if str(agency_id) == DEFAULT_AGENCY_ID else "Auto-created Agency")
+        if str(agency_id) == DEFAULT_AGENCY_ID:
+            # [MODIFIED] If default agency ID came in, it means user has no agency.
+            # Create a NEW Agency for this user, instead of using the shared dummy one.
+            import uuid
+            new_agency_id = uuid.uuid4()
+            agency_name = f"{current_user.username.split('@')[0]}의 Agency"
+            
+            agency = Agency(id=new_agency_id, name=agency_name)
             db.add(agency)
+            
+            # Update user's agency_id so next time they use this one
+            current_user.agency_id = new_agency_id
+            db.add(current_user)
             db.commit()
-            logger.info(f"Agency {agency_id} created automatically.")
+            
+            # Use the new ID for client creation
+            agency_id = new_agency_id
+            logger.info(f"Created new Agency {agency_id} for User {current_user.email}")
         else:
-            logger.error(f"Agency not found: {agency_id}")
-            raise HTTPException(status_code=404, detail="Agency not found")
+            # If a specific UUID was requested but not found, that's an error (unless Super Admin auto-create logic)
+            if current_user.role == UserRole.SUPER_ADMIN:
+                 agency = Agency(id=agency_id, name="Auto-created Agency")
+                 db.add(agency)
+                 db.commit()
+            else:
+                logger.error(f"Agency not found: {agency_id}")
+                raise HTTPException(status_code=404, detail="Agency not found")
     
     # Create the client
     new_client = Client(

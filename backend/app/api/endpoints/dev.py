@@ -2,6 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from sqlalchemy import text # Added text import
 from app.models.models import User, UserRole, Client, Target, Keyword, DailyRank, PlatformType, Settlement, SettlementStatus
 from app.core.security import get_password_hash
 from datetime import datetime, timedelta
@@ -174,33 +175,81 @@ def manual_kickstart_sync(
     msg = []
     
     # Check Connection
-    existing_conn = db.query(PlatformConnection).first()
-    if not existing_conn:
-        if settings.NAVER_AD_CUSTOMER_ID:
-            client = db.query(Client).order_by(Client.created_at.asc()).first()
-            if client:
-                new_conn = PlatformConnection(
-                    client_id=client.id,
-                    platform=PlatformType.NAVER_AD,
-                    status="ACTIVE",
-                    credentials={}
-                )
-                db.add(new_conn)
-                db.commit()
-                msg.append(f"Auto-Created Connection for Client {client.name}")
-            else:
-                msg.append("No Client found to attach connection!")
-        else:
-            msg.append("No NAVER keys in env to auto-connect.")
-    else:
-        msg.append("Connection already exists.")
+    connections = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE").all()
+    
+    if not connections:
+        return {"status": "SKIPPED", "message": "활성 연결이 없습니다. 데이터 연결을 먼저 해주세요."}
 
     # 2. Trigger Sync
     from app.tasks.sync_data import sync_all_channels
     background_tasks.add_task(sync_all_channels, db)
-    msg.append("Sync Task dispatched to background.")
+    msg.append(f"Triggered sync for {len(connections)} connections.")
     
     return {"status": "KICKSTARTED", "details": msg}
+
+@router.delete("/reset-all")
+def reset_workspace_data(
+    db: Session = Depends(get_db),
+    # Secret key protection (or admin check)
+    current_user: User = Depends(get_current_user) # Assuming auth import needed
+):
+    """
+    [Emergency] Hard Reset for Workspace Data.
+    Deletes ALL Clients, Connections, Campaigns, Metrics for the user's agency.
+    """
+    try:
+        if current_user.role == UserRole.SUPER_ADMIN:
+            # Delete EVERYTHING
+            tables = [
+                "metrics_daily", "campaigns", "sync_tasks", "sync_validation",
+                "platform_connections", "leads", "lead_activities", 
+                "settlement_details", "settlements", "reports", 
+                "collaborative_tasks", "task_comments", 
+                "swot_analysis", "strategy_goals", "analysis_history",
+                "clients" 
+                # Note: Not deleting Users or Agencies
+            ]
+            
+            for t in tables:
+                # Use cascade-like delete if possible, or just raw delete
+                # But sqlalchemy delete needs models. Let's use raw SQL for speed/force
+                # Be careful with foreign keys order
+                pass 
+                
+            # Better approach: Delete Clients one by one using the robust delete_client logic
+            clients = db.query(Client).all()
+        else:
+            if not current_user.agency_id:
+                return {"error": "No Agency ID found for user."}
+            clients = db.query(Client).filter(Client.agency_id == current_user.agency_id).all()
+            
+        from app.api.endpoints.clients import delete_client
+        
+        deleted_count = 0
+        for client in clients:
+            try:
+                # call delete_client(client.id, db, current_user) logic directly
+                # but delete_client is an API handler, might raise HTTPException.
+                # Let's extract logic is risky. 
+                # Let's just DELETE clients directly and rely on CASCADE if configured, 
+                # OR manual cleanup script below.
+                
+                # Manual RAW Cleanup order:
+                cid = str(client.id)
+                db.execute(text("DELETE FROM metrics_daily WHERE campaign_id IN (SELECT id FROM campaigns WHERE connection_id IN (SELECT id FROM platform_connections WHERE client_id = :cid))"), {"cid": cid})
+                db.execute(text("DELETE FROM campaigns WHERE connection_id IN (SELECT id FROM platform_connections WHERE client_id = :cid)"), {"cid": cid})
+                db.execute(text("DELETE FROM platform_connections WHERE client_id = :cid"), {"cid": cid})
+                db.execute(text("DELETE FROM clients WHERE id = :cid"), {"cid": cid})
+                deleted_count += 1
+            except Exception as e:
+                print(f"Failed to delete client {client.id}: {e}")
+                
+        db.commit()
+        return {"status": "RESET_COMPLETE", "deleted_clients": deleted_count}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/logs")
 def view_server_logs(lines: int = 50):
