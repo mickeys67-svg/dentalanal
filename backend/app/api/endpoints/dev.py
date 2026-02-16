@@ -5,6 +5,7 @@ from app.core.database import get_db
 from sqlalchemy import text # Added text import
 from app.models.models import User, UserRole, Client, Target, Keyword, DailyRank, PlatformType, Settlement, SettlementStatus
 from app.core.security import get_password_hash
+from app.api.endpoints.auth import get_current_user # FIX: Import missing dependency
 from datetime import datetime, timedelta
 import uuid
 import random
