@@ -98,25 +98,43 @@ export default function AnalysisPage() {
 
     const renderFunnelChart = () => {
         if (isFunnelLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-        if (!funnelData || funnelData.length === 0) return <div className="h-80 flex items-center justify-center text-gray-400 text-sm">데이터가 없습니다.</div>;
+
+        // [Safety Check] Ensure data is valid array
+        if (!funnelData || !Array.isArray(funnelData) || funnelData.length === 0) {
+            return (
+                <div className="h-80 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed">
+                    <Target className="h-10 w-10 mb-2 opacity-20" />
+                    <span>퍼널 데이터가 없습니다.</span>
+                </div>
+            );
+        }
+
         return (
-            <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={funnelData} layout="vertical" margin={{ left: 40, right: 40 }}>
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="stage" type="category" width={120} tick={{ fontSize: 12 }} />
-                    <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                    <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={40}>
-                        {funnelData?.map((entry: FunnelStage, index: number) => (
-                            <Cell key={`cell-${index}`} fill={[`#4f46e5`, `#6366f1`, `#818cf8`][index % 3]} />
-                        ))}
-                    </Bar>
-                </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={funnelData} layout="vertical" margin={{ left: 40, right: 40 }}>
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="stage" type="category" width={120} tick={{ fontSize: 12 }} />
+                        <Tooltip cursor={{ fill: '#f3f4f6' }} />
+                        <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={40}>
+                            {funnelData?.map((entry: FunnelStage, index: number) => (
+                                <Cell key={`cell-${index}`} fill={[`#4f46e5`, `#6366f1`, `#818cf8`][index % 3]} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
         );
     };
 
     const renderCohortTable = () => {
         if (isCohortLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+
+        // [Safety Check]
+        if (!cohortData || !Array.isArray(cohortData) || cohortData.length === 0) {
+            return <div className="h-80 flex items-center justify-center text-gray-400">데이터가 없습니다.</div>;
+        }
+
         return (
             <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
@@ -128,11 +146,11 @@ export default function AnalysisPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {cohortData?.map((row: CohortRow, i: number) => (
+                        {cohortData.map((row: CohortRow, i: number) => (
                             <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
                                 <td className="p-3 font-semibold text-gray-700">{row.month}</td>
                                 <td className="p-3 text-gray-400">{row.size}명</td>
-                                {row.retention.map((val: number, j: number) => (
+                                {Array.isArray(row.retention) && row.retention.map((val: number, j: number) => (
                                     <td key={j} className="p-3">
                                         <div className={clsx(
                                             "w-full py-2 rounded text-center font-bold",
@@ -155,7 +173,11 @@ export default function AnalysisPage() {
 
     const renderAttributionChart = () => {
         if (isAttrLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-        if (!attributionData || attributionData.length === 0) return <div className="h-80 flex items-center justify-center text-gray-400 text-sm">데이터가 없습니다.</div>;
+
+        // [Safety Check]
+        if (!attributionData || !Array.isArray(attributionData) || attributionData.length === 0) {
+            return <div className="h-80 flex items-center justify-center text-gray-400">기여도 데이터가 없습니다.</div>;
+        }
 
         return (
             <div className="space-y-6">
@@ -173,27 +195,35 @@ export default function AnalysisPage() {
                         </button>
                     ))}
                 </div>
-                <ResponsiveContainer width="100%" height={320}>
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={attributionData}>
-                        <PolarGrid stroke="#e5e7eb" />
-                        <PolarAngleAxis dataKey="channel" tick={{ fontSize: 10, fill: '#6b7280' }} />
-                        <PolarRadiusAxis angle={30} domain={[0, 100]} hide />
-                        <Radar
-                            name="기여도 (%)"
-                            dataKey={attrModel}
-                            stroke="#4f46e5"
-                            fill="#4f46e5"
-                            fillOpacity={0.6}
-                        />
-                        <Tooltip />
-                    </RadarChart>
-                </ResponsiveContainer>
+                <div style={{ width: '100%', height: 320 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={attributionData}>
+                            <PolarGrid stroke="#e5e7eb" />
+                            <PolarAngleAxis dataKey="channel" tick={{ fontSize: 10, fill: '#6b7280' }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} hide />
+                            <Radar
+                                name="기여도 (%)"
+                                dataKey={attrModel}
+                                stroke="#4f46e5"
+                                fill="#4f46e5"
+                                fillOpacity={0.6}
+                            />
+                            <Tooltip />
+                        </RadarChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
         );
     };
 
     const renderSegmentAnalysis = () => {
         if (isSegmentLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+
+        // [Safety Check]
+        if (!segmentData || !Array.isArray(segmentData) || segmentData.length === 0) {
+            return <div className="h-80 flex items-center justify-center text-gray-400">세그먼트 데이터가 없습니다.</div>;
+        }
+
         return (
             <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
@@ -206,7 +236,7 @@ export default function AnalysisPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {segmentData?.map((row: SegmentRow, i: number) => (
+                        {segmentData.map((row: SegmentRow, i: number) => (
                             <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="p-4 font-semibold text-gray-700">{row.segment}</td>
                                 <td className="p-4 text-center text-gray-500">{row.visitors.toLocaleString()}</td>
