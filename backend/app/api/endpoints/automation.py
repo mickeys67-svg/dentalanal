@@ -38,12 +38,40 @@ def get_recommendations(data: RecommendationRequest):
     return result
 
 @router.post("/sync")
-async def trigger_full_sync(background_tasks: BackgroundTasks):
+async def trigger_full_sync(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """
     Trigger full-channel data synchronization.
+    [Auto-Connect] If no connections exist, create a default Naver Ads connection using env vars.
     """
-    from app.scripts.sync_data import sync_all_channels
-    background_tasks.add_task(sync_all_channels)
+    # 1. Check if any connection exists
+    from app.models.models import PlatformConnection, PlatformType, Client
+    existing_conn = db.query(PlatformConnection).first()
+    
+    if not existing_conn:
+        # 2. Check if we have env vars to create one
+        from app.core.config import settings
+        if settings.NAVER_AD_CUSTOMER_ID and settings.NAVER_AD_ACCESS_LICENSE:
+            # 3. Find a client to attach to (e.g., the first one created)
+            client = db.query(Client).order_by(Client.created_at.asc()).first()
+            if client:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"[Auto-Connect] Creating default Naver Ads connection for client {client.id}")
+                
+                new_conn = PlatformConnection(
+                    client_id=client.id,
+                    platform=PlatformType.NAVER_AD,
+                    status="ACTIVE",
+                    credentials={} # Will use env vars by default in service
+                )
+                db.add(new_conn)
+                db.commit()
+    
+    from app.tasks.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels, db)
     return {"status": "SUCCESS", "message": "전체 채널 데이터 동기화가 시작되었습니다."}
 
 @router.post("/cron-sync")
@@ -56,8 +84,8 @@ async def trigger_cron_sync(
     """
     from datetime import datetime
     logger.info("Cron Sync triggered via Cloud Scheduler.")
-    from app.scripts.sync_data import sync_all_channels
-    background_tasks.add_task(sync_all_channels)
+    from app.tasks.sync_data import sync_all_channels
+    background_tasks.add_task(sync_all_channels, db)
     
     return {
         "status": "ACCEPTED",
