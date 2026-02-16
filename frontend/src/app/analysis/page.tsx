@@ -308,21 +308,30 @@ export default function AnalysisPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {rankingData?.map((row: any, i: number) => (
-                                <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="p-4 text-center font-bold text-gray-900">{row.rank}</td>
-                                    <td className="p-4 font-semibold text-gray-700">
-                                        {row.title}
-                                        {row.blog_name && <span className="text-gray-400 text-[10px] ml-2">({row.blog_name})</span>}
-                                    </td>
-                                    <td className="p-4 text-gray-500 truncate max-w-[200px]">
-                                        {row.link ? <a href={row.link} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">{row.link}</a> : '-'}
-                                    </td>
-                                    <td className="p-4 text-right text-gray-400">
-                                        {new Date(row.created_at).toLocaleTimeString()}
-                                    </td>
-                                </tr>
-                            ))}
+                            {rankingData?.map((row: any, i: number) => {
+                                // [Safety Check]
+                                const rank = row?.rank || '-';
+                                const title = row?.title || 'Unknown';
+                                const blogName = row?.blog_name || '';
+                                const link = row?.link || '#';
+                                const timeStr = row?.created_at ? new Date(row.created_at).toLocaleTimeString() : '-';
+
+                                return (
+                                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="p-4 text-center font-bold text-gray-900">{rank}</td>
+                                        <td className="p-4 font-semibold text-gray-700">
+                                            {title}
+                                            {blogName && <span className="text-gray-400 text-[10px] ml-2">({blogName})</span>}
+                                        </td>
+                                        <td className="p-4 text-gray-500 truncate max-w-[200px]">
+                                            {link !== '#' ? <a href={link} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">{link}</a> : '-'}
+                                        </td>
+                                        <td className="p-4 text-right text-gray-400">
+                                            {timeStr}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {(!rankingData || rankingData.length === 0) && (
                                 <tr>
                                     <td colSpan={4} className="p-8 text-center text-gray-400">
@@ -339,7 +348,17 @@ export default function AnalysisPage() {
 
     const renderSOVChart = () => {
         if (isSOVLoading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
-        if (!sovData || sovData.length === 0) return <div className="text-center p-20 text-gray-400">데이터가 없습니다.</div>;
+
+        // [Safety Check] Ensure data is valid array
+        if (!sovData || !Array.isArray(sovData) || sovData.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center p-20 text-gray-400 bg-gray-50 rounded-xl border border-dashed">
+                    <Activity className="h-10 w-10 mb-2 opacity-20" />
+                    <span>데이터가 수집되지 않았습니다.</span>
+                    <span className="text-xs mt-1">(조사가 진행 중이거나 연결된 데이터가 없습니다)</span>
+                </div>
+            );
+        }
 
         return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -364,20 +383,27 @@ export default function AnalysisPage() {
                 </DashboardWidget>
                 <DashboardWidget title="키워드별 점유율 현황">
                     <div className="space-y-4">
-                        {sovData.map((item: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                <div>
-                                    <div className="text-sm font-bold text-gray-900">{item.keyword}</div>
-                                    <div className="text-[10px] text-gray-400">최고 순위: {item.top_rank || '-'}위</div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-lg font-bold text-indigo-600">{item.sov_score.toFixed(1)}%</div>
-                                    <div className="w-24 bg-gray-200 h-1 rounded-full mt-1 overflow-hidden">
-                                        <div className="bg-indigo-500 h-full" style={{ width: `${item.sov_score}%` }} />
+                        {sovData.map((item: any, idx: number) => {
+                            // [Safety Check] Use default values to prevent crash
+                            const keyword = item?.keyword || 'Unknown';
+                            const rank = item?.top_rank || '-';
+                            const score = typeof item?.sov_score === 'number' ? item.sov_score : 0;
+
+                            return (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-900">{keyword}</div>
+                                        <div className="text-[10px] text-gray-400">최고 순위: {rank}위</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-lg font-bold text-indigo-600">{score.toFixed(1)}%</div>
+                                        <div className="w-24 bg-gray-200 h-1 rounded-full mt-1 overflow-hidden">
+                                            <div className="bg-indigo-500 h-full" style={{ width: `${score}%` }} />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </DashboardWidget>
             </div>
