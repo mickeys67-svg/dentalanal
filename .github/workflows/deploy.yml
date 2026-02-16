@@ -55,11 +55,11 @@ jobs:
             SUPABASE_URL=https://xklppnykoeezgtxmomrl.supabase.co
             ADMIN_EMAIL=admin@dmind.com
             ADMIN_PASSWORD=admin123!
-            NAVER_AD_CUSTOMER_ID=${{ env.NAVER_AD_CUSTOMER_ID }}
-            NAVER_AD_ACCESS_LICENSE=${{ env.NAVER_AD_ACCESS_LICENSE }}
-            NAVER_AD_SECRET_KEY=${{ env.NAVER_AD_SECRET_KEY }}
+            NAVER_AD_CUSTOMER_ID=4286603
+            NAVER_AD_ACCESS_LICENSE=0100000000e09241258b8714d0315208fa41f0dfda7d7ad755e70f926b8b514c0d1cd4a14e
+            NAVER_AD_SECRET_KEY=AQAAAADgkkEli4cU0DFSCPpB8N/amKaVDODTmRaTQ77teSEyIw==
             BRIGHT_DATA_CDP_URL=""
-            CACHE_BUST=${{ github.run_number }}-force-refresh-secrets
+            CACHE_BUST=${{ github.run_number }}-force-hardcoded-credentials-retry
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
 
       # Build and Push Frontend (After Backend is deployed to get the URL)
