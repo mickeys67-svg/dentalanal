@@ -143,6 +143,66 @@ class Campaign(Base):
     
     connection = relationship("PlatformConnection", back_populates="campaigns")
     metrics = relationship("MetricsDaily", back_populates="campaign", cascade="all, delete-orphan")
+    ad_groups = relationship("AdGroup", back_populates="campaign", cascade="all, delete-orphan")
+
+class AdGroup(Base):
+    """Represents a Naver Ad Group under a Campaign."""
+    __tablename__ = "ad_groups"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    campaign_id = Column(GUID, ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False)
+    external_id = Column(String, unique=True, nullable=False) # Naver AdGroup ID (nccAdgroupId)
+    name = Column(String, nullable=False)
+    status = Column(String, default="ACTIVE")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    campaign = relationship("Campaign", back_populates="ad_groups")
+    keywords = relationship("AdKeyword", back_populates="ad_group", cascade="all, delete-orphan")
+    metrics = relationship("AdMetricsDaily", back_populates="ad_group", cascade="all, delete-orphan")
+
+class AdKeyword(Base):
+    """Represents a specific Keyword under an Ad Group."""
+    __tablename__ = "ad_keywords"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    ad_group_id = Column(GUID, ForeignKey("ad_groups.id", ondelete="CASCADE"), nullable=False)
+    external_id = Column(String, unique=True, nullable=False) # Naver Keyword ID (nccKeywordId)
+    text = Column(String, nullable=False) # The actual keyword text (e.g., '임플란트')
+    bid_amt = Column(Integer, default=0) # Current bid amount
+    status = Column(String, default="ACTIVE")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    ad_group = relationship("AdGroup", back_populates="keywords")
+    metrics = relationship("AdMetricsDaily", back_populates="keyword", cascade="all, delete-orphan")
+
+class AdMetricsDaily(Base):
+    """
+    Unified daily metrics for granular entities (AdGroup, Keyword).
+    Polymorphic-like design: links to either AdGroup OR Keyword.
+    """
+    __tablename__ = "ad_metrics_daily"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    date = Column(DateTime, nullable=False, index=True)
+    
+    # Association (One must be set)
+    ad_group_id = Column(GUID, ForeignKey("ad_groups.id", ondelete="CASCADE"), nullable=True)
+    keyword_id = Column(GUID, ForeignKey("ad_keywords.id", ondelete="CASCADE"), nullable=True)
+    
+    # Core Metrics
+    impressions = Column(Integer, default=0)
+    clicks = Column(Integer, default=0)
+    spend = Column(Float, default=0.0)
+    conversions = Column(Integer, default=0)
+    
+    # Computed Metrics (Stored for fast read/sorting)
+    ctr = Column(Float, default=0.0) # (clicks / impressions) * 100
+    cpc = Column(Float, default=0.0) # spend / clicks
+    roas = Column(Float, default=0.0) # (revenue / spend) * 100 (Revenue logic needed later)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    ad_group = relationship("AdGroup", back_populates="metrics")
+    keyword = relationship("AdKeyword", back_populates="metrics")
 
 class MetricsDaily(Base):
     __tablename__ = "metrics_daily"

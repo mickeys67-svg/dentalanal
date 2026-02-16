@@ -439,5 +439,64 @@ def test_official_api(db: Session = Depends(get_db)):
             "configuration": key_status,
             "api_result": result
         }
+@router.post("/migrate-ad-tables")
+def migrate_ad_tables(db: Session = Depends(get_db)):
+    """
+    Emergency Migration: Create Ad Tables directly from Cloud Run.
+    Bypasses local DNS/Connection issues.
+    """
+    from sqlalchemy import text
+    
+    ddl_ad_groups = """
+    CREATE TABLE IF NOT EXISTS ad_groups (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        external_id VARCHAR NOT NULL UNIQUE,
+        name VARCHAR NOT NULL,
+        status VARCHAR DEFAULT 'ACTIVE',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+    );
+    """
+
+    ddl_ad_keywords = """
+    CREATE TABLE IF NOT EXISTS ad_keywords (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ad_group_id UUID NOT NULL REFERENCES ad_groups(id) ON DELETE CASCADE,
+        external_id VARCHAR NOT NULL UNIQUE,
+        text VARCHAR NOT NULL,
+        bid_amt INTEGER DEFAULT 0,
+        status VARCHAR DEFAULT 'ACTIVE',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+    );
+    """
+
+    ddl_ad_metrics = """
+    CREATE TABLE IF NOT EXISTS ad_metrics_daily (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        date TIMESTAMP NOT NULL,
+        ad_group_id UUID REFERENCES ad_groups(id) ON DELETE CASCADE,
+        keyword_id UUID REFERENCES ad_keywords(id) ON DELETE CASCADE,
+        impressions INTEGER DEFAULT 0,
+        clicks INTEGER DEFAULT 0,
+        spend FLOAT DEFAULT 0.0,
+        conversions INTEGER DEFAULT 0,
+        ctr FLOAT DEFAULT 0.0,
+        cpc FLOAT DEFAULT 0.0,
+        roas FLOAT DEFAULT 0.0,
+        created_at TIMESTAMPTZ DEFAULT now()
+    );
+    
+    CREATE INDEX IF NOT EXISTS idx_ad_metrics_date ON ad_metrics_daily(date);
+    """
+    
+    try:
+        db.execute(text(ddl_ad_groups))
+        db.execute(text(ddl_ad_keywords))
+        db.execute(text(ddl_ad_metrics))
+        db.commit()
+        return {"status": "SUCCESS", "message": "Ad Performance Tables Created Successfully."}
     except Exception as e:
+        db.rollback()
         return {"status": "FAILED", "error": str(e)}
