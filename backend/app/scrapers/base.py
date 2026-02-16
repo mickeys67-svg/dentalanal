@@ -23,10 +23,14 @@ class ScraperBase:
     async def fetch_page_content(self, url: str, scroll: bool = False, is_mobile: bool = True) -> str:
         import os
         cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
-
+        
+        # Sanitize env var (handle potential quotes from YAML)
+        if cdp_url:
+            cdp_url = cdp_url.strip().strip('"').strip("'")
+            
         async with async_playwright() as p:
             # Launch browser (Local or Remote)
-            if cdp_url:
+            if cdp_url and cdp_url.startswith("wss://"):
                 self.logger.info(f"Connecting to Bright Data Scraping Browser... (URL starts with {cdp_url[:15]}...)")
                 try:
                     browser = await p.chromium.connect_over_cdp(cdp_url)
@@ -34,7 +38,9 @@ class ScraperBase:
                     self.logger.error(f"Failed to connect to CDP: {e}")
                     raise e
             else:
-                self.logger.info("Using Local Headless Browser (No CDP URL found in env)")
+                if cdp_url:
+                    self.logger.warning(f"Invalid CDP URL format (Len: {len(cdp_url)}). Falling back to Local Browser.")
+                self.logger.info("Using Local Headless Browser (No valid CDP URL found)")
                 browser = await p.chromium.launch(headless=True)
             
             try:

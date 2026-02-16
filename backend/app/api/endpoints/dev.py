@@ -293,8 +293,11 @@ async def test_scraping_connection(
         cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
         logs.append(f"CDP_URL Configured: {'Yes' if cdp_url else 'No'}")
         if cdp_url:
+             # Sanitize env var (handle potential quotes from YAML)
+            cdp_url = cdp_url.strip().strip('"').strip("'")
+            
              # Masking for safety in response
-            masked_url = cdp_url.replace(cdp_url.split('@')[0], '***')
+            masked_url = cdp_url.replace(cdp_url.split('@')[0], '***') if '@' in cdp_url else '***'
             logs.append(f"CDP_URL (Masked): {masked_url}")
 
         # Try scraping
@@ -303,10 +306,13 @@ async def test_scraping_connection(
         async with async_playwright() as p:
             browser = None
             try:
-                if use_proxy and cdp_url:
+                # Robust check: must start with wss://
+                if use_proxy and cdp_url and cdp_url.startswith("wss://"):
                     logs.append("Connecting to Bright Data CDP...")
                     browser = await p.chromium.connect_over_cdp(cdp_url)
                 else:
+                    if cdp_url:
+                         logs.append(f"Invalid CDP URL format (Len: {len(cdp_url)}). Falling back to Local Browser.")
                     logs.append("Launching local browser (No Proxy)...")
                     browser = await p.chromium.launch(headless=True)
                 
