@@ -52,15 +52,7 @@ async def run_startup_tasks():
         try:
             from sqlalchemy import text
             with engine.connect() as conn:
-                # 1. Cleanup contaminated DB config if any
-                try:
-                    conn.execute(text("DELETE FROM system_configs WHERE key = 'DATABASE_URL'"))
-                    conn.commit()
-                    logger.info("[OK] Contaminated DATABASE_URL config removed from DB.")
-                except Exception:
-                    pass
-
-                # 2. Check source column
+                # 1. Check source column
                 col_exists = conn.execute(text("SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'metrics_daily' AND column_name = 'source');")).fetchone()[0]
                 if not col_exists:
                     logger.info("[MIGRATE] Adding 'source' column to metrics_daily...")

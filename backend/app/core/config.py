@@ -48,41 +48,13 @@ class Settings(BaseSettings):
 
     @property
     def get_database_url(self) -> str:
-        """Dynamically build database URL, prioritizing existing valid URL."""
-        import os
-        import urllib.parse
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        url = self.DATABASE_URL
-        db_pwd = self.DATABASE_PASSWORD or os.environ.get("DATABASE_PASSWORD")
-        tenant_id = "xklppnykoeezgtxmomrl"
-        
-        if not url or url.startswith("sqlite"):
-            if db_pwd:
-                safe_pwd = urllib.parse.quote_plus(db_pwd)
-                # Fallback to direct stable connection
-                logger.info("[CONFIG] Falling back to default direct DB URL")
-                return f"postgresql://postgres:{safe_pwd}@db.{tenant_id}.supabase.co:5432/postgres?sslmode=require"
+        """
+        [EXPLICIT] Returns the database URL strictly from environment variables.
+        No auto-correction or hidden logic.
+        """
+        if not self.DATABASE_URL:
             return "sqlite:///./test.db"
-            
-        # [SELF-HEALING] Handle missing password in injected URL
-        if ":@" in url and db_pwd:
-            safe_pwd = urllib.parse.quote_plus(db_pwd)
-            url = url.replace(":@", f":{safe_pwd}@", 1)
-            logger.info("[CONFIG] Patching missing password in DATABASE_URL")
-
-        # [REPAIR] Fix "Tenant or user not found" by adjusting username based on host
-        # If port 6543 (pooler) -> needs postgres.TENANT
-        # If port 5432 (direct) -> needs postgres
-        if "pooler.supabase.com" in url and "postgres." not in url:
-            url = url.replace("://postgres", f"://postgres.{tenant_id}", 1)
-            logger.info("[CONFIG] Adjusting username for Supabase Pooler")
-        elif "db.xklppnykoeezgtxmomrl.supabase.co" in url and "postgres." in url:
-            url = url.replace(f"postgres.{tenant_id}", "postgres", 1)
-            logger.info("[CONFIG] Stripping tenant suffix for Direct Connection")
-            
-        return url
+        return self.DATABASE_URL
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -90,26 +62,4 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8"
     )
 
-def hydrate_settings_from_db():
-    """
-    [SELF-HEALING] DB에서 설정을 읽어와 settings 객체를 업데이트합니다.
-    환경변수가 유실되었을 때를 대비한 2중 안전장치입니다.
-    """
-    try:
-        from sqlalchemy import create_engine, text
-        # settings 객체가 이미 생성된 후이므로 get_database_url 사용 가능
-        temp_engine = create_engine(settings.get_database_url)
-        with temp_engine.connect() as conn:
-            # system_configs 테이블 존재 여부 확인 후 데이터 로드
-            result = conn.execute(text("SELECT key, value FROM system_configs"))
-            for key, value in result:
-                if hasattr(settings, key) and not getattr(settings, key):
-                    setattr(settings, key, value)
-                    # print(f"[SELF-HEAL] DB에서 {key} 설정을 복구했습니다.")
-    except Exception as e:
-        # DB가 아직 준비되지 않았거나 테이블이 없는 경우 조용히 넘어감
-        pass
-
 settings = Settings()
-# 서버 시작 시 자가 치유 실행
-hydrate_settings_from_db()

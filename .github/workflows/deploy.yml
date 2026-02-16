@@ -50,7 +50,7 @@ jobs:
           image: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
           region: ${{ env.REGION }}
           env_vars: |
-            DATABASE_URL=postgresql://postgres:2KJCvEbTrWjAjXH1@db.xklppnykoeezgtxmomrl.supabase.co:6543/postgres?sslmode=require
+            DATABASE_URL=postgresql://postgres:2KJCvEbTrWjAjXH1@db.xklppnykoeezgtxmomrl.supabase.co:5432/postgres?sslmode=require
             DATABASE_PASSWORD=2KJCvEbTrWjAjXH1
             SUPABASE_URL=https://xklppnykoeezgtxmomrl.supabase.co
             ADMIN_EMAIL=admin@dmind.com
