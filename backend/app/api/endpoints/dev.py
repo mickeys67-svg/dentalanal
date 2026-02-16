@@ -281,13 +281,13 @@ async def test_scraping_connection(
     Attempts to fetch a URL using the BaseScraper logic (Playwright + Bright Data).
     """
     import asyncio
-    from app.scrapers.base import BaseScraper
+    from app.scrapers.base import ScraperBase
     from playwright.async_api import async_playwright
 
     logs = []
     
     try:
-        scraper = BaseScraper()
+        scraper = ScraperBase()
         # Manually verify env var first
         import os
         cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
