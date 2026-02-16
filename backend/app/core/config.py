@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@dmind.com"
     ADMIN_PASSWORD: str = "admin123!"
 
+    # Monitoring
+    SENTRY_DSN: Optional[str] = None
+
     @property
     def get_database_url(self) -> str:
         """Dynamically build database URL, prioritizing existing valid URL."""

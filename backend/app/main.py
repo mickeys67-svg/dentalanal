@@ -12,6 +12,28 @@ import traceback
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Sentry (Safe Import)
+try:
+    import sentry_sdk
+except ImportError:
+    sentry_sdk = None
+
+from app.core.config import settings
+
+if sentry_sdk and settings.SENTRY_DSN:
+    try:
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            traces_sample_rate=1.0,
+            profiles_sample_rate=1.0,
+            environment="production"
+        )
+        logger.info("✅ Sentry Monitoring Initialized")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to initialize Sentry: {e}")
+elif not sentry_sdk and settings.SENTRY_DSN:
+    logger.warning("⚠️ SENTRY_DSN is set but sentry-sdk is not installed. Run 'pip install sentry-sdk[fastapi]'")
+
 async def run_startup_tasks():
     # Lazy load to avoid top-level issues
     from app.core.database import engine, Base, SQLALCHEMY_DATABASE_URL

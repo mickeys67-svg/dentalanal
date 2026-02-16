@@ -1,15 +1,32 @@
 from app.core.celery_app import celery_app
 from app.scrapers.naver_place import NaverPlaceScraper
 from app.scrapers.naver_view import NaverViewScraper
+from app.scrapers.safe_wrapper import SafeScraperWrapper
+from app.schemas.response import ResponseStatus
 import asyncio
+import logging
+
+logger = logging.getLogger("worker")
 
 async def run_place_scraper(keyword: str):
     scraper = NaverPlaceScraper()
-    return await scraper.get_rankings(keyword)
+    wrapper = SafeScraperWrapper(scraper)
+    response = await wrapper.run("get_rankings", keyword)
+    
+    if response.status == ResponseStatus.SUCCESS and response.data:
+        return response.data
+    # On failure, SafeWrapper has already logged to Sentry.
+    # We return empty list to maintain compatibility with existing DB logic.
+    return []
 
 async def run_view_scraper(keyword: str):
     scraper = NaverViewScraper()
-    return await scraper.get_rankings(keyword)
+    wrapper = SafeScraperWrapper(scraper)
+    response = await wrapper.run("get_rankings", keyword)
+    
+    if response.status == ResponseStatus.SUCCESS and response.data:
+        return response.data
+    return []
 
 def execute_place_sync(keyword: str):
     """Inline execution of place scraping and saving."""
@@ -141,10 +158,17 @@ def execute_ad_sync(keyword: str):
     
     logger = logging.getLogger("worker")
     scraper = NaverAdScraper()
+    wrapper = SafeScraperWrapper(scraper)
     error_msg = None
 
     try:
-        results = asyncio.run(scraper.get_ad_rankings(keyword))
+        response = asyncio.run(wrapper.run("get_ad_rankings", keyword))
+        if response.status == ResponseStatus.SUCCESS and response.data:
+            results = response.data
+        else:
+            results = []
+            if response.message:
+                error_msg = response.message # Capture wrapper error message if any
     except Exception as e:
         logger.error(f"Ad scraping failed for {keyword}: {e}")
         error_msg = str(e)

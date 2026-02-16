@@ -20,3 +20,4 @@ python-jose[cryptography]
 email-validator
 python-multipart
 nest_asyncio
+sentry-sdk[fastapi]
