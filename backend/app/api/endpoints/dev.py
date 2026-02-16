@@ -187,11 +187,12 @@ def manual_kickstart_sync(
     
     return {"status": "KICKSTARTED", "details": msg}
 
-@router.delete("/reset-all")
+@router.api_route("/reset-all", methods=["GET", "DELETE"])
 def reset_workspace_data(
     db: Session = Depends(get_db),
-    # Secret key protection (or admin check)
-    current_user: User = Depends(get_current_user) # Assuming auth import needed
+    # For emergency reset, maybe relax auth or require specific header?
+    # but for now let's keep it safe behind auth
+    current_user: User = Depends(get_current_user) 
 ):
     """
     [Emergency] Hard Reset for Workspace Data.

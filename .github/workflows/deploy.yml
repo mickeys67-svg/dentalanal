@@ -62,7 +62,7 @@ jobs:
             NAVER_CLIENT_ID=${{ env.NAVER_LOGIN_ID }}
             NAVER_CLIENT_SECRET=${{ env.NAVER_LOGIN_SECRET }}
             NAVER_REDIRECT_URI=${{ env.NAVER_CALLBACK_URL }}
-            CACHE_BUST=${{ github.run_number }}-fix-db-integrity
+            CACHE_BUST=${{ github.run_number }}-reset-api-get-method
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
 
       # Build and Push Frontend (After Backend is deployed to get the URL)
