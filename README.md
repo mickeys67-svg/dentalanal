@@ -7,4 +7,4 @@
 - `backend/`: FastAPI 기반 마케팅 데이터 엔진
 - `frontend/`: Next.js 기반 대시보드 UI
 - `ARCHITECTURE.md`: 기술 스택 및 데이터 레이어 정의서
-- `scripts/`: DB 마이그레이션 및 관리 도구
+- `scripts/`: DB 마이그레이션 및 관리 도구# Deployment triggered: 2026년 02월 18일 수 오전  2:02:37
