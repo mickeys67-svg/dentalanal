@@ -13,6 +13,8 @@ from app.api.endpoints.auth import get_current_user
 from app.services.analysis import AnalysisService
 from app.services.report_builder import ReportBuilderService
 from app.services.pdf_generator import PDFGeneratorService
+from app.services.email_service import EmailService
+from pydantic import BaseModel, EmailStr
 import datetime
 
 router = APIRouter()
@@ -296,3 +298,77 @@ def download_report_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+class EmailReportRequest(BaseModel):
+    report_id: UUID
+    to_emails: list[EmailStr]
+    subject: str
+    summary: str
+
+@router.post("/send-email")
+def send_report_email(
+    request: EmailReportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    리포트 이메일 발송
+
+    Args:
+        request: 이메일 발송 요청
+            - report_id: 리포트 ID
+            - to_emails: 수신자 이메일 목록
+            - subject: 이메일 제목
+            - summary: 리포트 요약
+
+    Returns:
+        발송 결과
+    """
+    # 1. 리포트 조회
+    report = db.query(Report).filter(Report.id == request.report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    # 2. 템플릿 조회
+    template = db.query(ReportTemplate).filter(ReportTemplate.id == report.template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # 3. 클라이언트 조회
+    client = db.query(Client).filter(Client.id == report.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # 4. PDF 생성
+    try:
+        pdf_service = PDFGeneratorService()
+        pdf_bytes = pdf_service.generate_report_pdf(
+            report_data=report.data or {},
+            template_config=template.config,
+            client_name=client.name
+        )
+
+        # 5. 이메일 발송
+        email_service = EmailService()
+        success = email_service.send_report_email(
+            to_emails=request.to_emails,
+            subject=request.subject,
+            report_title=report.title,
+            client_name=client.name,
+            summary=request.summary,
+            pdf_bytes=pdf_bytes,
+            pdf_filename=f"report_{report.id}.pdf"
+        )
+
+        if success:
+            return {
+                "status": "SUCCESS",
+                "message": f"Email sent to {len(request.to_emails)} recipients"
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Email sending failed")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Email sending failed: {str(e)}")

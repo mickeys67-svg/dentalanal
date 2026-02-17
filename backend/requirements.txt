@@ -25,3 +25,4 @@ httpx
 pytz
 reportlab
 matplotlib
+jinja2
