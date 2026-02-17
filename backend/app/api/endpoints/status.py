@@ -82,3 +82,21 @@ def get_system_status(db: Session = Depends(get_db)):
         "uptime": "99.9%",
         "recent_logs": recent_activity
     }
+
+@router.post("/seed-test-data")
+async def seed_client_test_data(
+    client_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Seeds sample performance metrics for a specific client to enable feature visualization.
+    """
+    from app.services.analysis import AnalysisService
+    from fastapi import HTTPException
+    
+    service = AnalysisService(db)
+    try:
+        success = service.seed_sample_metrics(client_id)
+        return {"status": "SUCCESS", "message": f"'{client_id}' 업체에 대한 샘플 데이터 생성이 완료되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
