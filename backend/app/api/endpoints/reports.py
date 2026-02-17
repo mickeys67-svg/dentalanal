@@ -140,6 +140,24 @@ def create_report(
     
     return new_report
 
+@router.get("", response_model=List[ReportResponse])
+def get_all_reports(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all reports accessible to the current user's agency"""
+    # Get all clients owned by current user's agency
+    agency_clients = db.query(Client).filter(
+        Client.agency_id == current_user.agency_id
+    ).all()
+    agency_client_ids = [c.id for c in agency_clients]
+
+    # Get all reports for those clients
+    reports = db.query(Report).filter(
+        Report.client_id.in_(agency_client_ids)
+    ).all()
+    return reports
+
 @router.get("/detail/{report_id}", response_model=ReportResponse)
 def get_report(
     report_id: UUID,
