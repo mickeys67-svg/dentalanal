@@ -23,3 +23,5 @@ nest_asyncio
 sentry-sdk[fastapi]
 httpx
 pytz
+reportlab
+matplotlib

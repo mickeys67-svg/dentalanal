@@ -75,7 +75,25 @@ export default function ReportDetailPage() {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => window.print()}
+                        onClick={async () => {
+                            try {
+                                const response = await api.get(`/api/v1/reports/pdf/${report.id}`, {
+                                    responseType: 'blob'
+                                });
+                                const blob = new Blob([response.data], { type: 'application/pdf' });
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `report_${report.id}.pdf`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                            } catch (error) {
+                                console.error('PDF download failed:', error);
+                                alert('PDF 다운로드에 실패했습니다.');
+                            }
+                        }}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-all font-medium"
                     >
                         <Download className="w-4 h-4" /> PDF 다운로드

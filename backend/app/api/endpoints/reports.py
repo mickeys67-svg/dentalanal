@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
 from app.core.database import get_db
-from app.models.models import ReportTemplate, Report, User, UserRole
+from app.models.models import ReportTemplate, Report, User, UserRole, Client
 from app.schemas.reports import (
     ReportTemplateCreate, ReportTemplateResponse,
     ReportCreate, ReportResponse
@@ -11,6 +12,7 @@ from app.schemas.reports import (
 from app.api.endpoints.auth import get_current_user
 from app.services.analysis import AnalysisService
 from app.services.report_builder import ReportBuilderService
+from app.services.pdf_generator import PDFGeneratorService
 import datetime
 
 router = APIRouter()
@@ -244,3 +246,53 @@ def schedule_report(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/pdf/{report_id}")
+def download_report_pdf(
+    report_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    리포트 PDF 다운로드
+
+    Args:
+        report_id: 리포트 ID
+
+    Returns:
+        PDF 파일 (application/pdf)
+    """
+    # 1. 리포트 조회
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    # 2. 템플릿 조회
+    template = db.query(ReportTemplate).filter(ReportTemplate.id == report.template_id).first()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # 3. 클라이언트 조회
+    client = db.query(Client).filter(Client.id == report.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # 4. PDF 생성
+    try:
+        pdf_service = PDFGeneratorService()
+        pdf_bytes = pdf_service.generate_report_pdf(
+            report_data=report.data or {},
+            template_config=template.config,
+            client_name=client.name
+        )
+
+        # 5. Response 반환
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=report_{report_id}.pdf"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
