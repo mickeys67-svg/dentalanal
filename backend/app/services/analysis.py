@@ -363,12 +363,20 @@ class AnalysisService:
         if not start_date:
             start_date = end_date - datetime.timedelta(days=days)
         
+        # Determine best source (Fallback: RECONCILED > API > SCRAPER)
+        source_filter = 'RECONCILED'
+        recon_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'RECONCILED').limit(1).first()
+        if not recon_exists:
+            api_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'API').limit(1).first()
+            source_filter = 'API' if api_exists else 'SCRAPER'
+            self.logger.warning(f"No RECONCILED metrics found for funnel. Using {source_filter} fallback.")
+
         # Base query with filters
         query_base = self.db.query(MetricsDaily).join(Campaign).join(PlatformConnection).filter(
             PlatformConnection.client_id == client_id,
             MetricsDaily.date >= start_date,
             MetricsDaily.date <= end_date,
-            MetricsDaily.source == 'RECONCILED'
+            MetricsDaily.source == source_filter
         )
 
         # Get actual period found in DB
@@ -389,7 +397,7 @@ class AnalysisService:
             PlatformConnection.client_id == client_id,
             MetricsDaily.date >= start_date,
             MetricsDaily.date <= end_date,
-            MetricsDaily.source == 'RECONCILED'
+            MetricsDaily.source == source_filter
         ).first()
 
         impressions = int(results.impressions or 0)
@@ -546,6 +554,14 @@ class AnalysisService:
         if not start_date:
             start_date = end_date - datetime.timedelta(days=days)
         
+        # Determine best source (Fallback: RECONCILED > API > SCRAPER)
+        source_filter = 'RECONCILED'
+        recon_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'RECONCILED').limit(1).first()
+        if not recon_exists:
+            api_exists = self.db.query(MetricsDaily.id).filter(MetricsDaily.source == 'API').limit(1).first()
+            source_filter = 'API' if api_exists else 'SCRAPER'
+            self.logger.warning(f"No RECONCILED metrics found for efficiency. Using {source_filter} fallback.")
+
         # Base query with filters
         query_base = self.db.query(MetricsDaily).join(Campaign, Campaign.id == MetricsDaily.campaign_id)\
          .join(PlatformConnection, PlatformConnection.id == Campaign.connection_id)\
@@ -553,7 +569,7 @@ class AnalysisService:
              PlatformConnection.client_id == client_id,
              MetricsDaily.date >= start_date,
              MetricsDaily.date <= end_date,
-             MetricsDaily.source == 'RECONCILED'
+             MetricsDaily.source == source_filter
          )
 
         # Get actual period found in DB
