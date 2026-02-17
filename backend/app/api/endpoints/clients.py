@@ -67,9 +67,8 @@ def create_client(
         if str(agency_id) == DEFAULT_AGENCY_ID:
             # [MODIFIED] If default agency ID came in, it means user has no agency.
             # Create a NEW Agency for this user, instead of using the shared dummy one.
-            import uuid
             new_agency_id = uuid.uuid4()
-            agency_name = f"{current_user.username.split('@')[0]}의 Agency"
+            agency_name = f"{current_user.email.split('@')[0]}의 Agency"
             
             agency = Agency(id=new_agency_id, name=agency_name)
             db.add(agency)
