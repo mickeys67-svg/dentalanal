@@ -140,7 +140,7 @@ def create_report(
     
     return new_report
 
-@router.get("", response_model=List[ReportResponse])
+@router.get("/all", response_model=List[ReportResponse])
 def get_all_reports(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
