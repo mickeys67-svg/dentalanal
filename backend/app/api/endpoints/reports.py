@@ -9,7 +9,9 @@ from app.schemas.reports import (
     ReportCreate, ReportResponse
 )
 from app.api.endpoints.auth import get_current_user
-from app.services.analysis import AnalysisService # We'll extend this service for report data
+from app.services.analysis import AnalysisService
+from app.services.report_builder import ReportBuilderService
+import datetime
 
 router = APIRouter()
 
@@ -97,7 +99,7 @@ from app.core.database import SessionLocal
 def process_report_task(report_id: UUID):
     db = SessionLocal()
     try:
-        service = AnalysisService(db)
+        service = ReportBuilderService(db)
         service.generate_report_data(report_id)
     except Exception as e:
         import logging
@@ -152,3 +154,93 @@ def get_client_reports(
     current_user: User = Depends(get_current_user)
 ):
     return db.query(Report).filter(Report.client_id == client_id).all()
+
+@router.post("/generate/{report_id}")
+def generate_report_now(
+    report_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    리포트 데이터 즉시 생성
+
+    백그라운드 태스크 대신 즉시 생성하여 결과 반환
+    """
+    service = ReportBuilderService(db)
+
+    try:
+        report_data = service.generate_report_data(report_id)
+
+        return {
+            "status": "SUCCESS",
+            "report_id": str(report_id),
+            "data": report_data
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/schedule")
+def schedule_report(
+    client_id: UUID,
+    template_id: UUID,
+    schedule: str,  # "weekly", "monthly", "daily"
+    title_template: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    리포트 자동 생성 스케줄 등록
+
+    Args:
+        client_id: 클라이언트 ID
+        template_id: 템플릿 ID
+        schedule: 생성 주기 ("weekly", "monthly", "daily")
+        title_template: 제목 템플릿 (예: "주간 리포트 - {date}")
+
+    Returns:
+        생성된 스케줄 정보
+    """
+    service = ReportBuilderService(db)
+
+    # 다음 생성 일자 계산
+    today = datetime.date.today()
+
+    if schedule == "weekly":
+        period_start = today - datetime.timedelta(days=7)
+        period_end = today
+    elif schedule == "monthly":
+        # 지난 달 전체
+        first_of_month = today.replace(day=1)
+        period_end = first_of_month - datetime.timedelta(days=1)
+        period_start = period_end.replace(day=1)
+    elif schedule == "daily":
+        period_start = today - datetime.timedelta(days=1)
+        period_end = today - datetime.timedelta(days=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid schedule type")
+
+    # 제목 생성
+    title = title_template.replace("{date}", str(today))
+
+    try:
+        report = service.create_report(
+            client_id=client_id,
+            template_id=template_id,
+            title=title,
+            period_start=period_start,
+            period_end=period_end,
+            schedule=schedule
+        )
+
+        return {
+            "status": "SUCCESS",
+            "report_id": str(report.id),
+            "schedule": schedule,
+            "next_run": str(today)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
