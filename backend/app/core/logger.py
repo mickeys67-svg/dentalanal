@@ -28,7 +28,14 @@ def setup_logging(log_level=logging.INFO):
     if root_logger.handlers:
         root_logger.handlers.clear()
 
-    # 1. Console Handler
+    # 1. Console Handler with UTF-8 encoding
+    # Force UTF-8 encoding for console output (important for Cloud Run)
+    try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass  # Ignore if stdout doesn't support reconfigure
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
