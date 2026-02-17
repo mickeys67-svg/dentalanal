@@ -102,29 +102,4 @@ def sync_naver_data(db: Session, connection_id: str, days: int = None):
 
     return
 
-def sync_all_channels(db: Session):
-    """
-    [Main Task] Trigger sync for ALL active connections.
-    This is what 'Kickstart' calls.
-    """
-    logger.info("Starting sync_all_channels task...")
-    
-    # 1. Get all active connections
-    connections = db.query(PlatformConnection).filter(PlatformConnection.status == "ACTIVE").all()
-    
-    if not connections:
-        logger.warning("No active platform connections found to sync.")
-        return
-        
-    logger.info(f"Found {len(connections)} active connections. Syncing...")
-    
-    for conn in connections:
-        try:
-            if conn.platform == PlatformType.NAVER_AD:
-                logger.info(f"Syncing Connection {conn.id} (Naver Ads)...")
-                sync_naver_data(db, str(conn.id))
-            # Future: Add other platforms like META, GOOGLE here
-        except Exception as e:
-            logger.error(f"Failed to sync connection {conn.id}: {e}")
-            
-    logger.info("sync_all_channels task completed.")
+

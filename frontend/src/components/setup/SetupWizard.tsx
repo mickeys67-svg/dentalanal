@@ -77,6 +77,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     }, [clientName]);
 
     // Target Search Effect
+    const activeTargetName = activeTargetIdx !== null ? targets[activeTargetIdx]?.name : undefined;
+
     useEffect(() => {
         if (activeTargetIdx !== null) {
             const query = targets[activeTargetIdx]?.name || '';
@@ -95,7 +97,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         } else {
             setTargetSuggestions([]);
         }
-    }, [activeTargetIdx, activeTargetIdx !== null ? targets[activeTargetIdx]?.name : undefined]);
+    }, [activeTargetIdx, activeTargetName]);
 
     // History Effect
     useEffect(() => {
@@ -149,24 +151,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             if (!clientName) return alert('업체명을 입력해주세요.');
             try {
                 const existing = clientSuggestions.find(c => c.name === clientName) || recentClients.find(c => c.name === clientName);
-                let clientId = newClientId;
-                let client = selectedClient;
-
                 if (existing) {
-                    clientId = existing.id;
                     setNewClientId(existing.id);
                     setSelectedClient(existing);
-                    client = existing;
                 } else {
                     const created = await createClient({
                         name: clientName,
                         industry,
                         agency_id: user?.agency_id || '00000000-0000-0000-0000-000000000000'
                     });
-                    clientId = created.id;
                     setNewClientId(created.id);
                     setSelectedClient(created);
-                    client = created;
                     await refreshClients();
                 }
 
@@ -180,7 +175,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 });
 
                 setCurrentStep(2);
-            } catch (error) {
+            } catch {
                 alert('업체 등록 중 오류가 발생했습니다.');
             }
         } else if (currentStep === 2) {
@@ -197,7 +192,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     targets: validTargets
                 });
                 setCurrentStep(3);
-            } catch (error) {
+            } catch {
                 alert('타겟 등록 중 오류가 발생했습니다.');
             }
         } else {

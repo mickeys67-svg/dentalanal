@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Client } from '@/types';
 import { getClients } from '@/lib/api';
 import { useAuth } from './AuthProvider';
@@ -21,7 +21,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const refreshClients = async () => {
+    const refreshClients = useCallback(async () => {
         if (!user) {
             setClients([]);
             setSelectedClient(null);
@@ -54,13 +54,13 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user, selectedClient]);
 
     useEffect(() => {
         if (!isAuthLoading) {
             refreshClients();
         }
-    }, [user, isAuthLoading]);
+    }, [isAuthLoading, refreshClients]);
 
     useEffect(() => {
         if (selectedClient) {

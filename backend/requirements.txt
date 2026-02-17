@@ -3,12 +3,12 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
-alembic==1.13.1
+alembic
 pydantic
 pydantic-settings
 python-dotenv
 # redis==5.0.1 (Removed for stability)
-playwright==1.41.0
+playwright
 google-genai
 fake-useragent
 # celery (Removed for stability)
@@ -21,3 +21,5 @@ email-validator
 python-multipart
 nest_asyncio
 sentry-sdk[fastapi]
+httpx
+pytz

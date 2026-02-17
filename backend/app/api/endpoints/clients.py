@@ -231,8 +231,8 @@ def delete_client(
             )
             db.add(err_note)
             db.commit()
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to create error note: {e}")
 
         # Return exact error for debugging
         raise HTTPException(status_code=500, detail=f"Data Deletion Error: {str(e)}")

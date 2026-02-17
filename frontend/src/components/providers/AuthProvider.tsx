@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import axios from 'axios';
 
@@ -50,25 +50,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
         setIsLoading(false);
-    }, []);
+    }, [router]);
 
-    const login = (newToken: string, newUser: User) => {
+    const login = useCallback((newToken: string, newUser: User) => {
         setToken(newToken);
         setUser(newUser);
         localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(newUser));
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
         router.push('/dashboard');
-    };
+    }, [router]);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         delete axios.defaults.headers.common['Authorization'];
         router.push('/login');
-    };
+    }, [router]);
 
     // Protect routes
     useEffect(() => {
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         );
         return () => axios.interceptors.response.eject(interceptor);
-    }, []);
+    }, [logout]);
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>

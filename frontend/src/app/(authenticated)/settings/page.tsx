@@ -1,14 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, CheckCircle2, AlertCircle, RefreshCcw, Activity, Terminal, ShieldAlert, ChevronRight, Building2 } from 'lucide-react';
-import { getClients, createClient, deleteClient, getSystemStatus } from '@/lib/api';
-import { Client } from '@/types';
-import clsx from 'clsx';
-import { DashboardWidget } from '@/components/dashboard/DashboardWidget';
+import { Plus, Trash2, ChevronRight, Building2 } from 'lucide-react';
+import { deleteClient } from '@/lib/api';
 import { useClient } from '@/components/providers/ClientProvider';
-import { useAuth } from '@/components/providers/AuthProvider';
 
 import { SetupWizard } from '@/components/setup/SetupWizard';
 
@@ -16,14 +12,13 @@ export default function SettingsPage() {
     const [viewMode, setViewMode] = useState<'LIST' | 'CREATE'>('LIST');
     const router = useRouter();
     const { refreshClients, clients, isLoading, setSelectedClient } = useClient();
-    const { user } = useAuth();
 
     const handleDeleteClient = async (id: string) => {
         if (!confirm('정말 삭제하시겠습니까? 데이터가 모두 사라집니다.')) return;
         try {
             await deleteClient(id);
             await refreshClients();
-        } catch (error) {
+        } catch {
             alert('삭제에 실패했습니다.');
         }
     };

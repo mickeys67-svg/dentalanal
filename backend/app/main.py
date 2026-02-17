@@ -7,9 +7,10 @@ import logging
 import os
 import asyncio
 import traceback
+from app.core.logger import setup_logging
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # Initialize Sentry (Safe Import)
@@ -28,9 +29,9 @@ if sentry_sdk and settings.SENTRY_DSN:
             profiles_sample_rate=1.0,
             environment="production"
         )
-        logger.info("✅ Sentry Monitoring Initialized")
+        logger.info("[Sentry] Monitoring Initialized")
     except Exception as e:
-        logger.warning(f"⚠️ Failed to initialize Sentry: {e}")
+        logger.warning(f"[Sentry] Failed to initialize: {e}")
 elif not sentry_sdk and settings.SENTRY_DSN:
     logger.warning("⚠️ SENTRY_DSN is set but sentry-sdk is not installed. Run 'pip install sentry-sdk[fastapi]'")
 
@@ -166,8 +167,8 @@ async def lifespan(app: FastAPI):
     from app.core.scheduler import stop_scheduler
     try:
         stop_scheduler()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Startup task failed: {e}")
     if not init_task.done():
         init_task.cancel()
 

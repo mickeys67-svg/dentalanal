@@ -51,8 +51,8 @@ def get_system_status(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
         db_ok = True
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"DB Check Failed: {e}")
 
     # 2. Get Real Activity Logs from Notifications (Internal notices)
     recent_activity = []
@@ -65,8 +65,8 @@ def get_system_status(db: Session = Depends(get_db)):
                     "level": "INFO" if log.type == 'NOTICE' else "SUCCESS",
                     "message": log.title
                 })
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Notification Check Failed: {e}")
             
     # Fallback if no logs found
     if not recent_activity:

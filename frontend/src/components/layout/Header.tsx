@@ -9,6 +9,16 @@ import { getNotifications, markAsRead, markAllAsRead } from "@/lib/api";
 import clsx from "clsx";
 import Link from "next/link";
 
+interface Notification {
+    id: string;
+    type: string;
+    title: string;
+    content: string;
+    created_at: string;
+    is_read: boolean;
+    link?: string;
+}
+
 interface HeaderProps {
     onMenuClick?: () => void;
 }
@@ -19,16 +29,18 @@ export function Header({ onMenuClick }: HeaderProps) {
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const queryClient = useQueryClient();
 
-    const { data: notifications = [] } = useQuery({
+    const { data: notifications = [] } = useQuery<Notification[]>({
         queryKey: ['notifications'],
         queryFn: async () => {
             try {
                 return await getNotifications();
-            } catch (err: any) {
+            } catch (err) {
+                // @ts-expect-error - err is unknown
                 if (err.response?.status === 404) {
                     console.debug('Notifications endpoint not available yet');
                 } else {
-                    console.warn('Notifications fetch failed:', err.message);
+                    const message = err instanceof Error ? err.message : String(err);
+                    console.warn('Notifications fetch failed:', message);
                 }
                 return [];
             }
@@ -39,7 +51,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         staleTime: 60000,
     });
 
-    const unreadCount = notifications.filter((n: any) => !n.is_read).length;
+    const unreadCount = notifications.filter((n) => !n.is_read).length;
 
     const readMutation = useMutation({
         mutationFn: (id: string) => markAsRead(id),
@@ -133,7 +145,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                                             <p className="text-xs">새로운 알림이 없습니다.</p>
                                         </div>
                                     ) : (
-                                        notifications.map((n: any) => (
+                                        notifications.map((n) => (
                                             <div
                                                 key={n.id}
                                                 className={clsx(

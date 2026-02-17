@@ -117,7 +117,7 @@ export const getAIReport = async (keyword: string, targetHospital: string, platf
 // --- Dashboard & Management ---
 
 export interface DashboardSummary {
-    kpis: KPI[];
+    kpis: DashboardKPI[];
     campaigns: Campaign[];
     sov_data: { name: string; value: number }[];
     is_sample?: boolean;

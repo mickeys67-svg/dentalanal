@@ -3,7 +3,7 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql://postgres:3AiLcoNojCHgZpTw@db.uujxtnvpqdwcjqhsoshi.supabase.co:5432/postgres?sslmode=require"
+DATABASE_URL = "postgresql://postgres:2KJCvEbTrWjAjXH1@db.xklppnykoeezgtxmomrl.supabase.co:5432/postgres?sslmode=require"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

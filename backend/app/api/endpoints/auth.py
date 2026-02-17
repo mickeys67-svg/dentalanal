@@ -42,7 +42,8 @@ def get_optional_current_user(
         if email is None:
             return None
         return db.query(User).filter(User.email == email).first()
-    except:
+    except Exception as e:
+        # logger.debug(f"Auth check failed: {e}")
         return None
 
 def create_access_token(data: dict, expires_delta: timedelta = None):

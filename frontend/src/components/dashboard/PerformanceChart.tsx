@@ -1,88 +1,78 @@
 "use client";
 
-import React from 'react';
 import {
-    ResponsiveContainer,
-    AreaChart,
-    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend
-} from 'recharts';
+    ResponsiveContainer,
+    AreaChart,
+    Area
+} from "recharts";
 
-interface PerformanceChartProps {
-    data: { name: string; 광고비: number; 전환수: number }[];
-    height?: number;
+interface DataPoint {
+    date: string;
+    value: number;
 }
 
-export function PerformanceChart({ data, height = 300 }: PerformanceChartProps) {
-    if (!data || data.length === 0) {
-        return (
-            <div className="flex items-center justify-center text-gray-400 text-sm italic" style={{ height }}>
-                표시할 데이터가 없습니다.
-            </div>
-        );
-    }
+interface PerformanceChartProps {
+    data: DataPoint[];
+    title: string;
+    color?: string;
+}
+
+export function PerformanceChart({ data, title, color = "#4F46E5" }: PerformanceChartProps) {
     return (
-        <div style={{ width: '100%', height }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                    data={data}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                >
-                    <defs>
-                        <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1} />
-                            <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="colorConversions" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
-                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis
-                        dataKey="name"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 12, fill: '#9CA3AF' }}
-                        dy={10}
-                    />
-                    <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 12, fill: '#9CA3AF' }}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            borderRadius: '8px',
-                            border: 'none',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                        }}
-                    />
-                    <Legend verticalAlign="top" height={36} />
-                    <Area
-                        type="monotone"
-                        dataKey="광고비"
-                        stroke="#6366F1"
-                        fillOpacity={1}
-                        fill="url(#colorSpend)"
-                        strokeWidth={4}
-                        animationDuration={1500}
-                    />
-                    <Area
-                        type="monotone"
-                        dataKey="전환수"
-                        stroke="#10B981"
-                        fillOpacity={1}
-                        fill="url(#colorConversions)"
-                        strokeWidth={4}
-                        animationDuration={2000}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
+        <div className="rounded-xl border bg-card text-card-foreground shadow-sm h-full">
+            <div className="p-6 pb-2">
+                <h3 className="font-semibold leading-none tracking-tight">{title} 추이</h3>
+                <p className="text-sm text-muted-foreground pt-1">최근 30일 성과 그래프</p>
+            </div>
+            <div className="p-6 pt-0 h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id={`color-${title}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                                <stop offset="95%" stopColor={color} stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                        <XAxis
+                            dataKey="date"
+                            stroke="#888888"
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={10}
+                        />
+                        <YAxis
+                            stroke="#888888"
+                            fontSize={12}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(value) => `${value}`}
+                        />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: "hsl(var(--background))",
+                                borderColor: "hsl(var(--border))",
+                                borderRadius: "8px",
+                                fontSize: "12px",
+                            }}
+                            cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke={color}
+                            fillOpacity={1}
+                            fill={`url(#color-${title})`}
+                            strokeWidth={2}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
         </div>
     );
 }

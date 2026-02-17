@@ -28,10 +28,6 @@ export default function StrategyPage() {
     const queryClient = useQueryClient();
     const { selectedClient } = useClient();
 
-    if (!selectedClient) {
-        return <EmptyClientPlaceholder title="전략을 수립할 업체를 선택해주세요" description="업체를 선택하면 SWOT 분석 및 AI 타겟팅 전략 수립이 가능합니다." />;
-    }
-
     const [swotState, setSwotState] = useState<SWOTData>({
         strengths: [], weaknesses: [], opportunities: [], threats: []
     });
@@ -146,6 +142,10 @@ export default function StrategyPage() {
             setIsGenerating(false);
         }
     };
+
+    if (!selectedClient) {
+        return <EmptyClientPlaceholder title="전략을 수립할 업체를 선택해주세요" description="업체를 선택하면 SWOT 분석 및 AI 타겟팅 전략 수립이 가능합니다." />;
+    }
 
     return (
         <div className="space-y-8 p-6 animate-in fade-in duration-500">

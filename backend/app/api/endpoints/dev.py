@@ -9,6 +9,9 @@ from app.api.endpoints.auth import get_current_user # FIX: Import missing depend
 from datetime import datetime, timedelta
 import uuid
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -42,7 +45,8 @@ def seed_demo_data(
                 is_active=True
             )
             db.add(admin)
-            print("Created Admin User")
+            db.add(admin)
+            logger.info("Created Admin User")
             
         # 2. Create Sample Client
         client_name = "샘플 치과"
@@ -55,7 +59,8 @@ def seed_demo_data(
                 agency_id=uuid.UUID("00000000-0000-0000-0000-000000000000")
             )
             db.add(client)
-            print("Created Sample Client")
+            db.add(client)
+            logger.info("Created Sample Client")
         
         db.flush() # Get IDs
         
@@ -144,7 +149,8 @@ def seed_demo_data(
                 due_date=datetime(year, month+1 if month<12 else 1, 10)
             )
             db.add(settlement)
-            print("Created Settlement")
+            db.add(settlement)
+            logger.info("Created Settlement")
 
         db.commit()
         return {"message": "Demo data seeded successfully!", "admin_email": admin_email}
@@ -244,7 +250,7 @@ def reset_workspace_data(
                 db.execute(text("DELETE FROM clients WHERE id = :cid"), {"cid": cid})
                 deleted_count += 1
             except Exception as e:
-                print(f"Failed to delete client {client.id}: {e}")
+                logger.error(f"Failed to delete client {client.id}: {e}")
                 
         db.commit()
         return {"status": "RESET_COMPLETE", "deleted_clients": deleted_count}
@@ -389,8 +395,8 @@ async def system_diagnosis():
             ip_resp = requests.get("https://api.ipify.org?format=json", timeout=5)
             if ip_resp.status_code == 200:
                 report["network"]["public_ip"] = ip_resp.json().get("ip")
-        except:
-             report["network"]["public_ip_check"] = "Failed"
+        except Exception as e:
+             report["network"]["public_ip_check"] = f"Failed: {e}"
 
     except Exception as e:
         report["network"]["http_status"] = f"FAIL: {str(e)}"
@@ -443,6 +449,8 @@ def test_official_api(db: Session = Depends(get_db)):
             "configuration": key_status,
             "api_result": result
         }
+    except Exception as e:
+        return {"error": str(e), "details": "Check logs for more info"}
 @router.post("/migrate-ad-tables")
 def migrate_ad_tables(db: Session = Depends(get_db)):
     """

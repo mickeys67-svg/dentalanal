@@ -4,7 +4,6 @@ import {
     LayoutDashboard,
     Database,
     FileText,
-    Lightbulb,
     BarChart3,
     Users,
     Settings,

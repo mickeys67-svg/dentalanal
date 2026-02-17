@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Target, Search, Settings } from 'lucide-react';
+import { Target, Search, Settings } from 'lucide-react';
 import { Client } from '@/types';
 
 interface ControlPanelProps {

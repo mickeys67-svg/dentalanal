@@ -4,10 +4,12 @@ import hmac
 import base64
 import requests
 import json
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.models.models import PlatformConnection, Campaign, MetricsDaily, PlatformType
+from app.models.models import PlatformConnection, Campaign, MetricsDaily, PlatformType, AdGroup, AdKeyword, AdMetricsDaily
 import logging
 import uuid
 
@@ -23,6 +25,18 @@ class NaverAdsService:
         self.customer_id = creds.get('customer_id') or settings.NAVER_AD_CUSTOMER_ID
         self.access_license = creds.get('api_key') or creds.get('access_license') or settings.NAVER_AD_ACCESS_LICENSE
         self.secret_key = creds.get('secret_key') or settings.NAVER_AD_SECRET_KEY
+
+        # Setup Retry Strategy
+        self.session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        adapter = HTTPAdapter(max_retries=retries)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
     def _generate_signature(self, timestamp, method, path):
         message = f"{timestamp}.{method}.{path}"
@@ -46,7 +60,7 @@ class NaverAdsService:
         headers = self._get_headers("GET", path)
         
         try:
-            response = requests.get(self.base_url + path, headers=headers, timeout=10)
+            response = self.session.get(self.base_url + path, headers=headers, timeout=10)
             if response.status_code != 200:
                 logger.error(f"Naver API Error (Sync Campaigns): {response.status_code} - {response.text}")
                 return False
@@ -124,28 +138,120 @@ class NaverAdsService:
         self.db.commit()
         return True
 
-    def sync_daily_metrics(self, campaign_external_id: str, date_str: str):
-        """특정 날짜의 캠페인 성과 데이터를 수집하여 source='API'로 저장합니다."""
+    def sync_ad_groups(self, campaign_external_id: str):
+        """캠페인 하위의 광고그룹(AdGroup)을 동기화합니다."""
+        path = "/ncc/adgroups"
+        params = {"nccCampaignId": campaign_external_id}
+        headers = self._get_headers("GET", path)
+
+        try:
+            response = self.session.get(self.base_url + path, headers=headers, params=params, timeout=10)
+            if response.status_code != 200:
+                logger.error(f"Naver API AdGroup Error: {response.status_code} - {response.text}")
+                return []
+            
+            ad_groups_data = response.json()
+            
+            # DB Campaign ID Lookup
+            campaign = self.db.query(Campaign).filter(Campaign.external_id == campaign_external_id).first()
+            if not campaign:
+                logger.error(f"Campaign not found for external_id: {campaign_external_id}")
+                return []
+
+            synced_groups = []
+            for group_data in ad_groups_data:
+                ad_group = self.db.query(AdGroup).filter(AdGroup.external_id == group_data["nccAdgroupId"]).first()
+                if not ad_group:
+                    ad_group = AdGroup(
+                        id=uuid.uuid4(),
+                        campaign_id=campaign.id,
+                        external_id=group_data["nccAdgroupId"],
+                        name=group_data["name"],
+                        status=group_data["userLock"] == "N" and "ACTIVE" or "PAUSED"
+                    )
+                    self.db.add(ad_group)
+                else:
+                    ad_group.name = group_data["name"]
+                    ad_group.status = group_data["userLock"] == "N" and "ACTIVE" or "PAUSED"
+                
+                synced_groups.append(ad_group)
+            
+            self.db.commit()
+            return synced_groups
+
+        except Exception as e:
+            logger.error(f"Failed to sync ad groups: {e}")
+            return []
+
+    def sync_keywords(self, ad_group_external_id: str):
+        """광고그룹 하위의 키워드(AdKeyword)를 동기화합니다."""
+        path = "/ncc/keywords"
+        params = {"nccAdgroupId": ad_group_external_id}
+        headers = self._get_headers("GET", path)
+
+        try:
+            response = self.session.get(self.base_url + path, headers=headers, params=params, timeout=10)
+            if response.status_code != 200:
+                logger.error(f"Naver API Keyword Error: {response.status_code} - {response.text}")
+                return []
+
+            keywords_data = response.json()
+
+            # DB AdGroup Lookup
+            ad_group = self.db.query(AdGroup).filter(AdGroup.external_id == ad_group_external_id).first()
+            if not ad_group:
+                return []
+
+            synced_keywords = []
+            for kw_data in keywords_data:
+                keyword = self.db.query(AdKeyword).filter(AdKeyword.external_id == kw_data["nccKeywordId"]).first()
+                if not keyword:
+                    keyword = AdKeyword(
+                        id=uuid.uuid4(),
+                        ad_group_id=ad_group.id,
+                        external_id=kw_data["nccKeywordId"],
+                        text=kw_data["keyword"],
+                        bid_amt=kw_data.get("bidAmt", 0),
+                        status=kw_data["userLock"] == "N" and "ACTIVE" or "PAUSED"
+                    )
+                    self.db.add(keyword)
+                else:
+                    keyword.bid_amt = kw_data.get("bidAmt", 0)
+                    keyword.status = kw_data["userLock"] == "N" and "ACTIVE" or "PAUSED"
+                
+                synced_keywords.append(keyword)
+
+            self.db.commit()
+            return synced_keywords
+
+        except Exception as e:
+            logger.error(f"Failed to sync keywords: {e}")
+            return []
+
+    def sync_daily_metrics(self, external_id: str, date_str: str, entity_type: str = "campaign"):
+        """
+        특정 엔티티(캠페인, 광고그룹, 키워드)의 성과 데이터를 수집합니다.
+        entity_type: 'campaign', 'adgroup', 'keyword' (DB저장용 구분, API호출은 ID로 자동처리됨)
+        """
         # Naver Ads Stats API: GET /stats
-        # fields: impCnt(노출), clickCnt(클릭), salesAmt(비용), convCnt(전환)
         time_range = {"from": date_str, "to": date_str}
         params = {
-            "ids": campaign_external_id,
-            "fields": "impCnt,clickCnt,salesAmt,convCnt",
+            "ids": external_id,
+            "fields": "impCnt,clickCnt,salesAmt,convCnt,ctr,cpc,avgRnk", # Added CTR, CPC for validation
             "timeRange": json.dumps(time_range)
         }
         
         path = "/stats"
         headers = self._get_headers("GET", path)
         try:
-            response = requests.get(self.base_url + path, headers=headers, params=params, timeout=10)
+            response = self.session.get(self.base_url + path, headers=headers, params=params, timeout=10)
             if response.status_code != 200:
-                logger.error(f"Naver API Stats Error: {response.status_code} - {response.text}")
+                logger.error(f"Naver API Stats Error ({entity_type}:{external_id}): {response.status_code} - {response.text}")
                 return None
             
             data = response.json()
             if not data or 'data' not in data or not data['data']:
-                logger.warning(f"No API stats data found for {campaign_external_id} on {date_str}")
+                # logger.debug(f"No API stats data found for {external_id} on {date_str}")
                 return None
             
             # Extract first record
@@ -154,17 +260,22 @@ class NaverAdsService:
                 "spend": float(stats.get("salesAmt", 0)),
                 "impressions": int(stats.get("impCnt", 0)),
                 "clicks": int(stats.get("clickCnt", 0)),
-                "conversions": int(stats.get("convCnt", 0))
+                "conversions": int(stats.get("convCnt", 0)),
+                "ctr": float(stats.get("ctr", 0)),
+                "cpc": float(stats.get("cpc", 0))
             }
         except requests.exceptions.Timeout:
-            logger.error(f"Naver API Timeout for stats: {campaign_external_id}")
+            logger.error(f"Naver API Timeout for stats: {external_id}")
             return None
         except Exception as e:
             logger.error(f"Failed to fetch real Naver API metrics: {e}")
             return None
 
     def sync_all_campaign_metrics(self, connection_id: uuid.UUID, date_str: str):
-        """커넥션에 연결된 모든 캠페인의 API 지표를 수집합니다."""
+        """
+        커넥션에 연결된 모든 캠페인 -> 광고그룹 -> 키워드를 순회하며 데이터를 수집합니다.
+        (Granular Sync: Campaign > AdGroup > Keyword)
+        """
         campaigns = self.db.query(Campaign).filter(Campaign.connection_id == connection_id).all()
         results_count = 0
         target_date = datetime.strptime(date_str, "%Y-%m-%d")
@@ -172,27 +283,59 @@ class NaverAdsService:
         for cp in campaigns:
             if not cp.external_id:
                 continue
-                
-            data = self.sync_daily_metrics(cp.external_id, date_str)
-            if data:
-                # Save as API source
+            
+            # 1. Sync Campaign Metrics (Legacy/Summary)
+            camp_data = self.sync_daily_metrics(cp.external_id, date_str, "campaign")
+            if camp_data:
                 metrics = self.db.query(MetricsDaily).filter(
                     MetricsDaily.campaign_id == cp.id,
                     MetricsDaily.date == target_date,
                     MetricsDaily.source == 'API'
                 ).first()
-                
                 if not metrics:
                     metrics = MetricsDaily(id=uuid.uuid4(), campaign_id=cp.id, date=target_date, source='API')
                     self.db.add(metrics)
                 
-                metrics.spend = data["spend"]
-                metrics.impressions = data["impressions"]
-                metrics.clicks = data["clicks"]
-                metrics.conversions = data["conversions"]
-                results_count += 1
+                metrics.spend = camp_data["spend"]
+                metrics.impressions = camp_data["impressions"]
+                metrics.clicks = camp_data["clicks"]
+                metrics.conversions = camp_data["conversions"]
+
+            # 2. Sync AdGroups
+            ad_groups = self.sync_ad_groups(cp.external_id)
+            for ag in ad_groups:
+                # 3. Sync Keywords
+                keywords = self.sync_keywords(ag.external_id)
+                
+                # 4. Sync Metrics for Keywords
+                for kw in keywords:
+                    kw_data = self.sync_daily_metrics(kw.external_id, date_str, "keyword")
+                    if kw_data:
+                        ad_metrics = self.db.query(AdMetricsDaily).filter(
+                            AdMetricsDaily.keyword_id == kw.id,
+                            AdMetricsDaily.date == target_date
+                        ).first()
+                        
+                        if not ad_metrics:
+                            ad_metrics = AdMetricsDaily(
+                                id=uuid.uuid4(), 
+                                date=target_date, 
+                                ad_group_id=ag.id, 
+                                keyword_id=kw.id
+                            )
+                            self.db.add(ad_metrics)
+                        
+                        ad_metrics.impressions = kw_data["impressions"]
+                        ad_metrics.clicks = kw_data["clicks"]
+                        ad_metrics.spend = kw_data["spend"]
+                        ad_metrics.conversions = kw_data["conversions"]
+                        ad_metrics.ctr = kw_data["ctr"]
+                        ad_metrics.cpc = kw_data["cpc"]
+                        results_count += 1
+                        
+            # Intermediate commit per campaign to save progress
+            self.db.commit()
         
-        self.db.commit()
         return results_count
 
     def validate_api(self) -> dict:
@@ -201,7 +344,7 @@ class NaverAdsService:
         # 1개만 조회하여 최소한의 리소스로 인증 성공 여부 확인
         headers = self._get_headers("GET", path)
         try:
-            response = requests.get(self.base_url + path, headers=headers, params={"size": 1})
+            response = self.session.get(self.base_url + path, headers=headers, params={"size": 1})
             if response.status_code == 200:
                 return {"status": "HEALTHY", "message": "성공적으로 연결되었습니다."}
             elif response.status_code == 401:

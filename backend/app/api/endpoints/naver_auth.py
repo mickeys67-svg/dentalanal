@@ -1,6 +1,6 @@
 import os
 import secrets
-import axios
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -48,7 +48,8 @@ async def naver_callback(
         "state": state
     }
     
-    async with axios.post(token_url, params=params) as resp:
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(token_url, params=params)
         if resp.status_code != 200:
             raise HTTPException(status_code=400, detail="Failed to get token from Naver")
         token_data = resp.json()
