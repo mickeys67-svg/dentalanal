@@ -6,7 +6,7 @@ from typing import Optional
 class Settings(BaseSettings):
     # Standard Pydantic V2 Settings
     # Database
-    DATABASE_URL: str = "sqlite:///./test.db"
+    DATABASE_URL: str = ""
     DATABASE_PASSWORD: Optional[str] = None # Default value removed for security. 
     
     # Supabase (New Keys)

@@ -7,14 +7,6 @@ import os
 
 SQLALCHEMY_DATABASE_URL = settings.get_database_url
 
-# Cloud Run check: SQLite must use /tmp
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite") and os.environ.get("K_SERVICE"):
-    if "./" in SQLALCHEMY_DATABASE_URL:
-        # sqlite:///./test.db -> sqlite:////tmp/test.db
-        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("./", "/tmp/")
-        import logging
-        logging.info(f"Overriding SQLite path for Cloud Run: {SQLALCHEMY_DATABASE_URL}")
-
 # Handle Render/Supabase/Heroku postgres:// vs postgresql:// issue
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -38,11 +30,8 @@ engine_args = {
     "pool_pre_ping": True,
 }
 
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-else:
-    # PostgreSQL specific engine args - Enhanced for production performance
-    engine_args.update({
+# PostgreSQL specific engine args - Enhanced for production performance
+engine_args.update({
         "pool_size": 20,
         "max_overflow": 40,
         "pool_recycle": 1800, # More aggressive recycle

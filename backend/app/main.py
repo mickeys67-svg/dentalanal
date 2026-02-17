@@ -198,7 +198,7 @@ def health_check():
     return {"status": "ok"}
 
 # Lazy-loaded Routers to prevent top-level import crashes
-from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, dev
+from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
@@ -213,7 +213,6 @@ app.include_router(clients.router, prefix="/api/v1/clients", tags=["Clients"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
 app.include_router(settlement.router, prefix="/api/v1/settlement", tags=["Settlement"])
-app.include_router(dev.router, prefix="/api/v1/dev", tags=["Development"])
 
 @app.get("/")
 def read_root():
