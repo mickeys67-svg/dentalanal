@@ -18,7 +18,7 @@ class ReportTemplateResponse(ReportTemplateBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ReportBase(BaseModel):
     template_id: UUID
@@ -36,4 +36,4 @@ class ReportResponse(ReportBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
