@@ -53,9 +53,12 @@
 ## 다음 세션에서 할 작업 (우선순위 순)
 
 ### Phase 5 준비
-1. 단위 테스트 도입 (pytest / Vitest) — Phase 5 이전 필수
-2. DB 마이그레이션 관리 (Alembic 도입)
-3. 리포트 빌더 기획 (Phase 5 첫 번째 기능)
+1. 리포트 빌더 기획 및 구현 (Phase 5 첫 번째 기능)
+   - ReportTemplate DB 모델 이미 존재 (alembic 완료)
+   - 드래그 앤 드롭 위젯 시스템
+   - 템플릿 갤러리
+2. 캐싱 전략 검토 (Redis 도입 여부)
+3. React Query 도입 (데이터 캐싱 고려)
 
 ### Phase 4 잔여
 - (없음 — Phase 4 완료)
@@ -70,8 +73,8 @@
 - [x] 경쟁사 전략 분석 모달 ✅
 - [x] viral 페이지 경쟁사/트렌드 통합 ✅
 - [x] 알림 센터 UI ✅
-- [ ] 단위 테스트 도입 (Phase 5 이전)
-- [ ] DB 마이그레이션 관리 (Alembic)
+- [x] 단위 테스트 도입 (Vitest + pytest) ✅
+- [x] DB 마이그레이션 관리 (Alembic 동기화) ✅
 
 ## 프로젝트 경로
 - 루트: E:\dentalanal
