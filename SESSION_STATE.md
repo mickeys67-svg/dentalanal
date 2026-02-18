@@ -1,80 +1,106 @@
 # 세션 상태 저장 — 2026-02-19
 
 ## 마지막 커밋
-- 커밋: `0ff5189`
-- 메시지: [Feat] Phase 4 마무리 - 전략 분석 모달, viral 통합, 알림 센터
+- 커밋: `9fb499c`
+- 메시지: [Dev] 세션 상태 업데이트 및 package-lock 동기화
 - 브랜치: main
 
 ## 배포된 서비스 URL
 - Backend: https://dentalanal-backend-864421937037.us-west1.run.app
 - Frontend: https://dentalanal-864421937037.us-west1.run.app
 
-## Phase 4 완료 내역
+---
 
-### Step 1 — CompetitorDiscovery 컴포넌트 (이전 세션)
-- 파일: frontend/src/components/dashboard/CompetitorDiscovery.tsx
-- /api/v1/competitors/discover API 연동
-- Jaccard Similarity 기반 경쟁사 발굴
-- 플랫폼 토글 (NAVER_PLACE / NAVER_VIEW)
-- 중복도 진행바, 공유 키워드 펼치기, 위험도별 색상
-- place 페이지에 통합
+## 다음 세션 시작 방법
 
-### Step 2 — TrendAlerts 컴포넌트 (이전 세션)
-- 파일: frontend/src/components/dashboard/TrendAlerts.tsx
-- 순위 급락 감지: /api/v1/trends/alerts/ranking-drop/{client_id}
-- 트렌드 예측: /api/v1/trends/predict-search-trends/{client_id}
-- place 페이지에 통합
+**"진행해"를 입력하면 아래 Step 1부터 바로 시작합니다.**
 
-### Step 3 — CompetitorStrategyModal (이번 세션)
-- 파일: frontend/src/components/dashboard/CompetitorStrategyModal.tsx
-- POST /api/v1/competitors/strategy-analysis 연동
-- 순위 트렌드 LineChart (14일)
-- 주력 키워드 TOP N 목록
-- 시간대별 / 요일별 활동 패턴 BarChart
-- CompetitorDiscovery 카드에 "전략 분석" 버튼 추가
+---
 
-### Step 4 — viral 페이지 통합 (이번 세션)
-- 파일: frontend/src/app/(authenticated)/dashboard/viral/page.tsx
-- CompetitorDiscovery(NAVER_VIEW) + TrendAlerts 추가
+## Phase 5: 리포트 빌더 — 구현 계획
 
-### Step 5 — 알림 센터 (이번 세션)
-- 파일: frontend/src/components/layout/NotificationBell.tsx
-- GET /api/v1/notifications 조회 (1분 폴링)
-- POST /api/v1/notifications/{id}/read 개별 읽음
-- POST /api/v1/notifications/read-all 전체 읽음
-- 타입별 색상 (RANKING_DROP/빨강, BUDGET_OVERSPEND/주황, SYSTEM/파랑)
-- 미읽음 카운트 뱃지, 외부 클릭 시 닫기
-- AppHeader에 통합 (정적 벨 교체)
+### 현재 상태 (이미 완료된 것)
+- DB 모델: `report_templates`, `reports` 테이블 존재 (alembic `c3f8a912b045` 적용 완료)
+- DnD 패키지: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` 이미 설치됨 (`frontend/package.json`)
+- shadcn/ui Dialog 컴포넌트: `frontend/src/components/ui/dialog.tsx` 존재
 
-### 기타 신규 파일
-- frontend/src/components/ui/dialog.tsx — shadcn/ui Dialog
-- api.ts — analyzeCompetitorStrategy(), Notification 인터페이스 추가
+### Step 1 — 백엔드 리포트 API
 
-## 다음 세션에서 할 작업 (우선순위 순)
+**파일**: `backend/app/api/v1/reports.py` (신규)
 
-### Phase 5 준비
-1. 리포트 빌더 기획 및 구현 (Phase 5 첫 번째 기능)
-   - ReportTemplate DB 모델 이미 존재 (alembic 완료)
-   - 드래그 앤 드롭 위젯 시스템
-   - 템플릿 갤러리
-2. 캐싱 전략 검토 (Redis 도입 여부)
-3. React Query 도입 (데이터 캐싱 고려)
+엔드포인트:
+```
+GET  /api/v1/reports/templates         — 템플릿 목록
+POST /api/v1/reports/templates         — 템플릿 생성
+GET  /api/v1/reports/templates/{id}    — 템플릿 상세
+PUT  /api/v1/reports/templates/{id}    — 템플릿 수정
+GET  /api/v1/reports/{client_id}       — 리포트 목록
+POST /api/v1/reports/{client_id}/generate — 리포트 생성
+GET  /api/v1/reports/{client_id}/{id}  — 리포트 상세
+```
 
-### Phase 4 잔여
-- (없음 — Phase 4 완료)
+ReportTemplate.config JSON 스키마:
+```json
+{
+  "widgets": [
+    {"id": "w1", "type": "metrics_summary", "title": "핵심 지표", "order": 0},
+    {"id": "w2", "type": "rank_chart",      "title": "순위 추이", "order": 1},
+    {"id": "w3", "type": "ad_performance",  "title": "광고 성과", "order": 2},
+    {"id": "w4", "type": "competitor_map",  "title": "경쟁사 현황", "order": 3}
+  ]
+}
+```
 
-## 기술 부채 현황
-- [x] Frontend 에러 바운더리 추가 ✅
+### Step 2 — 리포트 빌더 페이지 (프론트엔드)
+
+**파일**: `frontend/src/app/(authenticated)/dashboard/reports/page.tsx` (신규)
+
+구성:
+1. **템플릿 갤러리** — 사전 정의된 3개 템플릿 카드 (기본/광고집중/플레이스집중)
+2. **위젯 에디터** — @dnd-kit 드래그 앤 드롭으로 위젯 순서 변경
+3. **리포트 생성** — 템플릿 선택 후 기간/클라이언트 지정 → 생성
+
+위젯 타입 4종:
+- `metrics_summary`: 핵심 KPI 카드 (노출/클릭/전환/ROAS)
+- `rank_chart`: 키워드 순위 추이 LineChart
+- `ad_performance`: 광고 캠페인 성과 BarChart
+- `competitor_map`: 경쟁사 중복도 현황
+
+### Step 3 — 사이드바 메뉴 추가
+
+**파일**: `frontend/src/components/layout/AppSidebar.tsx`
+- "리포트" 메뉴 항목 추가 → `/dashboard/reports`
+
+### Step 4 — PDF 내보내기 (선택, 시간 있으면)
+
+**파일**: `backend/app/services/report_pdf.py`
+- reportlab (이미 requirements.txt에 존재) 활용
+- `GET /api/v1/reports/{client_id}/{id}/export-pdf`
+
+---
+
+## 완료된 Phase 요약
+
+| Phase | 내용 | 상태 |
+|---|---|---|
+| Phase 1 | 프리미엄 UI 구축 (shadcn/ui, 7개 컴포넌트) | ✅ |
+| Phase 2 | 안정적 데이터 수집 (Naver API + 스크래퍼) | ✅ |
+| Phase 3 | 시스템 안정화 (스케줄러, 로깅, Cloud Run) | ✅ |
+| Phase 4 | 고급 분석 (경쟁사 발굴, 전략 모달, 트렌드 알림, 알림센터) | ✅ |
+| Phase 4.5 | 기술 부채 (단위 테스트 36개, Alembic 28개 테이블) | ✅ |
+| Phase 5 | 리포트 빌더 | 🔜 다음 세션 |
+
+## 기술 부채 현황 (전체 완료)
+- [x] Frontend 에러 바운더리 ✅
 - [x] 환경변수 검증 ✅
 - [x] alert() 전면 제거 ✅
-- [x] KeywordPositioningMap 플랫폼 토글 ✅
 - [x] 경쟁사 자동 발굴 UI ✅
 - [x] 트렌드 알림 시스템 UI ✅
 - [x] 경쟁사 전략 분석 모달 ✅
-- [x] viral 페이지 경쟁사/트렌드 통합 ✅
+- [x] viral 페이지 통합 ✅
 - [x] 알림 센터 UI ✅
-- [x] 단위 테스트 도입 (Vitest + pytest) ✅
-- [x] DB 마이그레이션 관리 (Alembic 동기화) ✅
+- [x] 단위 테스트 도입 (Vitest 16개 + pytest 20개) ✅
+- [x] DB 마이그레이션 동기화 (Alembic, 28개 테이블) ✅
 
 ## 프로젝트 경로
 - 루트: E:\dentalanal
@@ -90,3 +116,4 @@
 - 한글 커밋: commit_msg.txt에 저장 후 `git commit -F commit_msg.txt`
 - push 거부 시: `git push --force-with-lease origin main`
 - (authenticated) 경로 포함 파일: `git add -A frontend/src/app` 사용
+- venv 경로: `E:\dentalanal\backend\venv\Scripts\python.exe`
