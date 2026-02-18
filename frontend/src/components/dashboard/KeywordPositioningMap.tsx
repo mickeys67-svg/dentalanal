@@ -45,7 +45,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
         `/api/v1/competitors/positioning-map/${clientId}?platform=${platform}&days=${days}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         }
       )
