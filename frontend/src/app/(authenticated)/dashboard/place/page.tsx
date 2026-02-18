@@ -10,10 +10,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Search, Loader2, AlertCircle, RefreshCw } from "lucide-react";
-import { scrapePlace, getRankings, getCompetitors } from "@/lib/api";
+import { scrapePlace, getRankings, getCompetitors, getRankingTrend } from "@/lib/api";
 import { useClient } from "@/components/providers/ClientProvider";
 import { UI_TEXT } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp } from "lucide-react";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from "recharts";
 
 export default function PlaceRankPage() {
     const { selectedClient } = useClient();
@@ -33,6 +44,18 @@ export default function PlaceRankPage() {
         queryKey: ['competitors', searchedKeyword, 'NAVER_PLACE'],
         queryFn: () => getCompetitors(searchedKeyword, 'NAVER_PLACE'),
         enabled: !!searchedKeyword,
+        refetchOnWindowFocus: false,
+    });
+
+    const { data: trendData, isLoading: isTrendLoading } = useQuery({
+        queryKey: ['rankingTrend', searchedKeyword, 'NAVER_PLACE'],
+        queryFn: () => getRankingTrend({
+            keyword: searchedKeyword,
+            target_hospital: selectedClient?.name || '',
+            platform: 'NAVER_PLACE',
+            days: 14,
+        }),
+        enabled: !!searchedKeyword && !!selectedClient,
         refetchOnWindowFocus: false,
     });
 
@@ -117,6 +140,64 @@ export default function PlaceRankPage() {
                     </Alert>
                 )}
             </div>
+
+            {/* Trend Chart — 클라이언트 선택 + 키워드 검색 시 표시 */}
+            {selectedClient && searchedKeyword && (
+                <ErrorBoundary>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-blue-500" />
+                                플레이스 순위 트렌드 (최근 14일)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isTrendLoading ? (
+                                <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                                    <span className="text-sm">트렌드 로딩 중...</span>
+                                </div>
+                            ) : trendData && trendData.length > 0 ? (
+                                <div className="h-[200px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                            <XAxis
+                                                dataKey="date"
+                                                tick={{ fontSize: 11 }}
+                                                tickFormatter={(v) => v.slice(5)}
+                                            />
+                                            <YAxis
+                                                reversed
+                                                domain={[1, 'auto']}
+                                                tick={{ fontSize: 11 }}
+                                                tickFormatter={(v) => `${v}위`}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{ borderRadius: '8px', fontSize: '12px' }}
+                                                formatter={(v: number | undefined) => v !== undefined ? [`${v}위`, '순위'] : ['-', '순위']}
+                                                labelFormatter={(l) => `날짜: ${l}`}
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="rank"
+                                                stroke="#3b82f6"
+                                                strokeWidth={2}
+                                                dot={{ r: 3 }}
+                                                activeDot={{ r: 5 }}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            ) : (
+                                <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+                                    트렌드 데이터가 없습니다. 키워드를 검색하면 이후 데이터가 수집됩니다.
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </ErrorBoundary>
+            )}
 
             {/* Summary Cards */}
             <ErrorBoundary>
