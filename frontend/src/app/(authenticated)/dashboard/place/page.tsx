@@ -6,6 +6,8 @@ import { KeywordRankTable } from "@/components/dashboard/KeywordRankTable";
 import { CompetitorComparison } from "@/components/dashboard/CompetitorComparison";
 import { KeywordSummary } from "@/components/dashboard/KeywordSummary";
 import KeywordPositioningMap from "@/components/dashboard/KeywordPositioningMap";
+import { CompetitorDiscovery } from "@/components/dashboard/CompetitorDiscovery";
+import { TrendAlerts } from "@/components/dashboard/TrendAlerts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -235,6 +237,22 @@ export default function PlaceRankPage() {
                         days={30}
                     />
                 </ErrorBoundary>
+            )}
+
+            {/* 경쟁사 발굴 + 트렌드 알림 — 클라이언트 선택 시에만 표시 */}
+            {selectedClient && (
+                <>
+                    <ErrorBoundary>
+                        <CompetitorDiscovery
+                            clientId={selectedClient.id}
+                            platform="NAVER_PLACE"
+                        />
+                    </ErrorBoundary>
+
+                    <ErrorBoundary>
+                        <TrendAlerts clientId={selectedClient.id} />
+                    </ErrorBoundary>
+                </>
             )}
 
             {/* Disclaimer */}

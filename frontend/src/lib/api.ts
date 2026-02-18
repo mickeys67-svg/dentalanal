@@ -414,4 +414,89 @@ export const getBudgetReallocation = async (clientId: string, days: number = 30)
     return response.data;
 };
 
+// --- Competitor Intelligence APIs ---
+
+export interface CompetitorDiscoveryItem {
+    target_id: string;
+    name: string;
+    type: string;
+    overlap_score: number;
+    shared_keywords: number;
+    total_keywords: number;
+    keywords_appeared: number;
+    shared_keyword_terms: string[];
+}
+
+export interface CompetitorDiscoveryResult {
+    status: string;
+    count: number;
+    competitors: CompetitorDiscoveryItem[];
+    parameters: {
+        client_id: string;
+        platform: string;
+        threshold: number;
+        days: number;
+    };
+}
+
+export const discoverCompetitors = async (params: {
+    client_id: string;
+    platform?: string;
+    keyword_overlap_threshold?: number;
+    min_appearances?: number;
+    top_n?: number;
+    days?: number;
+}): Promise<CompetitorDiscoveryResult> => {
+    const response = await api.post('/api/v1/competitors/discover', params);
+    return response.data;
+};
+
+export interface RankingDropAlert {
+    keyword_id: string;
+    keyword: string;
+    previous_rank: number;
+    current_rank: number;
+    drop: number;
+}
+
+export interface RankingDropResult {
+    status: string;
+    alerts_created: number;
+    drops: RankingDropAlert[];
+}
+
+export const createRankingDropAlert = async (
+    clientId: string,
+    threshold: number = 5
+): Promise<RankingDropResult> => {
+    const response = await api.post(
+        `/api/v1/trends/alerts/ranking-drop/${clientId}`,
+        null,
+        { params: { rank_drop_threshold: threshold } }
+    );
+    return response.data;
+};
+
+export interface SearchTrendPrediction {
+    trend_data: { date: string; appearances: number; avg_rank: number }[];
+    recent_avg: number;
+    overall_avg: number;
+    prediction: string;
+}
+
+export interface SearchTrendsResult {
+    analysis_period: string;
+    predictions: Record<string, SearchTrendPrediction>;
+}
+
+export const predictSearchTrends = async (
+    clientId: string,
+    days: number = 90
+): Promise<{ status: string; data: SearchTrendsResult }> => {
+    const response = await api.get(`/api/v1/trends/predict-search-trends/${clientId}`, {
+        params: { days }
+    });
+    return response.data;
+};
+
 export default api;
