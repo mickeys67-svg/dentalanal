@@ -390,4 +390,28 @@ export const getAnalysisHistory = async (clientId: string): Promise<any[]> => {
     return response.data;
 };
 
+// --- ROI / Ads APIs ---
+export const getRoasTracking = async (clientId: string, days: number = 30): Promise<any> => {
+    const response = await api.post('/api/v1/roi/track-roas', {
+        client_id: clientId,
+        days,
+        conversion_value: 150000,
+    });
+    return response.data;
+};
+
+export const getInefficientAds = async (clientId: string, days: number = 30): Promise<any> => {
+    const response = await api.get(`/api/v1/roi/detect-inefficient/${clientId}`, {
+        params: { days, conversion_value: 150000 },
+    });
+    return response.data;
+};
+
+export const getBudgetReallocation = async (clientId: string, days: number = 30): Promise<any> => {
+    const response = await api.get(`/api/v1/roi/budget-reallocation/${clientId}`, {
+        params: { days, conversion_value: 150000 },
+    });
+    return response.data;
+};
+
 export default api;
