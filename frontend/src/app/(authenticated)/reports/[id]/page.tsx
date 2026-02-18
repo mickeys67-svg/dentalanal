@@ -267,7 +267,7 @@ function renderWidget(widget: any) {
                 <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "성과 추이 일자별 리포트"}</h3>
                     <div className="h-80">
-                        <PerformanceChart data={widget.data} />
+                        <PerformanceChart data={widget.data} title={widget.title || "성과 추이"} />
                     </div>
                 </div>
             );

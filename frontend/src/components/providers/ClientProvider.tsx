@@ -39,11 +39,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
             const savedClient = data.find(c => c.id === savedId);
 
             if (data.length > 0) {
-                if (savedClient) {
-                    setSelectedClient(savedClient);
-                } else if (!selectedClient) {
-                    setSelectedClient(data[0]);
-                }
+                setSelectedClient(savedClient ?? data[0]);
             } else {
                 setSelectedClient(null);
             }
@@ -54,7 +50,8 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [user, selectedClient]);
+    // selectedClient를 deps에서 제거 - 무한루프 방지
+    }, [user]);
 
     useEffect(() => {
         if (!isAuthLoading) {

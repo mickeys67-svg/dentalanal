@@ -82,19 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [token, isLoading, pathname, router]);
 
-    // Handle 401 globally
-    useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
-            (response) => response,
-            (error) => {
-                if (error.response?.status === 401) {
-                    logout();
-                }
-                return Promise.reject(error);
-            }
-        );
-        return () => axios.interceptors.response.eject(interceptor);
-    }, [logout]);
+    // 401 처리는 lib/api.ts의 axios 인스턴스 인터셉터에서 일괄 처리
+    // (axios.defaults에 붙이면 api 인스턴스에 미적용되므로 중복 제거)
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>

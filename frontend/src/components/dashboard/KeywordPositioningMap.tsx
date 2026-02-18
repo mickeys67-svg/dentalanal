@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import InfoTooltip from '@/components/common/InfoTooltip'
+import { InfoTooltip } from '@/components/common/InfoTooltip'
 
 interface PositioningTarget {
   id: string
@@ -94,7 +94,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             키워드 포지셔닝 맵
-            <InfoTooltip text="클라이언트와 경쟁사의 키워드별 순위를 비교합니다" />
+            <InfoTooltip title="키워드 포지셔닝 맵" content="클라이언트와 경쟁사의 키워드별 순위를 비교합니다" />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -137,7 +137,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           키워드 포지셔닝 맵
-          <InfoTooltip text="클라이언트와 경쟁사의 키워드별 순위를 비교합니다. 숫자가 작을수록 높은 순위입니다." />
+          <InfoTooltip title="키워드 포지셔닝 맵" content="클라이언트와 경쟁사의 키워드별 순위를 비교합니다. 숫자가 작을수록 높은 순위입니다." />
         </CardTitle>
         <div className="text-sm text-gray-500">
           {data.snapshot_time && (

@@ -23,15 +23,14 @@ export function useMission() {
 
     // Scraping Mutations
     const placeMutation = useMutation({
-        mutationFn: scrapePlace,
+        mutationFn: (keyword: string) => scrapePlace(keyword, selectedClient?.id),
         onError: (error) => {
             console.error("Place Scrape Error:", error);
-            // Toast or notification could go here
         }
     });
 
     const viewMutation = useMutation({
-        mutationFn: scrapeView,
+        mutationFn: (keyword: string) => scrapeView(keyword, selectedClient?.id),
         onError: (error) => {
             console.error("View Scrape Error:", error);
         }
