@@ -499,4 +499,51 @@ export const predictSearchTrends = async (
     return response.data;
 };
 
+// --- Competitor Strategy Analysis ---
+
+export interface StrategyTopKeyword {
+    term: string;
+    appearances: number;
+    avg_rank: number;
+    best_rank: number;
+}
+
+export interface StrategyRankTrendPoint {
+    date: string;
+    avg_rank: number;
+}
+
+export interface CompetitorStrategyAnalysis {
+    target_id: string;
+    target_name: string;
+    platform: string;
+    analysis_period: string;
+    top_keywords: StrategyTopKeyword[];
+    activity_by_hour: Record<string, number>;
+    activity_by_dow: Record<string, number>;
+    rank_trend: StrategyRankTrendPoint[];
+    trend_direction: string;
+}
+
+export const analyzeCompetitorStrategy = async (params: {
+    target_id: string;
+    platform?: string;
+    days?: number;
+}): Promise<{ status: string; analysis: CompetitorStrategyAnalysis }> => {
+    const response = await api.post('/api/v1/competitors/strategy-analysis', params);
+    return response.data;
+};
+
+// --- Notification Types ---
+
+export interface Notification {
+    id: string;
+    title: string;
+    content?: string;
+    link?: string;
+    is_read: boolean;
+    type?: string;
+    created_at: string;
+}
+
 export default api;

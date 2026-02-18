@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function AppHeader() {
     return (
@@ -23,10 +24,7 @@ export function AppHeader() {
                     <span className="font-medium">최근 30일</span>
                 </div>
 
-                <button className="relative p-2 rounded-full hover:bg-accent">
-                    <Bell className="h-5 w-5 text-muted-foreground" />
-                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-background"></span>
-                </button>
+                <NotificationBell />
             </div>
         </header>
     );

@@ -13,6 +13,8 @@ import { useClient } from "@/components/providers/ClientProvider";
 import { UI_TEXT } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { CompetitorDiscovery } from "@/components/dashboard/CompetitorDiscovery";
+import { TrendAlerts } from "@/components/dashboard/TrendAlerts";
 import {
     LineChart,
     Line,
@@ -218,6 +220,22 @@ export default function ViralPage() {
                     )}
                 </div>
             </div>
+
+            {/* 경쟁사 발굴 + 트렌드 알림 — 클라이언트 선택 시에만 표시 */}
+            {selectedClient && (
+                <>
+                    <ErrorBoundary>
+                        <CompetitorDiscovery
+                            clientId={selectedClient.id}
+                            platform="NAVER_VIEW"
+                        />
+                    </ErrorBoundary>
+
+                    <ErrorBoundary>
+                        <TrendAlerts clientId={selectedClient.id} />
+                    </ErrorBoundary>
+                </>
+            )}
         </div>
     );
 }

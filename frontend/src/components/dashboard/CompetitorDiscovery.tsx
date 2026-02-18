@@ -16,8 +16,10 @@ import {
     Tag,
     ChevronDown,
     ChevronUp,
+    BarChart2,
 } from "lucide-react";
 import { discoverCompetitors, CompetitorDiscoveryItem } from "@/lib/api";
+import { CompetitorStrategyModal } from "@/components/dashboard/CompetitorStrategyModal";
 
 interface CompetitorDiscoveryProps {
     clientId: string;
@@ -43,76 +45,104 @@ function ScoreBar({ score }: { score: number }) {
     );
 }
 
-function CompetitorCard({ item, rank }: { item: CompetitorDiscoveryItem; rank: number }) {
+function CompetitorCard({
+    item,
+    rank,
+    platform,
+}: {
+    item: CompetitorDiscoveryItem;
+    rank: number;
+    platform: "NAVER_PLACE" | "NAVER_VIEW";
+}) {
     const [expanded, setExpanded] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
     const pct = Math.round(item.overlap_score * 100);
     const danger = pct >= 70;
 
     return (
-        <div
-            className={`border rounded-lg p-4 transition-colors ${
-                danger ? "border-red-200 bg-red-50/30" : "border-gray-200 bg-white"
-            }`}
-        >
-            <div className="flex items-start gap-3">
-                {/* 순위 뱃지 */}
-                <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                        rank <= 3 ? "bg-red-500" : rank <= 6 ? "bg-orange-400" : "bg-gray-400"
-                    }`}
-                >
-                    {rank}
-                </div>
+        <>
+            <div
+                className={`border rounded-lg p-4 transition-colors ${
+                    danger ? "border-red-200 bg-red-50/30" : "border-gray-200 bg-white"
+                }`}
+            >
+                <div className="flex items-start gap-3">
+                    {/* 순위 뱃지 */}
+                    <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+                            rank <= 3 ? "bg-red-500" : rank <= 6 ? "bg-orange-400" : "bg-gray-400"
+                        }`}
+                    >
+                        {rank}
+                    </div>
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-semibold text-sm truncate">{item.name}</span>
-                        {danger && (
-                            <Badge variant="outline" className="text-red-600 border-red-300 text-[10px] shrink-0">
-                                주요 경쟁사
-                            </Badge>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="font-semibold text-sm truncate">{item.name}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {danger && (
+                                    <Badge variant="outline" className="text-red-600 border-red-300 text-[10px]">
+                                        주요 경쟁사
+                                    </Badge>
+                                )}
+                                <button
+                                    onClick={() => setModalOpen(true)}
+                                    className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors"
+                                >
+                                    <BarChart2 className="w-3 h-3" />
+                                    전략 분석
+                                </button>
+                            </div>
+                        </div>
+
+                        <ScoreBar score={item.overlap_score} />
+
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                                <Tag className="w-3 h-3" />
+                                공유 키워드 {item.shared_keywords}개
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                {item.keywords_appeared}회 노출
+                            </span>
+                        </div>
+
+                        {/* 공유 키워드 펼치기 */}
+                        {item.shared_keyword_terms.length > 0 && (
+                            <button
+                                onClick={() => setExpanded(!expanded)}
+                                className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                            >
+                                {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                공유 키워드 보기
+                            </button>
+                        )}
+
+                        {expanded && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                                {item.shared_keyword_terms.map((kw) => (
+                                    <span
+                                        key={kw}
+                                        className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[11px]"
+                                    >
+                                        {kw}
+                                    </span>
+                                ))}
+                            </div>
                         )}
                     </div>
-
-                    <ScoreBar score={item.overlap_score} />
-
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                            <Tag className="w-3 h-3" />
-                            공유 키워드 {item.shared_keywords}개
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            {item.keywords_appeared}회 노출
-                        </span>
-                    </div>
-
-                    {/* 공유 키워드 펼치기 */}
-                    {item.shared_keyword_terms.length > 0 && (
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-                        >
-                            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            공유 키워드 보기
-                        </button>
-                    )}
-
-                    {expanded && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                            {item.shared_keyword_terms.map((kw) => (
-                                <span
-                                    key={kw}
-                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[11px]"
-                                >
-                                    {kw}
-                                </span>
-                            ))}
-                        </div>
-                    )}
                 </div>
             </div>
-        </div>
+
+            <CompetitorStrategyModal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                targetId={item.target_id}
+                targetName={item.name}
+                platform={platform}
+            />
+        </>
     );
 }
 
@@ -232,7 +262,7 @@ export function CompetitorDiscovery({ clientId, platform = "NAVER_PLACE" }: Comp
                         ) : (
                             <div className="space-y-3">
                                 {result.map((item, idx) => (
-                                    <CompetitorCard key={item.target_id} item={item} rank={idx + 1} />
+                                    <CompetitorCard key={item.target_id} item={item} rank={idx + 1} platform={activePlatform} />
                                 ))}
                             </div>
                         )}

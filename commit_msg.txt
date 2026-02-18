@@ -1,0 +1,9 @@
+[Feat] Phase 4 마무리 - 전략 분석 모달, viral 통합, 알림 센터
+
+- CompetitorStrategyModal: 경쟁사 전략 심층 분석 모달 (순위 트렌드, 주력 키워드, 시간대/요일별 활동)
+- CompetitorDiscovery: 각 경쟁사 카드에 "전략 분석" 버튼 추가
+- viral/page.tsx: CompetitorDiscovery(NAVER_VIEW) + TrendAlerts 통합
+- NotificationBell: 헤더 알림 센터 (읽음/전체읽음, 1분 폴링, 타입별 색상)
+- AppHeader: 정적 벨 → NotificationBell 컴포넌트로 교체
+- dialog.tsx: shadcn/ui Dialog 컴포넌트 추가
+- api.ts: analyzeCompetitorStrategy(), Notification 타입 추가
