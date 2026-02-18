@@ -26,3 +26,6 @@ pytz
 reportlab
 matplotlib
 jinja2
+# Testing
+pytest
+pytest-asyncio

@@ -1,1 +1,16 @@
-docs: SESSION_STATE sync after Phase4 completion
+[Dev] 단위 테스트 환경 도입 (Vitest + pytest)
+
+Frontend (Vitest):
+- vitest.config.ts 설정 (jsdom, @vitejs/plugin-react, path alias)
+- src/test/setup.ts (@testing-library/jest-dom)
+- src/lib/formatters.ts: timeAgo, getRankDropSeverity, getOverlapLevel, formatKRW 분리
+- src/lib/formatters.test.ts: 16개 테스트 전부 통과
+- NotificationBell: 인라인 timeAgo → formatters.ts import로 교체
+- package.json: test / test:watch / test:coverage 스크립트 추가
+- tsconfig.json: vitest 설정/테스트 파일 exclude
+
+Backend (pytest):
+- pytest.ini 설정
+- app/core/algorithms/overlap.py: Jaccard, rank_competitors, predict_trend_direction 순수 로직 추출
+- tests/test_overlap_algorithms.py: 20개 테스트 전부 통과
+- requirements.txt: pytest, pytest-asyncio 추가
