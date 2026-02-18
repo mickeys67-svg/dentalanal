@@ -234,20 +234,10 @@ async def catch_all(request: Request, path_name: str):
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Global Error Catch: {exc}")
     logger.error(traceback.format_exc())
-    
-    # Manual CORS headers for error responses
-    headers = {
-        "Access-Control-Allow-Origin": "*", # In error state, allow all to let browser see it
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    }
-    
+
     return JSONResponse(
         status_code=500,
         content={
-            "detail": f"내부 서버 오류가 발생했습니다: {str(exc)}",
-            "error_type": str(type(exc).__name__),
-            "traceback": traceback.format_exc()
-        },
-        headers=headers
+            "detail": "내부 서버 오류가 발생했습니다.",
+        }
     )

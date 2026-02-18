@@ -4,6 +4,9 @@ from app.core.database import get_db, engine
 from app.models.models import Notification, User
 from sqlalchemy import text, desc
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Status"])
 

@@ -39,9 +39,9 @@ class Settings(BaseSettings):
     NAVER_REDIRECT_URI: str = "http://localhost:8000/api/v1/naver/callback"
     
     # Auth
-    SECRET_KEY: str = "dmind-secret-key-123456789"
+    SECRET_KEY: str = ""
     ADMIN_EMAIL: str = "admin@dmind.com"
-    ADMIN_PASSWORD: str = "admin123!"
+    ADMIN_PASSWORD: str = ""
 
     # Monitoring
     SENTRY_DSN: Optional[str] = None
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
         No auto-correction or hidden logic.
         """
         if not self.DATABASE_URL:
-            return "sqlite:///./test.db"
+            raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다. GitHub Secrets 또는 .env 파일을 확인하세요.")
         return self.DATABASE_URL
 
     model_config = SettingsConfigDict(
