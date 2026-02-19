@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createReportTemplate } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { createReportTemplate, updateReportTemplate, getReportTemplates } from '@/lib/api';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     ArrowLeft, Save, Plus, Trash2, GripVertical,
     BarChart3, PieChart, Activity, Brain, LayoutGrid
@@ -23,52 +23,101 @@ const AVAILABLE_WIDGETS = [
 
 export default function TemplateBuilderPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get('edit');
+    const isEditMode = !!editId;
+
     const queryClient = useQueryClient();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [selectedWidgets, setSelectedWidgets] = useState<any[]>([]);
+    const [formError, setFormError] = useState('');
+
+    // Load existing template when editing
+    const { data: templates, isLoading: isLoadingTemplate } = useQuery({
+        queryKey: ['reportTemplates'],
+        queryFn: getReportTemplates,
+        enabled: isEditMode,
+    });
+
+    useEffect(() => {
+        if (isEditMode && templates) {
+            const template = templates.find((t: any) => t.id === editId);
+            if (template) {
+                setName(template.name || '');
+                setDescription(template.description || '');
+                setSelectedWidgets(template.config?.widgets || []);
+            }
+        }
+    }, [isEditMode, templates, editId]);
 
     const createMutation = useMutation({
         mutationFn: createReportTemplate,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reportTemplates'] });
-            router.push('/reports');
+            router.push('/reports?tab=templates');
         }
     });
 
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: any }) => updateReportTemplate(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reportTemplates'] });
+            router.push('/reports?tab=templates');
+        }
+    });
+
+    const isPending = createMutation.isPending || updateMutation.isPending;
+
     const addWidget = (widget: any) => {
+        setFormError('');
         const newWidget = {
             id: `widget_${Date.now()}`,
             type: widget.type,
             title: widget.name,
             config: {}
         };
-        setSelectedWidgets([...selectedWidgets, newWidget]);
+        setSelectedWidgets((prev) => [...prev, newWidget]);
     };
 
     const removeWidget = (id: string) => {
-        setSelectedWidgets(selectedWidgets.filter(w => w.id !== id));
+        setSelectedWidgets((prev) => prev.filter(w => w.id !== id));
     };
 
     const handleSave = () => {
-        if (!name) {
-            alert('템플릿 이름을 입력해주세요.');
+        if (!name.trim()) {
+            setFormError('템플릿 이름을 입력해주세요.');
             return;
         }
         if (selectedWidgets.length === 0) {
-            alert('최소 하나 이상의 위젯을 추가해주세요.');
+            setFormError('최소 하나 이상의 위젯을 추가해주세요.');
             return;
         }
+        setFormError('');
 
-        createMutation.mutate({
-            name,
-            description,
+        const payload = {
+            name: name.trim(),
+            description: description.trim(),
             config: {
                 layout: 'grid',
                 widgets: selectedWidgets
             }
-        });
+        };
+
+        if (isEditMode && editId) {
+            updateMutation.mutate({ id: editId, data: payload });
+        } else {
+            createMutation.mutate(payload);
+        }
     };
+
+    if (isEditMode && isLoadingTemplate) {
+        return (
+            <div className="p-8 flex items-center justify-center min-h-[400px]">
+                <Activity className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500">
@@ -79,19 +128,28 @@ export default function TemplateBuilderPage() {
                         <ArrowLeft className="w-5 h-5 text-gray-500" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">리포트 템플릿 제작</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            {isEditMode ? '리포트 템플릿 편집' : '리포트 템플릿 제작'}
+                        </h1>
                         <p className="text-sm text-gray-500">원하는 위젯을 조합하여 병원만의 리포트 형식을 만드세요.</p>
                     </div>
                 </div>
                 <button
                     onClick={handleSave}
-                    disabled={createMutation.isPending}
-                    className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-opacity-90 transition-all"
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-opacity-90 transition-all disabled:opacity-60"
                 >
-                    {createMutation.isPending ? <Activity className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    템플릿 저장하기
+                    {isPending ? <Activity className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {isEditMode ? '변경 사항 저장' : '템플릿 저장하기'}
                 </button>
             </div>
+
+            {/* Inline error */}
+            {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl px-5 py-3">
+                    {formError}
+                </div>
+            )}
 
             <div className="grid grid-cols-12 gap-8">
                 {/* Sidebar: Widget Library */}
@@ -127,7 +185,7 @@ export default function TemplateBuilderPage() {
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => { setName(e.target.value); setFormError(''); }}
                                     placeholder="예: 월간 성과 상세 분석"
                                     className="w-full mt-1 px-4 py-3 rounded-xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-primary text-sm font-medium"
                                 />

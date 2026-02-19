@@ -200,9 +200,12 @@ export default function ReportsPage() {
                                             </div>
                                         ))}
                                     </div>
-                                    <button className="text-xs font-bold text-gray-400 hover:text-primary flex items-center gap-1">
-                                        <Edit2 className="w-3 h-3" /> 구성 편집 (준비중)
-                                    </button>
+                                    <Link
+                                        href={`/reports/templates/builder?edit=${template.id}`}
+                                        className="text-xs font-bold text-gray-400 hover:text-primary flex items-center gap-1 transition-colors"
+                                    >
+                                        <Edit2 className="w-3 h-3" /> 구성 편집
+                                    </Link>
                                 </div>
                             </div>
                         ))}
