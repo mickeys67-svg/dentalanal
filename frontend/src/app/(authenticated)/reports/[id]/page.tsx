@@ -290,7 +290,7 @@ function renderWidget(widget: any) {
                                     <RechartsYAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#9CA3AF' }} />
                                     <RechartsTooltip
                                         contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
-                                        formatter={(value: any, name: string) => [
+                                        formatter={(value: any, name: string | undefined) => [
                                             name === 'spend' ? `₩${Number(value).toLocaleString()}` : value,
                                             name === 'spend' ? '광고비' : '전환수'
                                         ]}

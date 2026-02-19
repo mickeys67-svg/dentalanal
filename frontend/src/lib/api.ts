@@ -312,6 +312,20 @@ export const getSegmentData = async (clientId: string): Promise<SegmentRow[]> =>
     return response.data;
 };
 
+// --- AI Assistant (Phase 6) ---
+export const getAssistantQuickQueries = async (): Promise<Array<{ id: string; label: string; description: string }>> => {
+    const response = await api.get('/api/v1/analyze/assistant/quick-queries');
+    return response.data;
+};
+
+export const queryAssistant = async (query: string, clientId?: string): Promise<{ report: string; type: string }> => {
+    const response = await api.post('/api/v1/analyze/assistant/query', {
+        query,
+        client_id: clientId || null,
+    });
+    return response.data;
+};
+
 // --- Auth & Users ---
 export const login = async (email: string, password: string): Promise<{ access_token: string, user: User }> => {
     const formData = new FormData();

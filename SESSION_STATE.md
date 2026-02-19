@@ -1,4 +1,4 @@
-# 세션 상태 저장 — 2026-02-19 (저녁 세션 완료)
+# 세션 상태 저장 — 2026-02-19 (Phase 6 AI 어시스턴트 완성)
 
 ## 마지막 커밋
 - 커밋: (이번 세션) — 보안 파일 정리 + Phase 5 위젯 완성
@@ -46,16 +46,49 @@
 
 ---
 
+## 이번 세션(Phase 6)에 완료한 것
+
+### Phase 6: AI 마케팅 어시스턴트 ✅
+
+**백엔드** (`backend/app/api/endpoints/analyze.py`):
+- `GET /api/v1/analyze/assistant/quick-queries` — 5개 빠른 질문 목록
+- `POST /api/v1/analyze/assistant/query` — 자연어 질의 처리
+  - 빠른 질문(status/advice/budget/top_keyword/swot) 별 데이터 기반 답변
+  - 자유 질의 → Gemini 직접 호출 (업체 데이터 컨텍스트 포함)
+- `POST /api/v1/analyze/assistant/swot` — SWOT 분석 전용 엔드포인트
+- `POST /api/v1/analyze/assistant/benchmark-diagnosis` — 벤치마크 AI 진단
+
+**프론트엔드**:
+- `frontend/src/app/(authenticated)/assistant/page.tsx` (신규) — AI 채팅 페이지
+  - 대화 히스토리 유지
+  - 5개 빠른 질문 버튼
+  - 자유 입력 (Enter 전송, Shift+Enter 줄바꿈)
+  - Markdown 렌더링
+  - 로딩 상태 표시
+
+- `frontend/src/components/layout/Sidebar.tsx` — AI 어시스턴트 메뉴 추가
+  - Sparkles 아이콘, `/assistant` 경로
+
+- `frontend/src/app/(authenticated)/dashboard/page.tsx` — AI 인사이트 패널 추가
+  - 빠른 질문 4개 버튼 (클릭 즉시 AI 답변)
+  - "전체 AI 어시스턴트" 링크
+  - Markdown 결과 렌더링
+
+- `frontend/src/lib/api.ts` — 2개 함수 추가
+  - `getAssistantQuickQueries()`
+  - `queryAssistant(query, clientId?)`
+
+**빌드**: TypeScript 에러 0개, 26개 페이지 ✅
+
 ## 다음 세션 시작 시 할 일
 
 1. **[선택] Phase 5 마지막 — 템플릿 편집 기능 ("구성 편집 (준비중)" 버튼 활성화)**
    - `reports/page.tsx`의 Edit2 버튼 → `/reports/templates/builder?edit={id}` 연결
-   - `/reports/templates/builder/page.tsx`에 edit 모드 지원 추가
 
-2. **[권장] Phase 6: AI 마케팅 어시스턴트 시작**
-   - 백엔드: `backend/app/services/ai_service.py` 이미 Gemini API 6개 함수 완성
-   - 프론트엔드: 전용 `/assistant` 페이지 (채팅 UI + 데이터 기반 답변)
-   - Option: 각 페이지 우측 "AI 인사이트 패널" 추가
+2. **[Phase 6 심화] AI 어시스턴트 기능 확장**
+   - AI 응답 스트리밍 (SSE)
+   - 대화 히스토리 서버 저장
+   - RAG 시스템 (VectorDB + LangChain)
 
 ---
 
@@ -69,6 +102,7 @@
 | Phase 4 | 고급 분석 (경쟁사 발굴, 전략 모달, 트렌드 알림, 알림센터) | ✅ |
 | Phase 4.5 | 기술 부채 (단위 테스트 36개, Alembic 28개 테이블) | ✅ |
 | Phase 5 | 리포트 빌더 (드래그앤드롭, PDF, 11개 위젯 전체 지원) | ✅ |
+| Phase 6 | AI 마케팅 어시스턴트 (채팅 페이지, 대시보드 패널, 5개 빠른 질문) | ✅ |
 
 ## 기술 부채 현황 (전체 완료)
 - [x] Frontend 에러 바운더리 ✅

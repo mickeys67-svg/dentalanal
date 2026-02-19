@@ -409,3 +409,183 @@ def get_analysis_history(
     return db.query(AnalysisHistory).filter(
         AnalysisHistory.client_id == client_id
     ).order_by(AnalysisHistory.created_at.desc()).limit(10).all()
+
+
+# --- AI Assistant Endpoints (Phase 6) ---
+
+class SWOTRequest(BaseModel):
+    hospital_name: str
+    competitor_info: List[Dict] = []
+
+class BenchmarkDiagnosisRequest(BaseModel):
+    client_id: str
+
+class AssistantQueryRequest(BaseModel):
+    query: str
+    client_id: Optional[str] = None
+
+QUICK_QUERIES = [
+    {"id": "status", "label": "지금 성과 어때?", "description": "효율성 리뷰 기반 현황 진단"},
+    {"id": "advice", "label": "개선 포인트 알려줘", "description": "캠페인 최적화 제안"},
+    {"id": "top_keyword", "label": "상위 키워드는?", "description": "노출 점유율 상위 키워드"},
+    {"id": "budget", "label": "다음 달 예산은?", "description": "예산 재분배 추천"},
+    {"id": "swot", "label": "SWOT 분석", "description": "강점/약점/기회/위협 분석"},
+]
+
+@router.get("/assistant/quick-queries")
+def get_quick_queries():
+    """사전 정의된 AI 빠른 질문 목록 반환"""
+    return QUICK_QUERIES
+
+@router.post("/assistant/swot")
+def generate_swot(
+    request: SWOTRequest,
+    db: Session = Depends(get_db)
+):
+    """SWOT 분석 생성"""
+    ai_service = AIService()
+    try:
+        result = ai_service.generate_swot_analysis(
+            hospital_name=request.hospital_name,
+            competitor_info=request.competitor_info
+        )
+        return {"report": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI 분석 오류: {str(e)}")
+
+@router.post("/assistant/benchmark-diagnosis")
+def benchmark_diagnosis(
+    request: BenchmarkDiagnosisRequest,
+    db: Session = Depends(get_db)
+):
+    """업종 평균 대비 벤치마크 AI 진단"""
+    try:
+        validated_id = UUID(request.client_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid client_id format")
+
+    benchmark_service = BenchmarkService(db)
+    ai_service = AIService()
+
+    benchmark_data = benchmark_service.compare_client_performance(validated_id)
+    try:
+        report = ai_service.generate_deep_diagnosis(benchmark_data)
+        return {"report": report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI 진단 오류: {str(e)}")
+
+@router.post("/assistant/query")
+def assistant_query(
+    request: AssistantQueryRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    자연어 질의 또는 빠른 질문 ID를 받아 적절한 AI 분석 결과 반환.
+    query 값이 QUICK_QUERIES의 id와 일치하면 해당 분석 수행.
+    """
+    query = request.query.strip()
+    client_id = request.client_id
+    ai_service = AIService()
+    service = AnalysisService(db)
+
+    # 빠른 질문: 효율성/현황
+    if query in ("status", "advice", "budget"):
+        if not client_id or client_id in ("undefined", "null"):
+            return {"report": "업체를 먼저 선택해주세요.", "type": "error"}
+        try:
+            validated_id = str(UUID(client_id))
+        except (ValueError, TypeError):
+            return {"report": "업체 ID가 올바르지 않습니다.", "type": "error"}
+
+        data = service.get_efficiency_data(validated_id, days=30)
+        if not data["items"]:
+            return {"report": "광고 집행 데이터가 없어 분석할 수 없습니다.", "type": "info"}
+
+        ai_res = ai_service.generate_efficiency_review(data)
+        if query == "status":
+            return {"report": ai_res.get("overall", "분석 결과 없음"), "type": "markdown"}
+        elif query == "advice":
+            suggestions = ai_res.get("suggestions", {})
+            lines = [f"**{k}**: {v}" for k, v in suggestions.items()]
+            return {"report": "\n\n".join(lines) if lines else "개선 제안이 없습니다.", "type": "markdown"}
+        elif query == "budget":
+            from app.services.roi_optimizer import ROIOptimizerService
+            roi_service = ROIOptimizerService(db)
+            roas_data = roi_service.track_campaign_roas(UUID(validated_id), days=30)
+            top = roas_data["campaigns"][:3] if roas_data["campaigns"] else []
+            lines = [f"**{c['campaign_name']}** — ROAS {c['roas']}%로 예산 집중 추천" for c in top]
+            return {
+                "report": "**예산 집중 추천 캠페인 (ROAS 상위)**\n\n" + "\n\n".join(lines) if lines else "캠페인 데이터가 없습니다.",
+                "type": "markdown"
+            }
+
+    # 빠른 질문: 상위 키워드
+    elif query == "top_keyword":
+        if not client_id or client_id in ("undefined", "null"):
+            return {"report": "업체를 먼저 선택해주세요.", "type": "error"}
+        try:
+            validated_id = UUID(client_id)
+        except (ValueError, TypeError):
+            return {"report": "업체 ID가 올바르지 않습니다.", "type": "error"}
+        from app.models.models import DailyRank, Keyword, Target, TargetType
+        from sqlalchemy import func, and_
+        import datetime
+        week_ago = datetime.date.today() - datetime.timedelta(days=7)
+        top_kws = db.query(
+            Keyword.term,
+            func.count(DailyRank.id).label("cnt")
+        ).join(DailyRank, DailyRank.keyword_id == Keyword.id).filter(
+            and_(
+                DailyRank.client_id == validated_id,
+                DailyRank.captured_at >= week_ago
+            )
+        ).group_by(Keyword.term).order_by(func.count(DailyRank.id).desc()).limit(5).all()
+
+        if not top_kws:
+            return {"report": "최근 7일 내 수집된 순위 데이터가 없습니다.", "type": "info"}
+        lines = [f"{i+1}. **{kw.term}** — {kw.cnt}회 노출" for i, kw in enumerate(top_kws)]
+        return {"report": "**최근 7일 상위 노출 키워드**\n\n" + "\n\n".join(lines), "type": "markdown"}
+
+    # 빠른 질문: SWOT
+    elif query == "swot":
+        if not client_id or client_id in ("undefined", "null"):
+            return {"report": "업체를 먼저 선택해주세요.", "type": "error"}
+        try:
+            validated_id = UUID(client_id)
+        except (ValueError, TypeError):
+            return {"report": "업체 ID가 올바르지 않습니다.", "type": "error"}
+        client = db.query(Client).filter(Client.id == validated_id).first()
+        hospital_name = client.name if client else "해당 병원"
+        report = ai_service.generate_swot_analysis(hospital_name=hospital_name, competitor_info=[])
+        return {"report": report, "type": "markdown"}
+
+    # 자유 질의: Gemini에 직접 전달
+    else:
+        if not ai_service.client:
+            return {"report": "AI 서비스가 설정되지 않았습니다. GOOGLE_API_KEY를 확인해주세요.", "type": "error"}
+        try:
+            context = ""
+            if client_id and client_id not in ("undefined", "null", None):
+                try:
+                    validated_id = str(UUID(client_id))
+                    data = service.get_efficiency_data(validated_id, days=30)
+                    if data["items"]:
+                        top = data["items"][:3]
+                        context = f"\n\n[현재 업체 데이터 요약]\n총 광고비: {data['total_spend']:,}원, 전환수: {data['total_conversions']}건, ROAS: {data['overall_roas']}%\n상위 캠페인: {', '.join(c['name'] for c in top)}"
+                except Exception:
+                    pass
+
+            prompt = f"""당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.
+{context}
+
+질문: {query}
+
+답변 (마크다운 형식으로, 간결하고 실용적으로):"""
+
+            response = ai_service.client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
+            )
+            return {"report": response.text, "type": "markdown"}
+        except Exception as e:
+            return {"report": f"AI 응답 생성 중 오류가 발생했습니다: {str(e)}", "type": "error"}

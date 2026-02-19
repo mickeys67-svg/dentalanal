@@ -8,7 +8,8 @@ import {
     Users,
     Settings,
     UserCog,
-    Activity
+    Activity,
+    Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,6 +20,7 @@ const serviceItems = [
     { name: '종합 대시보드', href: '/dashboard', icon: LayoutDashboard },
     { name: '성과 효율 리뷰', href: '/efficiency', icon: BarChart3 },
     { name: '리포트 센터', href: '/reports', icon: FileText },
+    { name: 'AI 어시스턴트', href: '/assistant', icon: Sparkles },
     { name: '심층 분석', href: '/analysis', icon: Database },
     { name: '협업 보드', href: '/collaboration', icon: Users },
 ];

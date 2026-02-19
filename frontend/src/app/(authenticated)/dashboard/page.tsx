@@ -4,12 +4,14 @@ import { useState } from "react";
 import { ScoreCard } from "@/components/dashboard/ScoreCard";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
-import { BarChart3, MousePointerClick, Wallet, Users, RefreshCw } from "lucide-react";
+import { BarChart3, MousePointerClick, Wallet, Users, RefreshCw, Sparkles, ChevronRight, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDashboardSummary, getMetricsTrend, triggerSync } from "@/lib/api";
+import { getDashboardSummary, getMetricsTrend, triggerSync, getAssistantQuickQueries, queryAssistant } from "@/lib/api";
 import { useClient } from "@/components/providers/ClientProvider";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 export default function DashboardPage() {
     const { selectedClient } = useClient();
@@ -57,6 +59,28 @@ export default function DashboardPage() {
     // Derived States
     // Check if we have valid data (KPIs are non-zero or trend array has data)
     const hasData = summary && (summary.kpis?.some(k => Number(k.value) > 0) || (trend && trend.length > 0));
+
+    // AI Quick Insight state
+    const [aiResult, setAiResult] = useState<string | null>(null);
+    const [activeQuickQuery, setActiveQuickQuery] = useState<string | null>(null);
+
+    const { data: quickQueries = [] } = useQuery({
+        queryKey: ['assistantQuickQueries'],
+        queryFn: getAssistantQuickQueries,
+        enabled: !!selectedClient,
+    });
+
+    const aiMutation = useMutation({
+        mutationFn: ({ query }: { query: string }) =>
+            queryAssistant(query, selectedClient?.id),
+        onSuccess: (data, variables) => {
+            setAiResult(data.report);
+            setActiveQuickQuery(variables.query);
+        },
+        onError: () => {
+            toast.error('AI 분석 중 오류가 발생했습니다.');
+        },
+    });
 
     // Formatting helpers
     const formatCurrency = (val: number) => new Intl.NumberFormat('ko-KR').format(val);
@@ -171,6 +195,61 @@ export default function DashboardPage() {
                                 <p className="font-medium text-center mb-1">+ 키워드 랭킹 요약</p>
                                 <p className="text-xs text-gray-400 text-center">주요 키워드(임플란트 등) 순위 변동</p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* AI 인사이트 패널 */}
+                    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 to-white shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-indigo-600 rounded-lg">
+                                    <Sparkles className="w-4 h-4 text-white" />
+                                </div>
+                                <h3 className="text-sm font-bold text-gray-900">AI 빠른 인사이트</h3>
+                            </div>
+                            <Link
+                                href="/assistant"
+                                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
+                            >
+                                전체 AI 어시스턴트 <ChevronRight className="w-3 h-3" />
+                            </Link>
+                        </div>
+
+                        {/* 빠른 질문 버튼 */}
+                        <div className="flex gap-2 flex-wrap mb-4">
+                            {quickQueries.slice(0, 4).map((q) => (
+                                <button
+                                    key={q.id}
+                                    onClick={() => {
+                                        setAiResult(null);
+                                        aiMutation.mutate({ query: q.id });
+                                    }}
+                                    disabled={aiMutation.isPending}
+                                    className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors disabled:opacity-40 ${
+                                        activeQuickQuery === q.id && aiResult
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                                    }`}
+                                >
+                                    {q.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 결과 영역 */}
+                        <div className="min-h-[80px] bg-white/70 rounded-xl border border-indigo-50 p-4">
+                            {aiMutation.isPending ? (
+                                <div className="flex items-center gap-2 text-indigo-400 text-sm">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    AI가 분석 중입니다...
+                                </div>
+                            ) : aiResult ? (
+                                <div className="prose prose-sm max-w-none prose-p:text-gray-700 prose-strong:text-gray-900 prose-headings:text-gray-900">
+                                    <ReactMarkdown>{aiResult}</ReactMarkdown>
+                                </div>
+                            ) : (
+                                <p className="text-gray-400 text-xs">위 버튼을 클릭하면 AI 인사이트를 바로 확인할 수 있습니다.</p>
+                            )}
                         </div>
                     </div>
                 </>
