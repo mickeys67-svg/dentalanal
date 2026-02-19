@@ -335,6 +335,184 @@ class ReportBuilderService:
                 } for m in daily_metrics]
             }
 
+        elif widget_type == "BENCHMARK":
+            # 업종 평균 비교 — 클라이언트 지표 vs 치과 업종 평균 (고정값)
+            metrics = self.db.query(
+                func.sum(MetricsDaily.spend).label("spend"),
+                func.sum(MetricsDaily.clicks).label("clicks"),
+                func.sum(MetricsDaily.impressions).label("impressions"),
+                func.sum(MetricsDaily.conversions).label("conversions")
+            ).join(Campaign).join(PlatformConnection).filter(
+                and_(
+                    PlatformConnection.client_id == client_id,
+                    MetricsDaily.date >= period_start,
+                    MetricsDaily.date <= period_end
+                )
+            ).first()
+
+            spend = float(metrics.spend or 0)
+            clicks = int(metrics.clicks or 0)
+            impressions = int(metrics.impressions or 0)
+            conversions = int(metrics.conversions or 0)
+
+            ctr = (clicks / impressions * 100) if impressions > 0 else 0
+            cpc = (spend / clicks) if clicks > 0 else 0
+            cvr = (conversions / clicks * 100) if clicks > 0 else 0
+
+            return {
+                "industry": "치과",
+                "client_kpis": {"ctr": round(ctr, 2), "cpc": round(cpc), "cvr": round(cvr, 2)},
+                "industry_avg": {"avg_ctr": 2.5, "avg_cpc": 800, "avg_cvr": 3.2}
+            }
+
+        elif widget_type == "SOV":
+            # 노출 점유율 — 키워드별 클라이언트 순위 기반 SOV 계산
+            from app.models.models import DailyRank, Keyword, Target, TargetType
+            import datetime as dt
+
+            week_ago = period_end - dt.timedelta(days=7)
+
+            client_ranks = self.db.query(
+                Keyword.term,
+                func.count(DailyRank.id).label("rank_count")
+            ).join(DailyRank, DailyRank.keyword_id == Keyword.id).join(
+                Target, DailyRank.target_id == Target.id
+            ).filter(
+                and_(
+                    DailyRank.client_id == client_id,
+                    Target.type == TargetType.OUR_CLINIC,
+                    DailyRank.captured_at >= week_ago
+                )
+            ).group_by(Keyword.term).limit(8).all()
+
+            if not client_ranks:
+                return {"keyword_details": []}
+
+            total_appearances = sum(r.rank_count for r in client_ranks)
+            keyword_details = [{
+                "keyword": r.term,
+                "sov": round(r.rank_count / total_appearances * 100, 1) if total_appearances > 0 else 0
+            } for r in client_ranks]
+
+            return {"keyword_details": sorted(keyword_details, key=lambda x: x["sov"], reverse=True)}
+
+        elif widget_type == "COMPETITORS":
+            # 경쟁사 분석 — 타겟별 노출 횟수 및 평균 순위
+            from app.models.models import DailyRank, Target, Keyword, TargetType
+            import datetime as dt
+
+            week_ago = period_end - dt.timedelta(days=7)
+
+            top_keyword = self.db.query(
+                Keyword.term,
+                func.count(DailyRank.id).label("cnt")
+            ).join(DailyRank, DailyRank.keyword_id == Keyword.id).filter(
+                and_(
+                    DailyRank.client_id == client_id,
+                    DailyRank.captured_at >= week_ago
+                )
+            ).group_by(Keyword.term).order_by(func.count(DailyRank.id).desc()).first()
+
+            keyword_name = top_keyword.term if top_keyword else "대표 키워드"
+
+            target_stats = self.db.query(
+                Target.name,
+                func.count(DailyRank.id).label("rank_count"),
+                func.avg(DailyRank.rank).label("avg_rank")
+            ).join(DailyRank, DailyRank.target_id == Target.id).filter(
+                and_(
+                    DailyRank.client_id == client_id,
+                    DailyRank.captured_at >= week_ago
+                )
+            ).group_by(Target.id, Target.name).order_by(func.count(DailyRank.id).desc()).limit(10).all()
+
+            if not target_stats:
+                return {"keyword": keyword_name, "competitors": []}
+
+            total = sum(s.rank_count for s in target_stats)
+            competitors = [{
+                "name": s.name,
+                "rank_count": s.rank_count,
+                "avg_rank": round(float(s.avg_rank), 1),
+                "share": round(s.rank_count / total * 100, 1) if total > 0 else 0
+            } for s in target_stats]
+
+            return {"keyword": keyword_name, "competitors": competitors}
+
+        elif widget_type == "RANKINGS":
+            # 키워드 순위 현황 — 최신 순위 목록
+            from app.models.models import DailyRank, Target, Keyword
+
+            latest_ranks = self.db.query(
+                DailyRank.rank,
+                Target.name.label("title"),
+                DailyRank.captured_at.label("created_at"),
+                Keyword.term.label("keyword")
+            ).join(Target, DailyRank.target_id == Target.id).join(
+                Keyword, DailyRank.keyword_id == Keyword.id
+            ).filter(
+                and_(
+                    DailyRank.client_id == client_id,
+                    DailyRank.captured_at >= period_start
+                )
+            ).order_by(DailyRank.captured_at.desc()).limit(20).all()
+
+            return [{
+                "rank": r.rank,
+                "title": f"{r.title} ({r.keyword})",
+                "created_at": r.created_at.isoformat() if r.created_at else str(period_end)
+            } for r in latest_ranks]
+
+        elif widget_type == "AI_DIAGNOSIS":
+            # AI 진단 — 규칙 기반 텍스트 생성
+            metrics = self.db.query(
+                func.sum(MetricsDaily.spend).label("spend"),
+                func.sum(MetricsDaily.clicks).label("clicks"),
+                func.sum(MetricsDaily.impressions).label("impressions"),
+                func.sum(MetricsDaily.conversions).label("conversions")
+            ).join(Campaign).join(PlatformConnection).filter(
+                and_(
+                    PlatformConnection.client_id == client_id,
+                    MetricsDaily.date >= period_start,
+                    MetricsDaily.date <= period_end
+                )
+            ).first()
+
+            spend = float(metrics.spend or 0)
+            clicks = int(metrics.clicks or 0)
+            impressions = int(metrics.impressions or 0)
+            conversions = int(metrics.conversions or 0)
+
+            ctr = (clicks / impressions * 100) if impressions > 0 else 0
+            cpc = (spend / clicks) if clicks > 0 else 0
+            cvr = (conversions / clicks * 100) if clicks > 0 else 0
+
+            insights = []
+            if ctr >= 2.5:
+                insights.append(f"클릭률(CTR) {ctr:.1f}%로 업종 평균(2.5%)을 상회합니다. 광고 문구와 키워드 타겟팅이 효과적입니다.")
+            else:
+                insights.append(f"클릭률(CTR) {ctr:.1f}%로 업종 평균(2.5%)에 미달합니다. 광고 소재 개선 또는 키워드 재검토가 필요합니다.")
+
+            if cpc > 0 and cpc <= 800:
+                insights.append(f"클릭당 비용(CPC) {cpc:,.0f}원으로 효율적입니다.")
+            elif cpc > 800:
+                insights.append(f"클릭당 비용(CPC) {cpc:,.0f}원으로 업종 평균(800원)보다 높습니다. 입찰가 최적화를 검토하세요.")
+
+            if cvr >= 3.0:
+                insights.append(f"전환율(CVR) {cvr:.1f}%로 양호합니다.")
+            else:
+                insights.append(f"전환율(CVR) {cvr:.1f}%입니다. 랜딩 페이지 최적화 또는 타겟 오디언스 재설정을 권장합니다.")
+
+            if conversions > 0:
+                cpa = spend / conversions
+                insights.append(f"전환당 비용(CPA): {cpa:,.0f}원")
+
+            content = f"[분석 기간: {period_start} ~ {period_end}]\n\n"
+            content += "\n\n".join(insights)
+            content += f"\n\n총 광고비 {spend:,.0f}원으로 {conversions}건의 전환을 달성했습니다."
+
+            return {"content": content}
+
         else:
             return {"error": f"Unknown widget type: {widget_type}"}
 

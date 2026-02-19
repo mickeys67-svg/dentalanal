@@ -1,16 +1,10 @@
-[Dev] 단위 테스트 환경 도입 (Vitest + pytest)
+[Feat] Phase 5 리포트 빌더 완성 - Backend 위젯 데이터 전체 지원
 
-Frontend (Vitest):
-- vitest.config.ts 설정 (jsdom, @vitejs/plugin-react, path alias)
-- src/test/setup.ts (@testing-library/jest-dom)
-- src/lib/formatters.ts: timeAgo, getRankDropSeverity, getOverlapLevel, formatKRW 분리
-- src/lib/formatters.test.ts: 16개 테스트 전부 통과
-- NotificationBell: 인라인 timeAgo → formatters.ts import로 교체
-- package.json: test / test:watch / test:coverage 스크립트 추가
-- tsconfig.json: vitest 설정/테스트 파일 exclude
-
-Backend (pytest):
-- pytest.ini 설정
-- app/core/algorithms/overlap.py: Jaccard, rank_competitors, predict_trend_direction 순수 로직 추출
-- tests/test_overlap_algorithms.py: 20개 테스트 전부 통과
-- requirements.txt: pytest, pytest-asyncio 추가
+- report_builder.py에 누락된 5개 위젯 데이터 생성 로직 추가
+  - BENCHMARK: 클라이언트 CTR/CPC/CVR vs 치과 업종 평균 비교
+  - SOV: 키워드별 노출 점유율 (DailyRank 기반)
+  - COMPETITORS: 타겟별 노출 횟수/평균순위/점유율 분석
+  - RANKINGS: 최신 키워드별 순위 목록
+  - AI_DIAGNOSIS: 규칙 기반 성과 진단 텍스트 자동 생성
+- Frontend 빌드 검증 완료 (TypeScript 에러 0개, 25개 페이지)
+- Phase 5 완료: 리포트 빌더 전체 기능 (드래그앤드롭, 위젯, PDF, 이메일)
