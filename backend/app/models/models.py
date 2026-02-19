@@ -563,3 +563,32 @@ class SyncValidation(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     task = relationship("SyncTask", back_populates="validation")
+
+
+# --- AI Chat History ---
+
+class ChatSession(Base):
+    """AI 어시스턴트 대화 세션"""
+    __tablename__ = "chat_sessions"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(GUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True)
+    title = Column(String(255), nullable=True)  # 자동 생성 제목 (첫 메시지 기반)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User")
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatMessage.created_at")
+
+
+class ChatMessage(Base):
+    """AI 어시스턴트 대화 메시지"""
+    __tablename__ = "chat_messages"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    session_id = Column(GUID, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String(20), nullable=False)   # 'user' | 'assistant'
+    content = Column(Text, nullable=False)
+    msg_type = Column(String(20), nullable=True, default="text")  # 'text' | 'markdown' | 'error'
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("ChatSession", back_populates="messages")

@@ -326,6 +326,90 @@ export const queryAssistant = async (query: string, clientId?: string): Promise<
     return response.data;
 };
 
+// SSE 스트리밍 — EventSource 대신 fetch 기반 (Authorization 헤더 지원)
+export const streamAssistantQuery = (
+    query: string,
+    clientId: string | undefined,
+    sessionId: string | undefined,
+    onDelta: (delta: string) => void,
+    onDone: (sessionId: string) => void,
+    onError: (err: string) => void,
+): (() => void) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const ctrl = new AbortController();
+
+    fetch(`${backendUrl}/api/v1/analyze/assistant/stream`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ query, client_id: clientId || null, session_id: sessionId || null }),
+        signal: ctrl.signal,
+    }).then(async (res) => {
+        if (!res.ok || !res.body) {
+            onError('스트리밍 연결 실패');
+            return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n');
+            buf = lines.pop() ?? '';
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    const parsed = JSON.parse(line.slice(6));
+                    if (parsed.done) {
+                        onDone(parsed.session_id ?? '');
+                    } else if (parsed.delta) {
+                        onDelta(parsed.delta);
+                    }
+                } catch {}
+            }
+        }
+    }).catch((err) => {
+        if (err.name !== 'AbortError') onError(String(err));
+    });
+
+    return () => ctrl.abort();
+};
+
+export interface ChatSession {
+    id: string;
+    title: string | null;
+    client_id: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    msg_type: string;
+    created_at: string;
+}
+
+export const getChatSessions = async (): Promise<ChatSession[]> => {
+    const response = await api.get('/api/v1/analyze/assistant/sessions');
+    return response.data;
+};
+
+export const getChatSessionMessages = async (sessionId: string): Promise<{ session_id: string; title: string; messages: ChatMessage[] }> => {
+    const response = await api.get(`/api/v1/analyze/assistant/sessions/${sessionId}/messages`);
+    return response.data;
+};
+
+export const deleteChatSession = async (sessionId: string): Promise<void> => {
+    await api.delete(`/api/v1/analyze/assistant/sessions/${sessionId}`);
+};
+
 // --- Auth & Users ---
 export const login = async (email: string, password: string): Promise<{ access_token: string, user: User }> => {
     const formData = new FormData();

@@ -589,3 +589,238 @@ def assistant_query(
             return {"report": response.text, "type": "markdown"}
         except Exception as e:
             return {"report": f"AI 응답 생성 중 오류가 발생했습니다: {str(e)}", "type": "error"}
+
+
+# ---------------------------------------------------------------------------
+# Phase 6-2: SSE 스트리밍 + 대화 히스토리
+# ---------------------------------------------------------------------------
+
+class StreamQueryRequest(BaseModel):
+    query: str
+    client_id: Optional[str] = None
+    session_id: Optional[str] = None  # 기존 세션에 이어쓰기
+
+
+class ChatSessionCreateRequest(BaseModel):
+    client_id: Optional[str] = None
+
+
+class ChatMessageSchema(BaseModel):
+    id: str
+    role: str
+    content: str
+    msg_type: Optional[str] = "text"
+    created_at: str
+
+
+class ChatSessionSchema(BaseModel):
+    id: str
+    title: Optional[str]
+    client_id: Optional[str]
+    created_at: str
+    messages: List[ChatMessageSchema] = []
+
+
+def _build_prompt(query: str, client_id: Optional[str], db: Session, service: "AnalysisService") -> str:
+    """자유 질의용 Gemini 프롬프트 빌더"""
+    context = ""
+    if client_id and client_id not in ("undefined", "null", None):
+        try:
+            validated_id = str(UUID(client_id))
+            data = service.get_efficiency_data(validated_id, days=30)
+            if data["items"]:
+                top = data["items"][:3]
+                context = (
+                    f"\n\n[현재 업체 데이터 요약]\n"
+                    f"총 광고비: {data['total_spend']:,}원, 전환수: {data['total_conversions']}건, ROAS: {data['overall_roas']}%\n"
+                    f"상위 캠페인: {', '.join(c['name'] for c in top)}"
+                )
+        except Exception:
+            pass
+    return (
+        f"당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.{context}\n\n"
+        f"질문: {query}\n\n답변 (마크다운 형식으로, 간결하고 실용적으로):"
+    )
+
+
+@router.post("/assistant/stream")
+def assistant_stream(
+    request: StreamQueryRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    SSE 스트리밍 응답. Gemini generate_content_stream 사용.
+    대화 내용을 DB에 저장 (session_id 활용).
+    """
+    from app.models.models import ChatSession, ChatMessage
+    import uuid as uuid_mod
+
+    ai_service = AIService()
+    service = AnalysisService(db)
+    query = request.query.strip()
+    client_id = request.client_id
+
+    # --- 세션 생성 or 재사용 ---
+    session_id = request.session_id
+    session_obj = None
+    if session_id:
+        try:
+            session_obj = db.query(ChatSession).filter(ChatSession.id == UUID(session_id)).first()
+        except Exception:
+            session_obj = None
+
+    if not session_obj:
+        # 새 세션 생성: 제목은 첫 질문 앞 20자
+        client_uuid = None
+        if client_id and client_id not in ("undefined", "null", None):
+            try:
+                client_uuid = UUID(client_id)
+            except Exception:
+                pass
+        session_obj = ChatSession(
+            user_id=current_user.id,
+            client_id=client_uuid,
+            title=query[:40] if query else "새 대화",
+        )
+        db.add(session_obj)
+        db.flush()
+
+    # 사용자 메시지 저장
+    user_msg = ChatMessage(
+        session_id=session_obj.id,
+        role="user",
+        content=query,
+        msg_type="text",
+    )
+    db.add(user_msg)
+    db.flush()
+    new_session_id = str(session_obj.id)
+
+    # --- 프롬프트 빌드 ---
+    if not ai_service.client:
+        # AI 미설정 시 즉시 응답
+        err_content = "AI 서비스가 설정되지 않았습니다."
+        ai_msg = ChatMessage(session_id=session_obj.id, role="assistant", content=err_content, msg_type="error")
+        db.add(ai_msg)
+        db.commit()
+
+        def error_gen():
+            yield f"data: {json.dumps({'delta': err_content, 'done': False, 'session_id': new_session_id})}\n\n"
+            yield f"data: {json.dumps({'delta': '', 'done': True, 'session_id': new_session_id})}\n\n"
+
+        return StreamingResponse(error_gen(), media_type="text/event-stream")
+
+    prompt = _build_prompt(query, client_id, db, service)
+
+    def event_stream():
+        full_response = []
+        try:
+            for chunk in ai_service.client.models.generate_content_stream(
+                model="gemini-2.0-flash",
+                contents=prompt,
+            ):
+                if chunk.text:
+                    full_response.append(chunk.text)
+                    payload = json.dumps({"delta": chunk.text, "done": False, "session_id": new_session_id}, ensure_ascii=False)
+                    yield f"data: {payload}\n\n"
+        except Exception as e:
+            err = f"AI 스트리밍 오류: {str(e)}"
+            full_response.append(err)
+            payload = json.dumps({"delta": err, "done": False, "session_id": new_session_id}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+
+        # 스트리밍 완료 — DB에 어시스턴트 메시지 저장
+        full_text = "".join(full_response)
+        ai_msg = ChatMessage(
+            session_id=session_obj.id,
+            role="assistant",
+            content=full_text,
+            msg_type="markdown",
+        )
+        db.add(ai_msg)
+        db.commit()
+
+        yield f"data: {json.dumps({'delta': '', 'done': True, 'session_id': new_session_id}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.get("/assistant/sessions")
+def list_chat_sessions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """현재 사용자의 대화 세션 목록 (최근 20개)"""
+    from app.models.models import ChatSession
+    sessions = (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == current_user.id)
+        .order_by(ChatSession.updated_at.desc())
+        .limit(20)
+        .all()
+    )
+    return [
+        {
+            "id": str(s.id),
+            "title": s.title,
+            "client_id": str(s.client_id) if s.client_id else None,
+            "created_at": s.created_at.isoformat(),
+            "updated_at": s.updated_at.isoformat(),
+        }
+        for s in sessions
+    ]
+
+
+@router.get("/assistant/sessions/{session_id}/messages")
+def get_session_messages(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """특정 세션의 메시지 전체 조회"""
+    from app.models.models import ChatSession, ChatMessage
+    try:
+        sid = UUID(session_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid session_id")
+
+    session = db.query(ChatSession).filter(ChatSession.id == sid, ChatSession.user_id == current_user.id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "session_id": str(session.id),
+        "title": session.title,
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "content": m.content,
+                "msg_type": m.msg_type,
+                "created_at": m.created_at.isoformat(),
+            }
+            for m in session.messages
+        ],
+    }
+
+
+@router.delete("/assistant/sessions/{session_id}")
+def delete_chat_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """대화 세션 삭제"""
+    from app.models.models import ChatSession
+    try:
+        sid = UUID(session_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid session_id")
+
+    session = db.query(ChatSession).filter(ChatSession.id == sid, ChatSession.user_id == current_user.id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    db.delete(session)
+    db.commit()
+    return {"ok": True}
