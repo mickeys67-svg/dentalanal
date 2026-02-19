@@ -1,13 +1,14 @@
-[Fix] 대규모 디버깅 — alert() 전면 제거 및 5개 핵심 버그 수정
+[Feat] Phase 6-3 AI 어시스턴트 심화 — 멀티턴 대화 + Quick-query SSE 스트리밍
 
-- [CRITICAL] Report 모델: period_start/end, generated_at, schedule 필드 추가
-- [CRITICAL] KPI_GROUP 위젯 데이터 구조 수정 (중첩 객체에서 직접 배열로)
-- [HIGH] alert() 전면 제거 후 toast(sonner) 로 교체 (7개 파일)
-  - dashboard/page.tsx, settings/page.tsx, efficiency/page.tsx
-  - settlement/page.tsx, reports/[id]/page.tsx, SetupWizard.tsx
-  - reports/builder/page.tsx
-- [HIGH] reports/builder: searchParams.get("client") 에서 useClient() 훅으로 교체
-- [MEDIUM] report_builder.py: 내부 중복 import 상단으로 통합
-- Alembic 마이그레이션 추가 (d1e2f3a4b5c6)
-- sonner 패키지 설치, layout.tsx에 Toaster 추가
-- npm run build: TypeScript 에러 0개, 25개 페이지 검증 완료
+백엔드:
+- _build_prompt(): 대화 히스토리 파라미터 추가 (최근 20개 메시지 → 멀티턴 컨텍스트)
+- _handle_quick_query() 헬퍼 함수 신규 추출 (stream 엔드포인트에서 재사용)
+- /assistant/stream: 세션 기존 메시지 로드 후 프롬프트에 포함
+- /assistant/stream: quick-query ID 감지 → _handle_quick_query() 호출 후 단어 단위 스트리밍
+
+프론트엔드:
+- assistant/page.tsx: sendQuickQuery() → SSE 스트리밍 방식으로 전환
+- Quick-query 버튼 클릭 시 라벨(한국어)을 사용자 메시지로 표시
+- 불필요한 quickMutation, Loader2 제거
+
+TypeScript 에러 0개 ✅

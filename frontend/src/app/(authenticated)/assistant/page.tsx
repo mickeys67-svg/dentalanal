@@ -3,14 +3,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    queryAssistant, streamAssistantQuery, getAssistantQuickQueries,
+    streamAssistantQuery, getAssistantQuickQueries,
     getChatSessions, getChatSessionMessages, deleteChatSession,
     type ChatSession,
 } from '@/lib/api';
 import { useClient } from '@/components/providers/ClientProvider';
 import ReactMarkdown from 'react-markdown';
 import {
-    Loader2, Send, Sparkles, MessageCircle, RotateCcw,
+    Send, Sparkles, MessageCircle, RotateCcw,
     History, Trash2, PanelLeft, Plus,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -49,23 +49,6 @@ export default function AssistantPage() {
         queryKey: ['chatSessions'],
         queryFn: getChatSessions,
         enabled: showHistory,
-    });
-
-    const quickMutation = useMutation({
-        mutationFn: ({ query }: { query: string }) =>
-            queryAssistant(query, selectedClient?.id),
-        onSuccess: (data) => {
-            setMessages((prev) => [
-                ...prev,
-                { role: 'assistant', content: data.report, type: data.type },
-            ]);
-        },
-        onError: () => {
-            setMessages((prev) => [
-                ...prev,
-                { role: 'assistant', content: 'AI 응답 중 오류가 발생했습니다.', type: 'text' },
-            ]);
-        },
     });
 
     const deleteSessionMutation = useMutation({
@@ -126,11 +109,54 @@ export default function AssistantPage() {
         stopStreamRef.current = stop;
     }, [isStreaming, selectedClient?.id, activeSessionId, queryClient]);
 
-    const sendQuickQuery = useCallback((queryId: string) => {
-        if (isStreaming || quickMutation.isPending) return;
-        setMessages((prev) => [...prev, { role: 'user', content: queryId }]);
-        quickMutation.mutate({ query: queryId });
-    }, [isStreaming, quickMutation]);
+    const sendQuickQuery = useCallback((queryId: string, label: string) => {
+        if (isStreaming) return;
+        // 라벨을 사용자 메시지로 표시, queryId를 백엔드에 전송
+        setMessages((prev) => [...prev, { role: 'user', content: label }]);
+        setIsStreaming(true);
+        setMessages((prev) => [...prev, { role: 'assistant', content: '', type: 'markdown', streaming: true }]);
+
+        const stop = streamAssistantQuery(
+            queryId,
+            selectedClient?.id,
+            activeSessionId,
+            (delta) => {
+                setMessages((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last?.streaming) {
+                        next[next.length - 1] = { ...last, content: last.content + delta };
+                    }
+                    return next;
+                });
+            },
+            (sessionId) => {
+                setIsStreaming(false);
+                stopStreamRef.current = null;
+                if (sessionId && !activeSessionId) setActiveSessionId(sessionId);
+                setMessages((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last?.streaming) next[next.length - 1] = { ...last, streaming: false };
+                    return next;
+                });
+                queryClient.invalidateQueries({ queryKey: ['chatSessions'] });
+            },
+            (err) => {
+                setIsStreaming(false);
+                stopStreamRef.current = null;
+                setMessages((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last?.streaming) {
+                        next[next.length - 1] = { role: 'assistant', content: `오류: ${err}`, type: 'text', streaming: false };
+                    }
+                    return next;
+                });
+            },
+        );
+        stopStreamRef.current = stop;
+    }, [isStreaming, selectedClient?.id, activeSessionId, queryClient]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -163,7 +189,7 @@ export default function AssistantPage() {
         }
     };
 
-    const isPending = isStreaming || quickMutation.isPending;
+    const isPending = isStreaming;
 
     return (
         <div className="flex h-[calc(100vh-64px)]">
@@ -255,7 +281,7 @@ export default function AssistantPage() {
                         {quickQueries.map((q) => (
                             <button
                                 key={q.id}
-                                onClick={() => sendQuickQuery(q.id)}
+                                onClick={() => sendQuickQuery(q.id, q.label)}
                                 disabled={isPending}
                                 className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors disabled:opacity-40"
                                 title={q.description}
@@ -308,19 +334,6 @@ export default function AssistantPage() {
                         </div>
                     ))}
 
-                    {quickMutation.isPending && (
-                        <div className="flex gap-3 justify-start">
-                            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-                                <Sparkles className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="bg-white border border-gray-100 shadow-sm rounded-2xl rounded-tl-sm px-5 py-4">
-                                <div className="flex items-center gap-2 text-gray-400 text-sm">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>AI가 분석 중입니다...</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                     <div ref={bottomRef} />
                 </div>
 

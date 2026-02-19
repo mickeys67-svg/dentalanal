@@ -621,8 +621,85 @@ class ChatSessionSchema(BaseModel):
     messages: List[ChatMessageSchema] = []
 
 
-def _build_prompt(query: str, client_id: Optional[str], db: Session, service: "AnalysisService") -> str:
-    """자유 질의용 Gemini 프롬프트 빌더"""
+def _handle_quick_query(
+    query: str,
+    client_id: Optional[str],
+    db: Session,
+    service: "AnalysisService",
+    ai_service: "AIService",
+) -> str:
+    """quick-query ID → 분석 결과 텍스트 반환 (stream 엔드포인트에서 재사용)"""
+    if query in ("status", "advice", "budget"):
+        if not client_id or client_id in ("undefined", "null", None):
+            return "업체를 먼저 선택해주세요."
+        try:
+            validated_id = str(UUID(client_id))
+        except (ValueError, TypeError):
+            return "업체 ID가 올바르지 않습니다."
+        data = service.get_efficiency_data(validated_id, days=30)
+        if not data["items"]:
+            return "광고 집행 데이터가 없어 분석할 수 없습니다."
+        ai_res = ai_service.generate_efficiency_review(data)
+        if query == "status":
+            return ai_res.get("overall", "분석 결과 없음")
+        elif query == "advice":
+            suggestions = ai_res.get("suggestions", {})
+            lines = [f"**{k}**: {v}" for k, v in suggestions.items()]
+            return "\n\n".join(lines) if lines else "개선 제안이 없습니다."
+        elif query == "budget":
+            from app.services.roi_optimizer import ROIOptimizerService
+            roi_service = ROIOptimizerService(db)
+            roas_data = roi_service.track_campaign_roas(UUID(validated_id), days=30)
+            top = roas_data["campaigns"][:3] if roas_data["campaigns"] else []
+            lines = [f"**{c['campaign_name']}** — ROAS {c['roas']}%로 예산 집중 추천" for c in top]
+            return "**예산 집중 추천 캠페인 (ROAS 상위)**\n\n" + "\n\n".join(lines) if lines else "캠페인 데이터가 없습니다."
+
+    elif query == "top_keyword":
+        if not client_id or client_id in ("undefined", "null", None):
+            return "업체를 먼저 선택해주세요."
+        try:
+            validated_id = UUID(client_id)
+        except (ValueError, TypeError):
+            return "업체 ID가 올바르지 않습니다."
+        from app.models.models import DailyRank, Keyword
+        from sqlalchemy import func, and_
+        import datetime
+        week_ago = datetime.date.today() - datetime.timedelta(days=7)
+        top_kws = db.query(
+            Keyword.term, func.count(DailyRank.id).label("cnt")
+        ).join(DailyRank, DailyRank.keyword_id == Keyword.id).filter(
+            and_(DailyRank.client_id == validated_id, DailyRank.captured_at >= week_ago)
+        ).group_by(Keyword.term).order_by(func.count(DailyRank.id).desc()).limit(5).all()
+        if not top_kws:
+            return "최근 7일 내 수집된 순위 데이터가 없습니다."
+        lines = [f"{i+1}. **{kw.term}** — {kw.cnt}회 노출" for i, kw in enumerate(top_kws)]
+        return "**최근 7일 상위 노출 키워드**\n\n" + "\n\n".join(lines)
+
+    elif query == "swot":
+        if not client_id or client_id in ("undefined", "null", None):
+            return "업체를 먼저 선택해주세요."
+        try:
+            validated_id = UUID(client_id)
+        except (ValueError, TypeError):
+            return "업체 ID가 올바르지 않습니다."
+        client = db.query(Client).filter(Client.id == validated_id).first()
+        hospital_name = client.name if client else "해당 병원"
+        return ai_service.generate_swot_analysis(hospital_name=hospital_name, competitor_info=[])
+
+    return f"알 수 없는 빠른 질문 ID: {query}"
+
+
+def _build_prompt(
+    query: str,
+    client_id: Optional[str],
+    db: Session,
+    service: "AnalysisService",
+    history: Optional[list] = None,
+) -> str:
+    """자유 질의용 Gemini 프롬프트 빌더 (대화 히스토리 포함)"""
+    from app.models.models import ChatSession, ChatMessage  # noqa: F811
+
+    # 업체 데이터 컨텍스트
     context = ""
     if client_id and client_id not in ("undefined", "null", None):
         try:
@@ -637,8 +714,19 @@ def _build_prompt(query: str, client_id: Optional[str], db: Session, service: "A
                 )
         except Exception:
             pass
+
+    # 대화 히스토리 (최근 10턴 = 20개 메시지 이내)
+    history_text = ""
+    if history:
+        recent = history[-20:]
+        lines = []
+        for msg in recent:
+            role_label = "사용자" if msg["role"] == "user" else "어시스턴트"
+            lines.append(f"{role_label}: {msg['content']}")
+        history_text = "\n\n[이전 대화]\n" + "\n".join(lines)
+
     return (
-        f"당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.{context}\n\n"
+        f"당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.{context}{history_text}\n\n"
         f"질문: {query}\n\n답변 (마크다운 형식으로, 간결하고 실용적으로):"
     )
 
@@ -686,6 +774,15 @@ def assistant_stream(
         db.add(session_obj)
         db.flush()
 
+    # 세션의 기존 메시지 로드 (히스토리)
+    existing_messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.session_id == session_obj.id)
+        .order_by(ChatMessage.created_at)
+        .all()
+    )
+    history = [{"role": m.role, "content": m.content} for m in existing_messages]
+
     # 사용자 메시지 저장
     user_msg = ChatMessage(
         session_id=session_obj.id,
@@ -698,6 +795,9 @@ def assistant_stream(
     new_session_id = str(session_obj.id)
 
     # --- 프롬프트 빌드 ---
+    # quick-query ID인 경우 구조화된 데이터 응답으로 전환
+    quick_ids = {q["id"] for q in QUICK_QUERIES}
+
     if not ai_service.client:
         # AI 미설정 시 즉시 응답
         err_content = "AI 서비스가 설정되지 않았습니다."
@@ -711,7 +811,34 @@ def assistant_stream(
 
         return StreamingResponse(error_gen(), media_type="text/event-stream")
 
-    prompt = _build_prompt(query, client_id, db, service)
+    # quick-query ID인 경우 기존 query 엔드포인트 로직으로 텍스트 생성 후 스트리밍
+    if query in quick_ids:
+        # 동기적으로 분석 결과 생성 후 단일 청크로 스트리밍
+        try:
+            result_text = _handle_quick_query(query, client_id, db, service, ai_service)
+        except Exception as e:
+            result_text = f"분석 중 오류가 발생했습니다: {str(e)}"
+
+        ai_msg_q = ChatMessage(
+            session_id=session_obj.id,
+            role="assistant",
+            content=result_text,
+            msg_type="markdown",
+        )
+        db.add(ai_msg_q)
+        db.commit()
+
+        def quick_stream():
+            # 단어 단위로 나눠 스트리밍 느낌 부여
+            words = result_text.split(" ")
+            for i, word in enumerate(words):
+                chunk = word + (" " if i < len(words) - 1 else "")
+                yield f"data: {json.dumps({'delta': chunk, 'done': False, 'session_id': new_session_id}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'delta': '', 'done': True, 'session_id': new_session_id}, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(quick_stream(), media_type="text/event-stream")
+
+    prompt = _build_prompt(query, client_id, db, service, history=history)
 
     def event_stream():
         full_response = []
