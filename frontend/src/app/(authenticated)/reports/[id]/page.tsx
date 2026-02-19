@@ -11,7 +11,8 @@ import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 
 import {
     ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-    Tooltip as RechartsTooltip, Cell, BarChart as RechartsBarChart, Bar as RechartsBar, XAxis as RechartsXAxis, YAxis as RechartsYAxis
+    Tooltip as RechartsTooltip, Cell, BarChart as RechartsBarChart, Bar as RechartsBar,
+    XAxis as RechartsXAxis, YAxis as RechartsYAxis, LineChart, Line, CartesianGrid, Legend
 } from 'recharts';
 
 export default function ReportDetailPage() {
@@ -272,6 +273,149 @@ function renderWidget(widget: any) {
                     </div>
                 </div>
             );
+        case "TREND_CHART": {
+            const trendData = widget.data?.data || [];
+            return (
+                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "광고 성과 일별 트렌드"}</h3>
+                    {trendData.length === 0 ? (
+                        <div className="h-[280px] flex items-center justify-center text-gray-400 text-sm">수집된 트렌드 데이터가 없습니다.</div>
+                    ) : (
+                        <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={trendData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                                    <RechartsXAxis dataKey="date" tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(v) => v.slice(5)} />
+                                    <RechartsYAxis yAxisId="left" tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
+                                    <RechartsYAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#9CA3AF' }} />
+                                    <RechartsTooltip
+                                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
+                                        formatter={(value: any, name: string) => [
+                                            name === 'spend' ? `₩${Number(value).toLocaleString()}` : value,
+                                            name === 'spend' ? '광고비' : '전환수'
+                                        ]}
+                                    />
+                                    <Legend formatter={(v) => v === 'spend' ? '광고비' : '전환수'} />
+                                    <Line yAxisId="left" type="monotone" dataKey="spend" stroke="#6366F1" strokeWidth={2} dot={false} />
+                                    <Line yAxisId="right" type="monotone" dataKey="conversions" stroke="#10B981" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        case "ROI_COMPARISON": {
+            const campaigns = widget.data?.campaigns || [];
+            return (
+                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "캠페인별 ROAS 비교"}</h3>
+                    {campaigns.length === 0 ? (
+                        <div className="text-center text-gray-400 text-sm py-10">캠페인 데이터가 없습니다.</div>
+                    ) : (
+                        <>
+                            <div className="h-[240px] mb-6">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsBarChart data={campaigns.slice(0, 6)} layout="vertical" margin={{ left: 80, right: 40 }}>
+                                        <RechartsXAxis type="number" tick={{ fontSize: 11, fill: '#9CA3AF' }} tickFormatter={(v) => `${v}%`} />
+                                        <RechartsYAxis type="category" dataKey="campaign_name" tick={{ fontSize: 10, fill: '#6B7280' }} width={80} />
+                                        <RechartsTooltip
+                                            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E5E7EB' }}
+                                            formatter={(value: any) => [`${value}%`, 'ROAS']}
+                                        />
+                                        <RechartsBar dataKey="roas" fill="#6366F1" radius={[0, 4, 4, 0]}>
+                                            {campaigns.slice(0, 6).map((_: any, idx: number) => (
+                                                <Cell key={idx} fill={idx === 0 ? '#6366F1' : idx < 3 ? '#818CF8' : '#C7D2FE'} />
+                                            ))}
+                                        </RechartsBar>
+                                    </RechartsBarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead>
+                                        <tr className="text-gray-400 font-bold border-b border-gray-50 uppercase tracking-tighter text-[10px]">
+                                            <th className="pb-3">캠페인명</th>
+                                            <th className="pb-3">플랫폼</th>
+                                            <th className="pb-3">ROAS</th>
+                                            <th className="pb-3">광고비</th>
+                                            <th className="pb-3">전환수</th>
+                                            <th className="pb-3">CPA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {campaigns.map((c: any, i: number) => (
+                                            <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 font-bold text-gray-800 text-xs max-w-[160px] truncate">{c.campaign_name}</td>
+                                                <td className="py-3 text-gray-400 text-xs">{c.platform}</td>
+                                                <td className="py-3 font-bold text-indigo-600 font-mono">{c.roas}%</td>
+                                                <td className="py-3 text-gray-500 font-mono text-xs">₩{Number(c.total_spend).toLocaleString()}</td>
+                                                <td className="py-3 text-gray-500 font-mono text-xs">{c.total_conversions}건</td>
+                                                <td className="py-3 text-gray-500 font-mono text-xs">₩{Number(c.cpa).toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+        case "COHORT": {
+            const cohorts: Array<{ month: string; size: number; retention: number[] }> = widget.data?.cohorts || [];
+            return (
+                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "고객 코호트 리텐션 분석"}</h3>
+                    {cohorts.length === 0 ? (
+                        <div className="text-center text-gray-400 text-sm py-10">코호트 분석을 위한 리드 데이터가 없습니다.</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead>
+                                    <tr className="text-gray-400 font-bold border-b border-gray-100 text-[10px] uppercase tracking-wider">
+                                        <th className="pb-3 pr-4">코호트</th>
+                                        <th className="pb-3 pr-4">규모</th>
+                                        {[0, 1, 2, 3, 4, 5].map(m => (
+                                            <th key={m} className="pb-3 pr-3 text-center">{m}M</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {cohorts.map((c, i) => (
+                                        <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                            <td className="py-3 pr-4 font-bold text-gray-700 text-xs">{c.month}</td>
+                                            <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{c.size}명</td>
+                                            {[0, 1, 2, 3, 4, 5].map(m => {
+                                                const val = c.retention[m];
+                                                const opacity = val != null ? Math.max(0.1, val / 100) : 0;
+                                                return (
+                                                    <td key={m} className="py-3 pr-3 text-center">
+                                                        {val != null ? (
+                                                            <span
+                                                                className="inline-block px-2 py-1 rounded text-xs font-mono font-bold"
+                                                                style={{
+                                                                    backgroundColor: `rgba(99, 102, 241, ${opacity})`,
+                                                                    color: opacity > 0.5 ? 'white' : '#4B5563'
+                                                                }}
+                                                            >
+                                                                {val}%
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-200 text-xs">—</span>
+                                                        )}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            );
+        }
         case "AI_DIAGNOSIS":
             return (
                 <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden break-inside-avoid">

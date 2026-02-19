@@ -69,3 +69,22 @@ backend-test
 manual_deploy.ps1
 deploy.ps1
 MASTER_CONFIG.md
+
+# GCP & Cloud Credentials
+gcp_sa_key.json
+*_sa_key.json
+*.service_account.json
+service_account*.json
+
+# Deployment Helper Scripts (one-time use)
+set_gcp_secret.py
+set_github_secrets*.py
+set_github_secrets*.ps1
+update_github_secret.py
+check_actions.py
+get_run_url.py
+healthcheck.py
+final_healthcheck.py
+quick_check.py
+check_deployment_status.py
+DEPLOYMENT_ANALYSIS.md
