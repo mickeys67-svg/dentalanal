@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from app.models.models import Report, ReportTemplate, Client, User
+from app.models.models import Report, ReportTemplate, Client, User, MetricsDaily, Campaign, PlatformConnection, DailyRank, Keyword, Target, TargetType
 from typing import List, Dict, Optional
 from uuid import UUID, uuid4
 import datetime
@@ -255,7 +255,6 @@ class ReportBuilderService:
         """
         from app.services.analysis import AnalysisService
         from app.services.roi_optimizer import ROIOptimizerService
-        from app.models.models import MetricsDaily, Campaign, PlatformConnection
 
         analysis_service = AnalysisService(self.db)
         roi_service = ROIOptimizerService(self.db)
@@ -276,14 +275,13 @@ class ReportBuilderService:
                 )
             ).first()
 
-            return {
-                "kpis": [
-                    {"label": "총 광고비", "value": int(metrics.total_spend or 0), "unit": "원"},
-                    {"label": "노출수", "value": int(metrics.total_impressions or 0), "unit": "회"},
-                    {"label": "클릭수", "value": int(metrics.total_clicks or 0), "unit": "회"},
-                    {"label": "전환수", "value": int(metrics.total_conversions or 0), "unit": "건"}
-                ]
-            }
+            # Frontend KPICard 컴포넌트 형식에 맞춰 배열 직접 반환
+            return [
+                {"label": "총 광고비", "value": int(metrics.total_spend or 0), "prefix": "₩"},
+                {"label": "노출수", "value": int(metrics.total_impressions or 0), "prefix": ""},
+                {"label": "클릭수", "value": int(metrics.total_clicks or 0), "prefix": ""},
+                {"label": "전환수", "value": int(metrics.total_conversions or 0), "prefix": ""}
+            ]
 
         elif widget_type == "FUNNEL":
             # 전환 퍼널
@@ -367,7 +365,6 @@ class ReportBuilderService:
 
         elif widget_type == "SOV":
             # 노출 점유율 — 키워드별 클라이언트 순위 기반 SOV 계산
-            from app.models.models import DailyRank, Keyword, Target, TargetType
             import datetime as dt
 
             week_ago = period_end - dt.timedelta(days=7)
@@ -398,7 +395,6 @@ class ReportBuilderService:
 
         elif widget_type == "COMPETITORS":
             # 경쟁사 분석 — 타겟별 노출 횟수 및 평균 순위
-            from app.models.models import DailyRank, Target, Keyword, TargetType
             import datetime as dt
 
             week_ago = period_end - dt.timedelta(days=7)
@@ -441,7 +437,6 @@ class ReportBuilderService:
 
         elif widget_type == "RANKINGS":
             # 키워드 순위 현황 — 최신 순위 목록
-            from app.models.models import DailyRank, Target, Keyword
 
             latest_ranks = self.db.query(
                 DailyRank.rank,

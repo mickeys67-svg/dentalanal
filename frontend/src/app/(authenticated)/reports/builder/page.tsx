@@ -6,12 +6,14 @@ import { ReportBuilder } from "@/components/reports/ReportBuilder";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import type { Widget } from "@/components/reports/ReportBuilder";
+import { useClient } from "@/components/providers/ClientProvider";
+import { toast } from "sonner";
 
 export default function ReportBuilderPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { selectedClient } = useClient();
   const templateId = searchParams.get("template");
-  const clientId = searchParams.get("client");
 
   const [isLoading, setIsLoading] = useState(false);
   const [initialWidgets, setInitialWidgets] = useState<Widget[]>([]);
@@ -49,8 +51,8 @@ export default function ReportBuilderPage() {
   };
 
   const handleSave = async (widgets: Widget[]) => {
-    if (!clientId) {
-      alert("클라이언트를 선택해주세요");
+    if (!selectedClient) {
+      toast.error("클라이언트를 선택해주세요");
       return;
     }
 
@@ -93,7 +95,7 @@ export default function ReportBuilderPage() {
         },
         body: JSON.stringify({
           template_id: template.id,
-          client_id: clientId,
+          client_id: selectedClient.id,
           title: `커스텀 리포트 - ${new Date().toLocaleDateString()}`,
         }),
       });
@@ -103,11 +105,11 @@ export default function ReportBuilderPage() {
       }
 
       const report = await reportResponse.json();
-      alert("리포트가 생성되었습니다!");
+      toast.success("리포트가 생성되었습니다!");
       router.push(`/reports/${report.id}`);
     } catch (error) {
       console.error("Failed to save report:", error);
-      alert("리포트 저장에 실패했습니다.");
+      toast.error("리포트 저장에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -124,6 +126,7 @@ export default function ReportBuilderPage() {
         <h1 className="text-3xl font-bold">리포트 빌더</h1>
         <p className="text-muted-foreground mt-2">
           위젯을 드래그하여 원하는 리포트를 만들어보세요
+          {selectedClient && ` — ${selectedClient.name}`}
         </p>
       </div>
 

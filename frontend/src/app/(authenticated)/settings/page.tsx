@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ChevronRight, Building2 } from 'lucide-react';
 import { deleteClient } from '@/lib/api';
 import { useClient } from '@/components/providers/ClientProvider';
+import { toast } from 'sonner';
 
 import { SetupWizard } from '@/components/setup/SetupWizard';
 
@@ -19,7 +20,7 @@ export default function SettingsPage() {
             await deleteClient(id);
             await refreshClients();
         } catch {
-            alert('삭제에 실패했습니다.');
+            toast.error('삭제에 실패했습니다.');
         }
     };
 

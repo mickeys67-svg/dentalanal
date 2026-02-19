@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDashboardSummary, getMetricsTrend, triggerSync } from "@/lib/api";
 import { useClient } from "@/components/providers/ClientProvider";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
     const { selectedClient } = useClient();
@@ -39,12 +40,12 @@ export default function DashboardPage() {
                 queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
                 queryClient.invalidateQueries({ queryKey: ['metricsTrend'] });
                 setIsSyncing(false);
-                alert("데이터 분석이 시작되었습니다. 잠시 후 새로고침 됩니다.");
+                toast.success("데이터 분석이 시작되었습니다. 잠시 후 새로고침 됩니다.");
             }, 3000);
         },
         onError: () => {
             setIsSyncing(false);
-            alert("조사 시작에 실패했습니다.");
+            toast.error("조사 시작에 실패했습니다.");
         }
     });
 

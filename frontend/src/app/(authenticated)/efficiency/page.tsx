@@ -6,6 +6,7 @@ import {
     getEfficiencyReview,
     createCollaborativeTask
 } from '@/lib/api';
+import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import {
     EfficiencyReview,
@@ -46,11 +47,11 @@ export default function EfficiencyPage() {
                 deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
             }),
         onSuccess: () => {
-            alert('업무가 협업 보드에 등록되었습니다.');
+            toast.success('업무가 협업 보드에 등록되었습니다.');
             setProcessingTaskId(null);
         },
         onError: () => {
-            alert('업무 등록에 실패했습니다.');
+            toast.error('업무 등록에 실패했습니다.');
             setProcessingTaskId(null);
         }
     });

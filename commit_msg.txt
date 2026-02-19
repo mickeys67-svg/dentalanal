@@ -1,10 +1,13 @@
-[Feat] Phase 5 리포트 빌더 완성 - Backend 위젯 데이터 전체 지원
+[Fix] 대규모 디버깅 — alert() 전면 제거 및 5개 핵심 버그 수정
 
-- report_builder.py에 누락된 5개 위젯 데이터 생성 로직 추가
-  - BENCHMARK: 클라이언트 CTR/CPC/CVR vs 치과 업종 평균 비교
-  - SOV: 키워드별 노출 점유율 (DailyRank 기반)
-  - COMPETITORS: 타겟별 노출 횟수/평균순위/점유율 분석
-  - RANKINGS: 최신 키워드별 순위 목록
-  - AI_DIAGNOSIS: 규칙 기반 성과 진단 텍스트 자동 생성
-- Frontend 빌드 검증 완료 (TypeScript 에러 0개, 25개 페이지)
-- Phase 5 완료: 리포트 빌더 전체 기능 (드래그앤드롭, 위젯, PDF, 이메일)
+- [CRITICAL] Report 모델: period_start/end, generated_at, schedule 필드 추가
+- [CRITICAL] KPI_GROUP 위젯 데이터 구조 수정 (중첩 객체에서 직접 배열로)
+- [HIGH] alert() 전면 제거 후 toast(sonner) 로 교체 (7개 파일)
+  - dashboard/page.tsx, settings/page.tsx, efficiency/page.tsx
+  - settlement/page.tsx, reports/[id]/page.tsx, SetupWizard.tsx
+  - reports/builder/page.tsx
+- [HIGH] reports/builder: searchParams.get("client") 에서 useClient() 훅으로 교체
+- [MEDIUM] report_builder.py: 내부 중복 import 상단으로 통합
+- Alembic 마이그레이션 추가 (d1e2f3a4b5c6)
+- sonner 패키지 설치, layout.tsx에 Toaster 추가
+- npm run build: TypeScript 에러 0개, 25개 페이지 검증 완료

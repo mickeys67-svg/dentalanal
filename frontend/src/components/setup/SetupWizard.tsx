@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView } from '@/lib/api';
+import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { TargetItem, Client } from '@/types';
@@ -148,7 +149,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
     const handleNext = async () => {
         if (currentStep === 1) {
-            if (!clientName) return alert('업체명을 입력해주세요.');
+            if (!clientName) { toast.error('업체명을 입력해주세요.'); return; }
             try {
                 const existing = clientSuggestions.find(c => c.name === clientName) || recentClients.find(c => c.name === clientName);
                 if (existing) {
@@ -176,14 +177,14 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 setCurrentStep(2);
             } catch {
-                alert('업체 등록 중 오류가 발생했습니다.');
+                toast.error('업체 등록 중 오류가 발생했습니다.');
             }
         } else if (currentStep === 2) {
             // Filter out targets with completely empty names
             const validTargets = targets.filter(t => t.name.trim() !== '');
 
             if (validTargets.length === 0) {
-                return alert('최소 한 개의 분석 대상을 입력해주세요.');
+                toast.error('최소 한 개의 분석 대상을 입력해주세요.'); return;
             }
 
             try {
@@ -193,10 +194,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 });
                 setCurrentStep(3);
             } catch {
-                alert('타겟 등록 중 오류가 발생했습니다.');
+                toast.error('타겟 등록 중 오류가 발생했습니다.');
             }
         } else {
-            if (!keyword) return alert('조사 키워드를 입력해주세요.');
+            if (!keyword) { toast.error('조사 키워드를 입력해주세요.'); return; }
             if (isSubmitting) return;
 
             setIsSubmitting(true);
@@ -224,7 +225,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 }, 100);
             } catch (error) {
                 console.error("Analysis save error:", error);
-                alert('분석 이력 저장 중 오류가 발생했습니다.');
+                toast.error('분석 이력 저장 중 오류가 발생했습니다.');
             } finally {
                 setIsSubmitting(false);
             }

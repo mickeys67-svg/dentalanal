@@ -3,6 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2, ArrowLeft, Download, Share2, AlertCircle, Target } from 'lucide-react';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -91,7 +92,7 @@ export default function ReportDetailPage() {
                                 document.body.removeChild(a);
                             } catch (error) {
                                 console.error('PDF download failed:', error);
-                                alert('PDF 다운로드에 실패했습니다.');
+                                toast.error('PDF 다운로드에 실패했습니다.');
                             }
                         }}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-all font-medium"
@@ -101,7 +102,7 @@ export default function ReportDetailPage() {
                     <button
                         onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
-                            alert('공유 링크가 클립보드에 복사되었습니다.');
+                            toast.success('공유 링크가 클립보드에 복사되었습니다.');
                         }}
                         className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-opacity-90 transition-all font-medium shadow-sm"
                     >

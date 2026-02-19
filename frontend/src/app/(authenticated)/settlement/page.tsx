@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettlements, generateSettlement, updateSettlementStatus } from '@/lib/api';
+import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import {
     CreditCard, Download, Receipt, AlertCircle,
@@ -30,10 +31,10 @@ export default function SettlementPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['settlements', selectedClient?.id] });
             setIsGenerating(false);
-            alert('정산 데이터가 생성되었습니다.');
+            toast.success('정산 데이터가 생성되었습니다.');
         },
         onError: (err: any) => {
-            alert(err?.response?.data?.detail || "정산 데이터 생성 실패");
+            toast.error(err?.response?.data?.detail || "정산 데이터 생성 실패");
             setIsGenerating(false);
         }
     });
@@ -43,7 +44,7 @@ export default function SettlementPage() {
             updateSettlementStatus(vars.id, vars.status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['settlements', selectedClient?.id] });
-            alert('상태가 변경되었습니다.');
+            toast.success('상태가 변경되었습니다.');
         }
     });
 

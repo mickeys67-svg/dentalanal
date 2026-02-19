@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { Toaster } from "sonner";
 
 export default function DashboardLayout({
     children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
                     {children}
                 </main>
             </div>
+            <Toaster position="top-right" richColors />
         </div>
     );
 }
