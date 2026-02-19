@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType, MetricsDaily, Campaign, PlatformConnection, Lead, LeadActivity, LeadProfile, Report
+from app.models.models import DailyRank, Target, Keyword, TargetType, PlatformType, MetricsDaily, Campaign, PlatformConnection, Lead, LeadActivity, LeadProfile, Report, Client
 from typing import List, Union, Optional, Any
 from uuid import uuid4, UUID
 import random
@@ -8,9 +8,24 @@ import datetime
 import logging
 
 class AnalysisService:
+    DEFAULT_CONVERSION_VALUE = 150000.0  # 전환당 기본 수익 (설정값 없을 때)
+
     def __init__(self, db: Session):
         self.db = db
         self.logger = logging.getLogger(__name__)
+
+    def _get_client_conversion_value(self, client_id) -> float:
+        """클라이언트별 전환당 수익값 조회 (미설정 시 기본값 150,000원)"""
+        if not client_id:
+            return self.DEFAULT_CONVERSION_VALUE
+        try:
+            cid = UUID(str(client_id)) if not isinstance(client_id, UUID) else client_id
+            client = self.db.query(Client).filter(Client.id == cid).first()
+            if client and client.conversion_value and client.conversion_value > 0:
+                return float(client.conversion_value)
+        except Exception:
+            pass
+        return self.DEFAULT_CONVERSION_VALUE
         # [MIGRATE] Transitioned from MongoDB to Supabase (Option A)
 
     def _get_or_create_keyword(self, term: str, client_id: Optional[UUID] = None) -> Keyword:
@@ -601,7 +616,8 @@ class AnalysisService:
             total_spend += spend
             total_conv += conv
             
-            roas = (conv * 50000 / spend * 100) if spend > 0 else 0 # Mock revenue: 50,000 KRW per conversion
+            _conv_val = self._get_client_conversion_value(client_id)
+            roas = (conv * _conv_val / spend * 100) if spend > 0 else 0
             cpa = (spend / conv) if conv > 0 else spend
             ctr = (clicks / impressions * 100) if impressions > 0 else 0
             cvr = (conv / clicks * 100) if clicks > 0 else 0
@@ -617,7 +633,8 @@ class AnalysisService:
                 "cvr": round(cvr, 2)
             })
             
-        overall_roas = (total_conv * 50000 / total_spend * 100) if total_spend > 0 else 0
+        _conv_val = self._get_client_conversion_value(client_id)
+        overall_roas = (total_conv * _conv_val / total_spend * 100) if total_spend > 0 else 0
         
         period_start_str = actual_period[0].strftime("%Y-%m-%d") if actual_period and actual_period[0] else None
         period_end_str = actual_period[1].strftime("%Y-%m-%d") if actual_period and actual_period[1] else None

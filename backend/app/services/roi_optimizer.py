@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from app.models.models import MetricsDaily, Campaign, PlatformConnection, Notification
+from app.models.models import MetricsDaily, Campaign, PlatformConnection, Notification, Client
 from typing import List, Dict, Optional, Tuple
 from uuid import UUID, uuid4
 import datetime
@@ -17,6 +17,8 @@ class ROIOptimizerService:
     3. 예산 재분배 추천
     """
 
+    DEFAULT_CONVERSION_VALUE = 150000.0
+
     def __init__(self, db: Session):
         self.db = db
         self.logger = logging.getLogger(__name__)
@@ -27,11 +29,21 @@ class ROIOptimizerService:
         self.HIGH_CPA_PERCENTILE = 75  # CPA 상위 75% (비효율)
         self.MIN_SPEND_FOR_ANALYSIS = 50000  # 최소 광고비 5만원
 
+    def _get_client_conversion_value(self, client_id: UUID) -> float:
+        """클라이언트별 전환당 수익값 조회 (미설정 시 기본값 150,000원)"""
+        try:
+            client = self.db.query(Client).filter(Client.id == client_id).first()
+            if client and client.conversion_value and client.conversion_value > 0:
+                return float(client.conversion_value)
+        except Exception:
+            pass
+        return self.DEFAULT_CONVERSION_VALUE
+
     def track_campaign_roas(
         self,
         client_id: UUID,
         days: int = 30,
-        conversion_value: float = 150000  # 전환당 평균 수익 (치과: 15만원)
+        conversion_value: float = None  # None이면 클라이언트 설정값 또는 기본 150,000원
     ) -> Dict:
         """
         캠페인별 ROAS 추적 및 트렌드 분석
@@ -44,6 +56,8 @@ class ROIOptimizerService:
         Returns:
             캠페인별 ROAS 데이터 및 트렌드
         """
+        if conversion_value is None:
+            conversion_value = self._get_client_conversion_value(client_id)
         start_date = datetime.date.today() - datetime.timedelta(days=days)
 
         # 1. 캠페인별 전체 성과 집계
@@ -128,7 +142,7 @@ class ROIOptimizerService:
         self,
         client_id: UUID,
         days: int = 30,
-        conversion_value: float = 150000
+        conversion_value: float = None
     ) -> List[Dict]:
         """
         비효율 광고 자동 감지
@@ -146,6 +160,8 @@ class ROIOptimizerService:
         Returns:
             비효율 광고 목록 및 개선 권장사항
         """
+        if conversion_value is None:
+            conversion_value = self._get_client_conversion_value(client_id)
         start_date = datetime.date.today() - datetime.timedelta(days=days)
 
         # 캠페인별 성과 집계
@@ -278,7 +294,7 @@ class ROIOptimizerService:
         self,
         client_id: UUID,
         days: int = 30,
-        conversion_value: float = 150000
+        conversion_value: float = None
     ) -> Dict:
         """
         예산 재분배 추천

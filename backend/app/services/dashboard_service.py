@@ -2,7 +2,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.models import MetricsDaily, Campaign, PlatformConnection, AnalysisHistory
+from app.models.models import MetricsDaily, Campaign, PlatformConnection, AnalysisHistory, Client
 import datetime
 
 logger = logging.getLogger(__name__)
@@ -10,6 +10,36 @@ logger = logging.getLogger(__name__)
 class DashboardService:
     def __init__(self, db: Session):
         self.db = db
+
+    def _get_client_conversion_value(self, client_id) -> float:
+        """클라이언트별 전환당 수익값 조회 (미설정 시 기본값 150,000원)"""
+        DEFAULT_CONVERSION_VALUE = 150000.0
+        if not client_id:
+            return DEFAULT_CONVERSION_VALUE
+        try:
+            from uuid import UUID
+            cid = UUID(str(client_id)) if not isinstance(client_id, UUID) else client_id
+            client = self.db.query(Client).filter(Client.id == cid).first()
+            if client and client.conversion_value and client.conversion_value > 0:
+                return float(client.conversion_value)
+        except Exception:
+            pass
+        return DEFAULT_CONVERSION_VALUE
+
+    def _get_client_fee_rate(self, client_id) -> float:
+        """클라이언트별 수수료율 조회 (미설정 시 기본값 15%)"""
+        DEFAULT_FEE_RATE = 0.15
+        if not client_id:
+            return DEFAULT_FEE_RATE
+        try:
+            from uuid import UUID
+            cid = UUID(str(client_id)) if not isinstance(client_id, UUID) else client_id
+            client = self.db.query(Client).filter(Client.id == cid).first()
+            if client and client.fee_rate and 0 < client.fee_rate <= 1:
+                return float(client.fee_rate)
+        except Exception:
+            pass
+        return DEFAULT_FEE_RATE
 
     def get_summary_metrics(self, client_id: str = None) -> Dict[str, Any]:
         """
@@ -59,7 +89,8 @@ class DashboardService:
             total_revenue = float(revenue_res.total_revenue or 0) if revenue_res and hasattr(revenue_res, 'total_revenue') else 0.0
             
             if total_revenue == 0 and total_conversions > 0:
-                total_revenue = total_conversions * 150000 
+                conversion_value = self._get_client_conversion_value(client_id)
+                total_revenue = total_conversions * conversion_value
                 
             avg_roas = (total_revenue / total_spend * 100) if total_spend > 0 else 0
             avg_cpc = (total_spend / total_clicks) if total_clicks > 0 else 0
@@ -140,9 +171,10 @@ class DashboardService:
                            .order_by(func.sum(MetricsDaily.spend).desc())\
                            .limit(limit).all()
             
+            conversion_value = self._get_client_conversion_value(client_id)
             campaigns = []
             for r in results:
-                rev = (int(r.conversions or 0) * 50000)
+                rev = (int(r.conversions or 0) * conversion_value)
                 roas = (rev / float(r.spend or 1) * 100) if float(r.spend or 0) > 0 else 0
                 campaigns.append({
                     "name": r.name,

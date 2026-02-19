@@ -24,10 +24,14 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     industry: Optional[str] = None
     email: Optional[str] = None
+    conversion_value: Optional[float] = None
+    fee_rate: Optional[float] = None
 
 class ClientResponse(ClientBase):
     id: UUID
     email: Optional[str] = None
+    conversion_value: Optional[float] = None  # 전환당 수익 (기본 150,000원)
+    fee_rate: Optional[float] = None           # 대행 수수료율 (기본 0.15)
     created_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
 

@@ -48,8 +48,11 @@ class SettlementService:
             return None
 
         total_spend = sum(m.total_spend for m in metrics_query)
-        # Default fee rate 15% - In real app, this might come from Client model or a contract table
-        fee_rate = 0.15 
+        # 클라이언트 설정값 우선, 없으면 기본 15%
+        from uuid import UUID as _UUID
+        _cid = _UUID(str(client_id)) if not isinstance(client_id, _UUID) else client_id
+        _client = self.db.query(Client).filter(Client.id == _cid).first()
+        fee_rate = float(_client.fee_rate) if _client and _client.fee_rate and 0 < _client.fee_rate <= 1 else 0.15
         total_fee = total_spend * fee_rate
         total_tax = total_fee * 0.1 # 10% VAT on fee
         total_amount = total_fee + total_tax # Amount to be invoiced by agency (some models include spend, some just fee)

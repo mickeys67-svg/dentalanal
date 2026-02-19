@@ -160,7 +160,7 @@ export const deleteClient = async (clientId: string): Promise<{ status: string }
 
 export const updateClient = async (
     clientId: string,
-    data: { email?: string; name?: string; industry?: string }
+    data: { email?: string; name?: string; industry?: string; conversion_value?: number; fee_rate?: number }
 ): Promise<Client> => {
     const response = await api.patch(`/api/v1/clients/${clientId}`, data);
     return response.data;

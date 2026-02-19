@@ -97,7 +97,9 @@ class Client(Base):
     agency_id = Column(GUID, ForeignKey("agencies.id"), nullable=False)
     name = Column(String, nullable=False)
     industry = Column(String, nullable=True)
-    email = Column(String(255), nullable=True)  # 리포트 수신 이메일
+    email = Column(String(255), nullable=True)          # 리포트 수신 이메일
+    conversion_value = Column(Float, nullable=True)     # 전환당 수익 (기본 150,000원)
+    fee_rate = Column(Float, nullable=True)             # 대행 수수료율 (기본 0.15 = 15%)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
