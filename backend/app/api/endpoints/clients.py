@@ -20,8 +20,14 @@ class ClientBase(BaseModel):
 class ClientCreate(ClientBase):
     pass
 
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    industry: Optional[str] = None
+    email: Optional[str] = None
+
 class ClientResponse(ClientBase):
     id: UUID
+    email: Optional[str] = None
     created_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -116,6 +122,26 @@ def search_clients(
         Client.agency_id == agency_id,
         Client.name.ilike(f"%{name}%")
     ).limit(10).all()
+
+@router.patch("/{client_id}", response_model=ClientResponse)
+def update_client(
+    client_id: UUID,
+    data: ClientUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """클라이언트 정보 업데이트 (이메일, 이름, 업종)"""
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    for field, val in data.model_dump(exclude_unset=True).items():
+        setattr(client, field, val)
+
+    db.commit()
+    db.refresh(client)
+    return client
+
 
 @router.delete("/{client_id}")
 def delete_client(

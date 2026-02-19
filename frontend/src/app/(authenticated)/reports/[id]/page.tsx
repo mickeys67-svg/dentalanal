@@ -1,11 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, sendReportEmail } from '@/lib/api';
 import { toast } from 'sonner';
 import { useParams, useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, Download, Share2, AlertCircle, Target } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, Share2, AlertCircle, Target, Mail, X } from 'lucide-react';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 
@@ -18,6 +18,13 @@ import {
 export default function ReportDetailPage() {
     const { id } = useParams();
     const router = useRouter();
+
+    // 이메일 발송 모달 상태
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [emailTo, setEmailTo] = useState('');
+    const [emailSubject, setEmailSubject] = useState('');
+    const [emailSummary, setEmailSummary] = useState('');
+    const [isSending, setIsSending] = useState(false);
 
     const { data: report, isLoading, error } = useQuery({
         queryKey: ['report', id],
@@ -102,6 +109,18 @@ export default function ReportDetailPage() {
                     </button>
                     <button
                         onClick={() => {
+                            // client.email을 기본값으로 채움
+                            setEmailTo(report.client?.email || '');
+                            setEmailSubject(`${report.title} — 성과 리포트`);
+                            setEmailSummary('');
+                            setShowEmailModal(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 rounded-lg text-sm hover:bg-indigo-50 transition-all font-medium"
+                    >
+                        <Mail className="w-4 h-4" /> 이메일 발송
+                    </button>
+                    <button
+                        onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
                             toast.success('공유 링크가 클립보드에 복사되었습니다.');
                         }}
@@ -111,6 +130,116 @@ export default function ReportDetailPage() {
                     </button>
                 </div>
             </div>
+
+            {/* 이메일 발송 모달 */}
+            {showEmailModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                        {/* 모달 헤더 */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-50 rounded-lg">
+                                    <Mail className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-gray-900">리포트 이메일 발송</h2>
+                                    <p className="text-xs text-gray-400">PDF 리포트를 이메일로 전달합니다</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowEmailModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-4 h-4 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* 모달 본문 */}
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                    수신자 이메일 <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={emailTo}
+                                    onChange={e => setEmailTo(e.target.value)}
+                                    placeholder="example@email.com (쉼표로 여러 명 입력)"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1">쉼표(,)로 여러 수신자를 구분하세요</p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                    이메일 제목 <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={emailSubject}
+                                    onChange={e => setEmailSubject(e.target.value)}
+                                    placeholder="이메일 제목을 입력하세요"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                    요약 메시지
+                                </label>
+                                <textarea
+                                    value={emailSummary}
+                                    onChange={e => setEmailSummary(e.target.value)}
+                                    placeholder="클라이언트에게 전달할 핵심 내용을 간략히 입력하세요 (선택)"
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* 모달 푸터 */}
+                        <div className="flex gap-3 p-6 pt-0">
+                            <button
+                                onClick={() => setShowEmailModal(false)}
+                                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                취소
+                            </button>
+                            <button
+                                disabled={isSending || !emailTo.trim() || !emailSubject.trim()}
+                                onClick={async () => {
+                                    const emails = emailTo.split(',').map(e => e.trim()).filter(Boolean);
+                                    if (emails.length === 0) {
+                                        toast.error('수신자 이메일을 입력해주세요.');
+                                        return;
+                                    }
+                                    setIsSending(true);
+                                    try {
+                                        await sendReportEmail({
+                                            report_id: String(id),
+                                            to_emails: emails,
+                                            subject: emailSubject,
+                                            summary: emailSummary,
+                                        });
+                                        toast.success(`이메일이 발송되었습니다. (${emails.join(', ')})`);
+                                        setShowEmailModal(false);
+                                    } catch (err: any) {
+                                        const msg = err?.response?.data?.detail || '이메일 발송에 실패했습니다.';
+                                        toast.error(msg);
+                                    } finally {
+                                        setIsSending(false);
+                                    }
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSending ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> 발송 중...</>
+                                ) : (
+                                    <><Mail className="w-4 h-4" /> 발송하기</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Print Header (Only visible when printing) */}
             <div className="hidden print:block text-center border-b-2 border-gray-900 pb-8 mb-10">

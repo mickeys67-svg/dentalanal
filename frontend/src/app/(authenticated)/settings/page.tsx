@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, ChevronRight, Building2 } from 'lucide-react';
-import { deleteClient } from '@/lib/api';
+import { Plus, Trash2, ChevronRight, Building2, Mail, Pencil, Check, X as XIcon, Loader2 } from 'lucide-react';
+import { deleteClient, updateClient } from '@/lib/api';
 import { useClient } from '@/components/providers/ClientProvider';
 import { toast } from 'sonner';
 
@@ -14,6 +14,11 @@ export default function SettingsPage() {
     const router = useRouter();
     const { refreshClients, clients, isLoading, setSelectedClient } = useClient();
 
+    // 이메일 인라인 편집 상태: clientId → editValue
+    const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+    const [editEmailValue, setEditEmailValue] = useState('');
+    const [savingEmailId, setSavingEmailId] = useState<string | null>(null);
+
     const handleDeleteClient = async (id: string) => {
         if (!confirm('정말 삭제하시겠습니까? 데이터가 모두 사라집니다.')) return;
         try {
@@ -21,6 +26,31 @@ export default function SettingsPage() {
             await refreshClients();
         } catch {
             toast.error('삭제에 실패했습니다.');
+        }
+    };
+
+    const handleStartEditEmail = (clientId: string, currentEmail: string | undefined) => {
+        setEditingEmailId(clientId);
+        setEditEmailValue(currentEmail || '');
+    };
+
+    const handleCancelEditEmail = () => {
+        setEditingEmailId(null);
+        setEditEmailValue('');
+    };
+
+    const handleSaveEmail = async (clientId: string) => {
+        setSavingEmailId(clientId);
+        try {
+            await updateClient(clientId, { email: editEmailValue.trim() || undefined });
+            await refreshClients();
+            toast.success('이메일이 저장되었습니다.');
+            setEditingEmailId(null);
+            setEditEmailValue('');
+        } catch {
+            toast.error('이메일 저장에 실패했습니다.');
+        } finally {
+            setSavingEmailId(null);
         }
     };
 
@@ -76,7 +106,60 @@ export default function SettingsPage() {
                                 <h3 className="text-2xl font-bold text-gray-900 leading-tight">{client.name}</h3>
                             </div>
 
-                            <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50">
+                            {/* 이메일 인라인 편집 영역 */}
+                            <div className="mt-4 mb-2">
+                                {editingEmailId === client.id ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 flex items-center gap-1 border border-indigo-300 rounded-lg px-2 py-1 bg-indigo-50 focus-within:ring-2 focus-within:ring-indigo-300">
+                                            <Mail className="w-3 h-3 text-indigo-400 shrink-0" />
+                                            <input
+                                                type="email"
+                                                value={editEmailValue}
+                                                onChange={e => setEditEmailValue(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') handleSaveEmail(client.id);
+                                                    if (e.key === 'Escape') handleCancelEditEmail();
+                                                }}
+                                                placeholder="이메일 입력"
+                                                autoFocus
+                                                className="flex-1 text-xs bg-transparent outline-none text-gray-700 placeholder-gray-300"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleSaveEmail(client.id)}
+                                            disabled={savingEmailId === client.id}
+                                            className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                            title="저장"
+                                        >
+                                            {savingEmailId === client.id
+                                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                : <Check className="w-3 h-3" />
+                                            }
+                                        </button>
+                                        <button
+                                            onClick={handleCancelEditEmail}
+                                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="취소"
+                                        >
+                                            <XIcon className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleStartEditEmail(client.id, (client as any).email)}
+                                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 transition-colors group/email"
+                                        title="리포트 수신 이메일 편집"
+                                    >
+                                        <Mail className="w-3 h-3" />
+                                        <span className={(client as any).email ? 'text-gray-600 font-medium' : 'italic'}>
+                                            {(client as any).email || '이메일 미설정'}
+                                        </span>
+                                        <Pencil className="w-3 h-3 opacity-0 group-hover/email:opacity-100 transition-opacity" />
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-between mt-4 pt-6 border-t border-gray-50">
                                 <div className="text-xs text-gray-400 space-y-1">
                                     <div className="flex items-center gap-1">
                                         <span className="font-bold text-gray-900">3개의 타겟</span> 연동됨

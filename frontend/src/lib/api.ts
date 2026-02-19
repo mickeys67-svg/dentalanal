@@ -158,6 +158,28 @@ export const deleteClient = async (clientId: string): Promise<{ status: string }
     return response.data;
 };
 
+export const updateClient = async (
+    clientId: string,
+    data: { email?: string; name?: string; industry?: string }
+): Promise<Client> => {
+    const response = await api.patch(`/api/v1/clients/${clientId}`, data);
+    return response.data;
+};
+
+export interface SendReportEmailPayload {
+    report_id: string;
+    to_emails: string[];
+    subject: string;
+    summary: string;
+}
+
+export const sendReportEmail = async (
+    payload: SendReportEmailPayload
+): Promise<{ status: string; message: string }> => {
+    const response = await api.post('/api/v1/reports/send-email', payload);
+    return response.data;
+};
+
 export const updateBulkTargets = async (data: { client_id: string, targets: any[] }): Promise<{ status: string, targets: any[] }> => {
     const response = await api.post('/api/v1/analyze/targets/bulk', data);
     return response.data;
