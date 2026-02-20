@@ -211,10 +211,11 @@ def health_check():
     return {"status": "ok"}
 
 # Lazy-loaded Routers to prevent top-level import crashes
-from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads
+from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads, debug
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
+app.include_router(debug.router, prefix="/api/v1/debug", tags=["Debug"])
 app.include_router(scrape.router, prefix="/api/v1/scrape", tags=["Scraping"])
 app.include_router(analyze.router, prefix="/api/v1/analyze", tags=["Analysis"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
