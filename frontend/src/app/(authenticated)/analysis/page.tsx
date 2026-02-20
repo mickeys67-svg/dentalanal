@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { DashboardWidget } from '@/components/dashboard/DashboardWidget';
-import { Filter, BarChart2, TrendingUp, Users, Target, MousePointer2, Loader2, Search, Activity } from 'lucide-react';
+import { Filter, TrendingUp, Users, Target, MousePointer2, Loader2, Search, Activity, Map } from 'lucide-react';
+import KeywordPositioningMap from '@/components/dashboard/KeywordPositioningMap';
 import clsx from 'clsx';
 import { useQuery } from '@tanstack/react-query';
 import { getFunnelData, getCohortData, getAttributionData, getSegmentData } from '@/lib/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend,
-    LineChart, Line, AreaChart, Area
+    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    LineChart, Line
 } from 'recharts';
 import { FunnelStage, CohortRow, AttributionData, SegmentRow } from '@/types';
 import { useClient } from '@/components/providers/ClientProvider';
@@ -24,17 +25,18 @@ const analysisTypes = [
     { id: 'segment', name: '세그먼트 분석 (Segment)', icon: Filter, description: '오디언스 그룹별 성과 비교' },
     { id: 'rankings', name: '순위 추적 (Ranking)', icon: Search, description: '주요 키워드별 노출 순위 변동' },
     { id: 'sov', name: '점유율 분석 (SOV)', icon: Activity, description: '경쟁사 대비 노출 점유율 분석' },
+    { id: 'positioning', name: '포지셔닝 맵 (Positioning)', icon: Map, description: '경쟁사 대비 키워드별 순위 히트맵' },
 ];
 
 export default function AnalysisPage() {
     const { selectedClient } = useClient();
-    if (!selectedClient) {
-        return <EmptyClientPlaceholder title="분석할 업체를 선택해주세요" description="상단에서 업체를 선택하면 정밀 데이터 분석 기능이 활성화됩니다." />;
-    }
-
     const clientId = selectedClient?.id;
+
+    // All hooks must be declared before any conditional return (React Rules of Hooks)
     const [selectedType, setSelectedType] = useState('funnel');
     const [attrModel, setAttrModel] = useState<'first_touch' | 'last_touch' | 'linear'>('linear');
+    const [rankingKeyword, setRankingKeyword] = useState('치과 마케팅');
+    const [rankingPlatform, setRankingPlatform] = useState('NAVER_AD');
 
     // 1. Funnel Data
     const { data: funnelData, isLoading: isFunnelLoading } = useQuery({
@@ -64,10 +66,7 @@ export default function AnalysisPage() {
         enabled: selectedType === 'segment' && !!clientId
     });
 
-    // 5. Rankings Data (New)
-    const [rankingKeyword, setRankingKeyword] = useState('치과 마케팅');
-    const [rankingPlatform, setRankingPlatform] = useState('NAVER_AD');
-
+    // 5. Rankings Data
     const { data: rankingData, isLoading: isRankingLoading } = useQuery({
         queryKey: ['rankings', rankingKeyword, rankingPlatform, clientId],
         queryFn: () => import('@/lib/api').then(mod => mod.getRankings(rankingKeyword, rankingPlatform)),
@@ -95,6 +94,11 @@ export default function AnalysisPage() {
         })),
         enabled: selectedType === 'sov' && !!clientId
     });
+
+    // Early return AFTER all hooks
+    if (!selectedClient) {
+        return <EmptyClientPlaceholder title="분석할 업체를 선택해주세요" description="상단에서 업체를 선택하면 정밀 데이터 분석 기능이 활성화됩니다." />;
+    }
 
     const renderFunnelChart = () => {
         if (isFunnelLoading) return <div className="h-80 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
@@ -448,6 +452,7 @@ export default function AnalysisPage() {
             case 'segment': return renderSegmentAnalysis();
             case 'rankings': return renderRankingsList();
             case 'sov': return renderSOVChart();
+            case 'positioning': return <KeywordPositioningMap clientId={clientId!} />;
             default: return null;
         }
     };

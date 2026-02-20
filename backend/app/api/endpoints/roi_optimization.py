@@ -5,7 +5,7 @@ from app.services.roi_optimizer import ROIOptimizerService
 from app.models.models import User
 from app.api.endpoints.auth import get_current_user
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 router = APIRouter(tags=["ROI Optimization"])
@@ -13,7 +13,7 @@ router = APIRouter(tags=["ROI Optimization"])
 class ROASTrackingRequest(BaseModel):
     client_id: UUID
     days: int = 30
-    conversion_value: float = 150000  # 전환당 평균 수익
+    conversion_value: Optional[float] = None  # None이면 클라이언트 DB 설정값 사용
 
 @router.post("/track-roas")
 def track_campaign_roas(
@@ -75,7 +75,7 @@ def track_campaign_roas(
 def detect_inefficient_ads(
     client_id: UUID,
     days: int = Query(30, ge=7, le=90),
-    conversion_value: float = Query(150000, gt=0),
+    conversion_value: Optional[float] = Query(None, gt=0),
     create_alerts: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -143,7 +143,7 @@ def detect_inefficient_ads(
 def recommend_budget_reallocation(
     client_id: UUID,
     days: int = Query(30, ge=7, le=90),
-    conversion_value: float = Query(150000, gt=0),
+    conversion_value: Optional[float] = Query(None, gt=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

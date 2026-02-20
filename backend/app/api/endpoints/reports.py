@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from app.core.database import get_db
-from app.models.models import ReportTemplate, Report, User, UserRole, Client
+from app.models.models import ReportTemplate, Report, User, UserRole, Client, SystemConfig
 from app.schemas.reports import (
     ReportTemplateCreate, ReportTemplateResponse,
     ReportCreate, ReportResponse
@@ -16,6 +16,8 @@ from app.services.pdf_generator import PDFGeneratorService
 from app.services.email_service import EmailService
 from pydantic import BaseModel, EmailStr
 import datetime
+import secrets
+import json
 
 router = APIRouter()
 
@@ -108,6 +110,7 @@ def process_report_task(report_id: UUID):
     except Exception as e:
         import logging
         logging.error(f"CRITICAL ERROR in process_report_task: {str(e)}")
+        db.rollback()
     finally:
         db.close()
 
@@ -168,14 +171,6 @@ def get_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     return report
-
-@router.get("/{client_id}", response_model=List[ReportResponse])
-def get_client_reports(
-    client_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    return db.query(Report).filter(Report.client_id == client_id).all()
 
 @router.post("/generate/{report_id}")
 def generate_report_now(
@@ -390,3 +385,116 @@ def send_report_email(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Email sending failed: {str(e)}")
+
+
+# ─── 클라이언트 포털 공유 ──────────────────────────────────────────────────────
+
+@router.post("/share/{client_id}")
+def create_share_token(
+    client_id: UUID,
+    expires_days: int = 30,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    클라이언트 포털 공유 토큰 생성 (읽기 전용 링크)
+
+    생성된 토큰으로 /portal/{token} 에 접근 시 로그인 없이 해당 클라이언트의
+    핵심 KPI를 열람할 수 있습니다.
+    """
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Verify the client belongs to the current user's agency
+    if client.agency_id != current_user.agency_id and current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.datetime.utcnow() + datetime.timedelta(days=expires_days)).isoformat()
+
+    config_key = f"PORTAL_TOKEN_{token}"
+    payload = json.dumps({"client_id": str(client_id), "expires_at": expires_at})
+
+    existing = db.query(SystemConfig).filter(SystemConfig.key == config_key).first()
+    if existing:
+        existing.value = payload
+    else:
+        db.add(SystemConfig(key=config_key, value=payload, description=f"Portal share token for {client.name}"))
+    db.commit()
+
+    return {"token": token, "expires_at": expires_at, "client_name": client.name}
+
+
+@router.get("/portal/{token}")
+def get_portal_data(
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """
+    공유 토큰으로 클라이언트 포털 데이터 조회 (인증 불필요)
+    """
+    config_key = f"PORTAL_TOKEN_{token}"
+    config = db.query(SystemConfig).filter(SystemConfig.key == config_key).first()
+    if not config:
+        raise HTTPException(status_code=404, detail="유효하지 않은 공유 링크입니다.")
+
+    try:
+        payload = json.loads(config.value)
+    except Exception:
+        raise HTTPException(status_code=500, detail="토큰 데이터 오류")
+
+    expires_at = datetime.datetime.fromisoformat(payload["expires_at"])
+    if datetime.datetime.utcnow() > expires_at:
+        raise HTTPException(status_code=410, detail="만료된 공유 링크입니다.")
+
+    client_id = UUID(payload["client_id"])
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="클라이언트를 찾을 수 없습니다.")
+
+    # 최근 30일 리포트 목록
+    recent_reports = db.query(Report).filter(
+        Report.client_id == client_id,
+        Report.status == "COMPLETED"
+    ).order_by(Report.created_at.desc()).limit(5).all()
+
+    return {
+        "client": {"id": str(client.id), "name": client.name, "industry": client.industry},
+        "expires_at": payload["expires_at"],
+        "reports": [
+            {
+                "id": str(r.id),
+                "title": r.title,
+                "period_start": str(r.period_start) if r.period_start else None,
+                "period_end": str(r.period_end) if r.period_end else None,
+                "generated_at": r.generated_at.isoformat() if r.generated_at else None,
+                "data_summary": _extract_summary(r.data),
+            }
+            for r in recent_reports
+        ]
+    }
+
+
+@router.get("/{client_id}", response_model=List[ReportResponse])
+def get_client_reports(
+    client_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """클라이언트별 리포트 목록 조회 (와일드카드 — 반드시 모든 구체 경로 뒤에 위치)"""
+    return db.query(Report).filter(Report.client_id == client_id).all()
+
+
+def _extract_summary(data: Optional[dict]) -> dict:
+    """리포트 data JSON에서 핵심 KPI만 추출"""
+    if not data:
+        return {}
+    summary = {}
+    for widget in data.get("widgets", []):
+        wtype = widget.get("type", "")
+        if wtype == "KPI_GROUP":
+            summary["kpis"] = widget.get("data", [])
+        elif wtype == "FUNNEL":
+            summary["funnel"] = widget.get("data", [])
+    return summary

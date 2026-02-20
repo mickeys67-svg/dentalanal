@@ -377,7 +377,7 @@ class ReportBuilderService:
             ).filter(
                 and_(
                     DailyRank.client_id == client_id,
-                    Target.type == TargetType.OUR_CLINIC,
+                    Target.type == TargetType.OWNER,
                     DailyRank.captured_at >= week_ago
                 )
             ).group_by(Keyword.term).limit(8).all()

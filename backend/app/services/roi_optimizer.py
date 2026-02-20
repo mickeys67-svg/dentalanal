@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from app.models.models import MetricsDaily, Campaign, PlatformConnection, Notification, Client
+from app.models.models import MetricsDaily, Campaign, PlatformConnection, Notification, Client, User
 from typing import List, Dict, Optional, Tuple
 from uuid import UUID, uuid4
 import datetime
@@ -389,17 +389,29 @@ class ROIOptimizerService:
         high_severity = [ad for ad in inefficient_ads if ad["severity"] == "high"]
 
         if high_severity:
-            # 심각한 비효율 광고에 대한 알림 생성
-            for ad in high_severity[:3]:  # 최대 3개만
-                notification = Notification(
-                    id=uuid4(),
-                    client_id=client_id,
-                    type="ALERT",
-                    title=f"⚠️ 비효율 광고 감지: {ad['campaign_name']}",
-                    message=f"ROAS {ad['roas']}%로 매우 낮은 성과를 보이고 있습니다. {', '.join(ad['recommendations'][:2])}",
-                    is_read=False
-                )
-                self.db.add(notification)
+            # 클라이언트 소속 agency의 유저 목록 조회 (알림 수신 대상)
+            client = self.db.query(Client).filter(Client.id == client_id).first()
+            if not client:
+                return
+            agency_users = self.db.query(User).filter(User.agency_id == client.agency_id).all()
+            if not agency_users:
+                return
 
-            self.db.commit()
-            self.logger.info(f"Created {len(high_severity)} inefficiency alerts for client {client_id}")
+            # 심각한 비효율 광고에 대한 알림 생성 (최대 3개)
+            try:
+                for ad in high_severity[:3]:
+                    for user in agency_users:
+                        notification = Notification(
+                            id=uuid4(),
+                            user_id=user.id,
+                            type="ALERT",
+                            title=f"⚠️ 비효율 광고 감지: {ad['campaign_name']}",
+                            content=f"ROAS {ad['roas']}%로 매우 낮은 성과를 보이고 있습니다. {', '.join(ad['recommendations'][:2])}",
+                            is_read=0
+                        )
+                        self.db.add(notification)
+                self.db.commit()
+                self.logger.info(f"Created inefficiency alerts for client {client_id}")
+            except Exception as e:
+                self.db.rollback()
+                self.logger.error(f"Failed to create inefficiency alerts: {e}")

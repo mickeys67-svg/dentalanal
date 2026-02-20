@@ -357,7 +357,7 @@ export const streamAssistantQuery = (
     onDone: (sessionId: string) => void,
     onError: (err: string) => void,
 ): (() => void) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const ctrl = new AbortController();
 
@@ -515,22 +515,78 @@ export const getRoasTracking = async (clientId: string, days: number = 30): Prom
     const response = await api.post('/api/v1/roi/track-roas', {
         client_id: clientId,
         days,
-        conversion_value: 150000,
+        // conversion_value 미전달 → 서버에서 클라이언트 DB 설정값 사용
     });
     return response.data;
 };
 
 export const getInefficientAds = async (clientId: string, days: number = 30): Promise<any> => {
     const response = await api.get(`/api/v1/roi/detect-inefficient/${clientId}`, {
-        params: { days, conversion_value: 150000 },
+        params: { days },
     });
     return response.data;
 };
 
 export const getBudgetReallocation = async (clientId: string, days: number = 30): Promise<any> => {
     const response = await api.get(`/api/v1/roi/budget-reallocation/${clientId}`, {
-        params: { days, conversion_value: 150000 },
+        params: { days },
     });
+    return response.data;
+};
+
+// --- Lead Management APIs ---
+export interface Lead {
+    id: string;
+    client_id: string;
+    name: string | null;
+    contact: string | null;
+    channel: string | null;
+    cohort_month: string;
+    first_visit_date: string;
+    created_at: string;
+}
+
+export interface LeadSummary {
+    total_leads: number;
+    new_this_month: number;
+    total_conversions: number;
+    total_revenue: number;
+    conversion_rate: number;
+    by_channel: Record<string, number>;
+}
+
+export interface LeadCreate {
+    client_id: string;
+    name?: string;
+    contact?: string;
+    channel?: string;
+    first_visit_date?: string;
+}
+
+export const getLeadSummary = async (clientId: string): Promise<LeadSummary> => {
+    const response = await api.get(`/api/v1/leads/summary/${clientId}`);
+    return response.data;
+};
+
+export const getLeads = async (
+    clientId: string,
+    params?: { channel?: string; cohort_month?: string; limit?: number; offset?: number }
+): Promise<Lead[]> => {
+    const response = await api.get(`/api/v1/leads/${clientId}`, { params });
+    return response.data;
+};
+
+export const createLead = async (data: LeadCreate): Promise<Lead> => {
+    const response = await api.post('/api/v1/leads/', data);
+    return response.data;
+};
+
+export const deleteLead = async (leadId: string): Promise<void> => {
+    await api.delete(`/api/v1/leads/${leadId}`);
+};
+
+export const getCohortAnalysis = async (clientId: string): Promise<any[]> => {
+    const response = await api.get(`/api/v1/leads/cohort/${clientId}`);
     return response.data;
 };
 
