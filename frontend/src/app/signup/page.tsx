@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createUser } from '@/lib/api';
+import { createUser, login as apiLogin } from '@/lib/api';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { UserRole } from '@/types';
 import { Loader2, Mail, Lock, User as UserIcon, ShieldCheck, Cake, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignupPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +25,7 @@ export default function SignupPage() {
         setIsLoading(true);
         setError('');
         try {
+            // Step 1: 회원가입
             await createUser({
                 email,
                 name,
@@ -30,10 +33,21 @@ export default function SignupPage() {
                 birth_date: birthDate,
                 role: UserRole.ADMIN
             });
-            setSuccess(true);
-            setTimeout(() => {
-                router.push('/login');
-            }, 2000);
+
+            // Step 2: 자동 로그인
+            try {
+                const response = await apiLogin(email, password);
+                login(response.access_token, response.user as any);
+                setSuccess(true);
+                // login() 함수가 자동으로 /dashboard로 이동함
+            } catch (loginError: any) {
+                console.error('Auto-login failed after signup:', loginError);
+                // 자동 로그인 실패 시 로그인 페이지로 이동
+                setSuccess(true);
+                setTimeout(() => {
+                    router.push('/login');
+                }, 2000);
+            }
         } catch (err: any) {
             console.error('Signup error:', err);
             const detail = err.response?.data?.detail;
@@ -42,7 +56,12 @@ export default function SignupPage() {
                 const messages = detail.map((d: any) => `${d.loc.join('.')}: ${d.msg}`).join(', ');
                 setError(`입력 값이 올바르지 않습니다: ${messages}`);
             } else if (typeof detail === 'string') {
-                setError(detail);
+                // 이메일 중복 에러 시 로그인 페이지 링크 안내
+                if (detail.includes('이미') || detail.includes('등록')) {
+                    setError(`${detail} 로그인 페이지에서 로그인해주세요.`);
+                } else {
+                    setError(detail);
+                }
             } else {
                 // Network or Infrastructure error
                 const errorMsg = err.response

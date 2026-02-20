@@ -202,30 +202,50 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
             setIsSubmitting(true);
             try {
-                await saveAnalysisHistory({
+                // Step 1: Save analysis history
+                const historyResponse = await saveAnalysisHistory({
                     client_id: newClientId!,
                     keyword,
                     platform
                 });
+                console.log('✅ Analysis history saved:', historyResponse);
 
-                // Trigger immediate scraping - Don't await here to prevent navigation block
+                // Step 2: Trigger scraping (async, don't block)
                 if (platform === 'NAVER_PLACE') {
-                    scrapePlace(keyword, newClientId!).catch(console.error);
+                    scrapePlace(keyword, newClientId!)
+                        .then(() => console.log('✅ Place scraping triggered'))
+                        .catch((err) => {
+                            console.error('⚠️ Place scraping failed:', err);
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                        });
                 } else if (platform === 'NAVER_VIEW') {
-                    scrapeView(keyword, newClientId!).catch(console.error);
+                    scrapeView(keyword, newClientId!)
+                        .then(() => console.log('✅ View scraping triggered'))
+                        .catch((err) => {
+                            console.error('⚠️ View scraping failed:', err);
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                        });
                 }
 
-                // Small delay to ensure state/history is updated on backend
+                // Step 3: Navigate to dashboard
+                toast.success('분석이 시작되었습니다! 잠시 후 이동합니다...');
                 setTimeout(() => {
                     if (onComplete) {
                         onComplete();
                     } else {
                         router.push('/dashboard');
                     }
-                }, 100);
-            } catch (error) {
-                console.error("Analysis save error:", error);
-                toast.error('분석 이력 저장 중 오류가 발생했습니다.');
+                }, 500);
+            } catch (error: any) {
+                console.error('❌ Analysis setup error:', error);
+
+                // Extract error message from various sources
+                const errorMessage =
+                    error?.response?.data?.detail ||
+                    error?.message ||
+                    '분석 이력 저장 중 오류가 발생했습니다.';
+
+                toast.error(`오류: ${errorMessage}`);
             } finally {
                 setIsSubmitting(false);
             }
