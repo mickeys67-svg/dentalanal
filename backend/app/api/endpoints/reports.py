@@ -224,18 +224,7 @@ def schedule_report(
     # 다음 생성 일자 계산
     today = datetime.date.today()
 
-    if schedule == "weekly":
-        period_start = today - datetime.timedelta(days=7)
-        period_end = today
-    elif schedule == "monthly":
-        # 지난 달 전체
-        first_of_month = today.replace(day=1)
-        period_end = first_of_month - datetime.timedelta(days=1)
-        period_start = period_end.replace(day=1)
-    elif schedule == "daily":
-        period_start = today - datetime.timedelta(days=1)
-        period_end = today - datetime.timedelta(days=1)
-    else:
+    if schedule not in ["weekly", "monthly", "daily"]:
         raise HTTPException(status_code=400, detail="Invalid schedule type")
 
     # 제목 생성
@@ -246,8 +235,6 @@ def schedule_report(
             client_id=client_id,
             template_id=template_id,
             title=title,
-            period_start=period_start,
-            period_end=period_end,
             schedule=schedule
         )
 
@@ -466,8 +453,6 @@ def get_portal_data(
             {
                 "id": str(r.id),
                 "title": r.title,
-                "period_start": str(r.period_start) if r.period_start else None,
-                "period_end": str(r.period_end) if r.period_end else None,
                 "generated_at": r.generated_at.isoformat() if r.generated_at else None,
                 "data_summary": _extract_summary(r.data),
             }

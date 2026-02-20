@@ -374,8 +374,6 @@ class Report(Base):
     title = Column(String(255), nullable=False)
     data = Column(JSON, nullable=True) # Frozen data at the time of report generation
     status = Column(String, default="PENDING") # PENDING, COMPLETED, FAILED, ARCHIVED
-    period_start = Column(Date, nullable=True)  # 분석 시작일
-    period_end = Column(Date, nullable=True)    # 분석 종료일
     generated_at = Column(DateTime(timezone=True), nullable=True)  # 데이터 생성 완료 시각
     schedule = Column(String, nullable=True)    # 자동 생성 스케줄 (weekly, monthly 등)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

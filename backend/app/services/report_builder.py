@@ -131,8 +131,6 @@ class ReportBuilderService:
         client_id: UUID,
         template_id: UUID,
         title: str,
-        period_start: datetime.date,
-        period_end: datetime.date,
         schedule: Optional[str] = None
     ) -> Report:
         """
@@ -142,8 +140,6 @@ class ReportBuilderService:
             client_id: 클라이언트 ID
             template_id: 템플릿 ID
             title: 리포트 제목
-            period_start: 분석 시작일
-            period_end: 분석 종료일
             schedule: 자동 생성 스케줄 (예: "weekly", "monthly")
 
         Returns:
@@ -161,8 +157,6 @@ class ReportBuilderService:
             client_id=client_id,
             template_id=template_id,
             title=title,
-            period_start=period_start,
-            period_end=period_end,
             status="PENDING",
             schedule=schedule
         )
@@ -204,9 +198,7 @@ class ReportBuilderService:
             widget_data = self._generate_widget_data(
                 widget_type=widget_type,
                 widget_config=widget,
-                client_id=report.client_id,
-                period_start=report.period_start,
-                period_end=report.period_end
+                client_id=report.client_id
             )
 
             widgets_data.append({
@@ -238,9 +230,7 @@ class ReportBuilderService:
         self,
         widget_type: str,
         widget_config: Dict,
-        client_id: UUID,
-        period_start: datetime.date,
-        period_end: datetime.date
+        client_id: UUID
     ) -> Dict:
         """
         위젯별 데이터 생성
