@@ -16,13 +16,15 @@ import {
     History,
     RefreshCw,
     Briefcase,
-    X
+    X,
+    AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView, getScrapeResults } from '@/lib/api';
 import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { ScrapeResultsDisplay } from './ScrapeResultsDisplay';
 import { TargetItem, Client } from '@/types';
 
 type Step = 1 | 2 | 3;
@@ -592,6 +594,29 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                         </div>
                     )}
                 </div>
+
+                {/* Scraping Results Display */}
+                {showResults && scrapeResults && currentStep === 3 && (
+                    <ScrapeResultsDisplay
+                        scrapeResults={scrapeResults}
+                        onContinue={() => {
+                            setShowResults(false);
+                            setIsSubmitting(false);
+                            toast.success('대시보드로 이동합니다...');
+                            setTimeout(() => {
+                                if (onComplete) {
+                                    onComplete();
+                                } else {
+                                    router.push('/dashboard');
+                                }
+                            }, 500);
+                        }}
+                        onRetry={() => {
+                            setShowResults(false);
+                            setIsSubmitting(false);
+                        }}
+                    />
+                )}
 
                 {/* Footer Buttons */}
                 <div className="mt-12 flex items-center justify-between pt-8 border-t border-gray-50">
