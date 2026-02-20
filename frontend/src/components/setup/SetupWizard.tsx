@@ -62,7 +62,21 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     useEffect(() => {
         getClients().then(setRecentClients);
         searchTargets('').then(setRecentTargets);
-    }, []);
+
+        // Load analysis history if client is selected
+        if (selectedClient) {
+            console.log(`📊 Loading analysis history for client: ${selectedClient.id}`);
+            getAnalysisHistory(selectedClient.id)
+                .then((data) => {
+                    console.log(`✅ Analysis history loaded:`, data);
+                    setHistory(data);
+                })
+                .catch((err) => {
+                    console.error(`❌ Failed to load analysis history:`, err);
+                    setHistory([]);
+                });
+        }
+    }, [selectedClient]);
 
     // Client Search Effect
     useEffect(() => {
@@ -203,33 +217,54 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             setIsSubmitting(true);
             try {
                 // Step 1: Save analysis history
+                console.log(`🚀 Starting analysis: keyword="${keyword}", platform="${platform}", clientId="${newClientId}"`);
+
                 const historyResponse = await saveAnalysisHistory({
                     client_id: newClientId!,
                     keyword,
                     platform
                 });
-                console.log('✅ Analysis history saved:', historyResponse);
+                console.log('✅ [Step 1] Analysis history saved:', historyResponse);
+                console.log('   Response type:', typeof historyResponse, 'Keys:', Object.keys(historyResponse || {}));
 
                 // Step 2: Trigger scraping (async, don't block)
+                console.log(`🔄 [Step 2] Triggering scraping for platform: ${platform}`);
+
                 if (platform === 'NAVER_PLACE') {
                     scrapePlace(keyword, newClientId!)
-                        .then(() => console.log('✅ Place scraping triggered'))
+                        .then((data) => {
+                            console.log('✅ [Step 2-A] Place scraping triggered');
+                            console.log('   Response:', data);
+                        })
                         .catch((err) => {
-                            console.error('⚠️ Place scraping failed:', err);
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                            console.error('⚠️ [Step 2-A] Place scraping failed:', {
+                                status: err?.response?.status,
+                                message: err?.message,
+                                detail: err?.response?.data?.detail
+                            });
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다. (PLACE)');
                         });
                 } else if (platform === 'NAVER_VIEW') {
                     scrapeView(keyword, newClientId!)
-                        .then(() => console.log('✅ View scraping triggered'))
+                        .then((data) => {
+                            console.log('✅ [Step 2-B] View scraping triggered');
+                            console.log('   Response:', data);
+                        })
                         .catch((err) => {
-                            console.error('⚠️ View scraping failed:', err);
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                            console.error('⚠️ [Step 2-B] View scraping failed:', {
+                                status: err?.response?.status,
+                                message: err?.message,
+                                detail: err?.response?.data?.detail
+                            });
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다. (VIEW)');
                         });
                 }
 
                 // Step 3: Navigate to dashboard
+                console.log(`✅ [Step 3] Navigating to dashboard in 500ms`);
                 toast.success('분석이 시작되었습니다! 잠시 후 이동합니다...');
                 setTimeout(() => {
+                    console.log(`🎯 [Step 3-Final] Moving to dashboard`);
                     if (onComplete) {
                         onComplete();
                     } else {
