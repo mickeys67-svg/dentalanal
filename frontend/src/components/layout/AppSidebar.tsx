@@ -11,9 +11,12 @@ import {
     Settings,
     Menu,
     X,
-    PieChart
+    PieChart,
+    Users,
+    LogOut
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const menuItems = [
     {
@@ -37,6 +40,11 @@ const menuItems = [
         icon: MessageSquare,
     },
     {
+        title: "리드 관리",
+        href: "/leads",
+        icon: Users,
+    },
+    {
         title: "리포트",
         href: "/reports",
         icon: PieChart,
@@ -50,6 +58,7 @@ const menuItems = [
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const { user, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(true);
 
     return (
@@ -98,17 +107,24 @@ export function AppSidebar() {
                         })}
                     </nav>
 
-                    {/* User Profile / Logout (Simple placeholder for now) */}
-                    <div className="p-4 border-t">
+                    {/* User Profile / Logout */}
+                    <div className="p-4 border-t space-y-3">
                         <div className="flex items-center">
                             <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                                A
+                                {user?.name?.charAt(0).toUpperCase() || 'A'}
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm font-medium">Administrator</p>
-                                <p className="text-xs text-muted-foreground">admin@dental.com</p>
+                            <div className="ml-3 flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{user?.name || 'Administrator'}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user?.email || 'admin@dental.com'}</p>
                             </div>
                         </div>
+                        <button
+                            onClick={logout}
+                            className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md transition-colors"
+                        >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            로그아웃
+                        </button>
                     </div>
                 </div>
             </aside>
