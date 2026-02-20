@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@dmind.com"
     ADMIN_PASSWORD: str = ""
 
+    # CORS Configuration [FIX Issue #5]
+    # Comma-separated list of allowed origins
+    # Examples:
+    #   - Production: https://dentalanal-864421937037.us-west1.run.app
+    #   - Development: http://localhost:3000
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+
     # Monitoring
     SENTRY_DSN: Optional[str] = None
 

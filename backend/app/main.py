@@ -180,21 +180,28 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="D-MIND API", version="1.0.0", lifespan=lifespan)
 
-# CORS Configuration
-origins = [
-    "https://dentalanal-864421937037.us-west1.run.app",
-    "https://dentalanal-backend-864421937037.us-west1.run.app",
-    "https://dentalanal-2556cvhe3q-uw.a.run.app",
-    "http://localhost:3000",
-    "http://localhost:8000",
+# [FIX Issue #5] CORS Configuration - now environment-based instead of hardcoded
+# Parse comma-separated origins from ALLOWED_ORIGINS env var
+allowed_origins_str = settings.ALLOWED_ORIGINS
+origins = [origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()]
+
+# Add hardcoded Cloud Run production URLs as fallback if not already present
+production_origins = [
+    "https://dentalanal-864421937037.us-west1.run.app",  # Frontend prod
 ]
+
+for origin in production_origins:
+    if origin not in origins:
+        origins.append(origin)
+
+logger.info(f"[CORS] Allowed origins configured: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Explicit methods
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],  # Explicit headers
 )
 
 # Health Check Endpoint - CRITICAL for Cloud Run
