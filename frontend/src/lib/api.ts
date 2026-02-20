@@ -56,6 +56,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // 상세한 에러 로깅
+        console.error('❌ API Error Response:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            url: error.config?.url,
+            method: error.config?.method,
+            dataType: typeof error.response?.data,
+            dataLength: error.response?.data?.length || 'N/A',
+            contentType: error.response?.headers?.['content-type'],
+            firstChars: error.response?.data?.toString?.()?.substring(0, 100)
+        });
+
         if (error.response?.status === 401) {
             if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
                 localStorage.removeItem('token');
