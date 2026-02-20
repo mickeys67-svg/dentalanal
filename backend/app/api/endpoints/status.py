@@ -86,6 +86,58 @@ def get_system_status(db: Session = Depends(get_db)):
         "recent_logs": recent_activity
     }
 
+@router.post("/dev/seed-test-data")
+def seed_test_data(db: Session = Depends(get_db)):
+    """
+    [개발 전용] 테스트 데이터를 데이터베이스에 시드합니다.
+    Phase 2 polling 기능을 테스트하기 위한 필수 데이터:
+    - Agency (D-MIND 대행사)
+    - Client A (A 치과)
+    - Keywords (임플란트, 치아교정, 강남역치과)
+    - Platform Connections (NAVER_AD, NAVER_PLACE, NAVER_VIEW)
+    - Sample DailyRank data (지난 3일치)
+    """
+    try:
+        from app.models.models import Agency, Client, Keyword, Target
+
+        # Check if seed data already exists
+        existing_client = db.query(Client).filter(Client.name == "A 치과").first()
+        if existing_client and db.query(Keyword).filter(Keyword.client_id == existing_client.id).first():
+            return {
+                "status": "ALREADY_SEEDED",
+                "message": "테스트 데이터가 이미 존재합니다.",
+                "client_id": str(existing_client.id)
+            }
+
+        # Run the seed script
+        from app.scripts.debug_seed import seed_data
+        seed_data()
+
+        # Fetch the created client to return its ID
+        client_a = db.query(Client).filter(Client.name == "A 치과").first()
+
+        logger.info("✅ Test data seeding completed successfully")
+
+        return {
+            "status": "SUCCESS",
+            "message": "테스트 데이터가 성공적으로 생성되었습니다.",
+            "client_id": str(client_a.id),
+            "details": {
+                "agency": "D-MIND 대행사",
+                "client": "A 치과",
+                "keywords": ["임플란트", "치아교정", "강남역치과"],
+                "platforms": ["NAVER_AD", "NAVER_PLACE", "NAVER_VIEW"],
+                "sample_ranks": "지난 3일치 데이터 (테스트용)"
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"❌ Test data seeding failed: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"시드 실패: {str(e)}")
+
 @router.get("/dev/reset-all")
 @router.post("/dev/reset-all")
 def reset_all_data(db: Session = Depends(get_db)):
