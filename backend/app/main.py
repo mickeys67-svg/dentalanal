@@ -107,19 +107,25 @@ async def run_startup_tasks():
                 logger.info("Seeding: Default Agency created.")
             
             # 2. Ensure Default Admin User exists
-            admin_email = os.environ.get("ADMIN_EMAIL", "admin@dmind.com")
-            admin_pw = os.environ.get("ADMIN_PASSWORD", "admin123!")
-            admin = session.query(User).filter(User.email == admin_email).first()
-            if not admin:
-                admin = User(
-                    email=admin_email,
-                    hashed_password=get_password_hash(admin_pw),
-                    name="Administrator",
-                    role=UserRole.ADMIN,
-                    agency_id=agency_id
-                )
-                session.add(admin)
-                logger.info(f"Seeding: Default Admin User ({admin_email}) created.")
+            # [SECURITY FIX] Fail fast if credentials are not set - never use defaults
+            admin_email = os.environ.get("ADMIN_EMAIL")
+            admin_pw = os.environ.get("ADMIN_PASSWORD")
+
+            if not admin_email or not admin_pw:
+                logger.warning("⚠️  [SECURITY] ADMIN_EMAIL or ADMIN_PASSWORD not set. Skipping admin user creation.")
+                logger.warning("   Please set these environment variables in GitHub Secrets before deployment.")
+            else:
+                admin = session.query(User).filter(User.email == admin_email).first()
+                if not admin:
+                    admin = User(
+                        email=admin_email,
+                        hashed_password=get_password_hash(admin_pw),
+                        name="Administrator",
+                        role=UserRole.ADMIN,
+                        agency_id=agency_id
+                    )
+                    session.add(admin)
+                    logger.info(f"Seeding: Default Admin User ({admin_email}) created.")
             
             # 3. Ensure Executive Dashboard Template exists
             template_name = "Executive Dashboard"

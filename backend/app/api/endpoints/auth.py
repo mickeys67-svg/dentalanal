@@ -4,15 +4,22 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from app.core.database import get_db
+from app.core.config import settings  # SECURITY FIX: Use settings instead of os.environ
 from app.models.models import User, UserRole
 from app.core.security import verify_password
-import os
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dmind-secret-key-123456789")
+# [SECURITY FIX] Never use default SECRET_KEY - fail fast if not set
+SECRET_KEY = settings.SECRET_KEY
+if not SECRET_KEY or SECRET_KEY == "":
+    raise ValueError("❌ CRITICAL: SECRET_KEY environment variable is not set!")
+
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+REFRESH_TOKEN_EXPIRE_DAYS = 7  # [NEW] Refresh tokens valid for 7 days
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 

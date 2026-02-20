@@ -56,10 +56,39 @@ jobs:
             BRIGHT_DATA_CDP_URL=${{ secrets.BRIGHT_DATA_CDP_URL }}
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
 
+      # [SECURITY FIX] Validate backend URL before using it in frontend build
+      - name: Validate Backend Deployment URL
+        run: |
+          BACKEND_URL="${{ steps.deploy_backend.outputs.url }}"
+          echo "Backend URL from outputs: [$BACKEND_URL]"
+
+          if [ -z "$BACKEND_URL" ]; then
+            echo "❌ CRITICAL: Backend deployment URL is empty!"
+            echo "   The frontend will not be able to communicate with the backend."
+            echo "   This usually means the backend deployment failed."
+            echo "   Check the 'Deploy Backend to Cloud Run' step above for errors."
+            exit 1
+          fi
+
+          if ! [[ "$BACKEND_URL" =~ ^https:// ]]; then
+            echo "❌ CRITICAL: Backend URL does not start with https://"
+            echo "   Expected format: https://service-xxxxx.region.run.app"
+            echo "   Got: $BACKEND_URL"
+            exit 1
+          fi
+
+          echo "✅ Backend URL is valid: $BACKEND_URL"
+
       # Build and Push Frontend (After Backend is deployed to get the URL)
       - name: Build and Push Frontend
         run: |
-          docker build --build-arg NEXT_PUBLIC_API_URL=${{ steps.deploy_backend.outputs.url }} -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest ./frontend
+          BACKEND_URL="${{ steps.deploy_backend.outputs.url }}"
+          echo "Building frontend with backend URL: $BACKEND_URL"
+
+          docker build --build-arg NEXT_PUBLIC_API_URL=$BACKEND_URL \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest \
+            ./frontend
+
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
 
       # Deploy Frontend
