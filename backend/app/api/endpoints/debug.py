@@ -40,11 +40,11 @@ async def run_data_diagnostic(
         - recommendations: 권장사항
     """
     
-    # 권한 확인 (슈퍼 어드민만 접근 가능)
-    if current_user.role != "SUPER_ADMIN":
+    # 권한 확인 (어드민 이상 접근 가능)
+    if current_user.role not in ["SUPER_ADMIN", "ADMIN"]:
         raise HTTPException(
             status_code=403,
-            detail="Super admin만 접근 가능합니다"
+            detail="Admin 이상의 권한이 필요합니다"
         )
     
     try:
