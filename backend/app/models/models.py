@@ -108,7 +108,7 @@ class Client(Base):
     swot_analyses = relationship("SWOTAnalysis", back_populates="client", cascade="all, delete-orphan")
     strategy_goals = relationship("StrategyGoal", back_populates="client", cascade="all, delete-orphan")
     tasks = relationship("CollaborativeTask", back_populates="client", cascade="all, delete-orphan")
-    reports = relationship("Report", back_populates="client", cascade="all, delete-orphan")
+    # reports relationship removed - DB schema is uncertain due to multiple DB migrations
     settlements = relationship("Settlement", back_populates="client", cascade="all, delete-orphan")
     leads = relationship("Lead", back_populates="client", cascade="all, delete-orphan")
     approval_requests = relationship("ApprovalRequest", back_populates="client", cascade="all, delete-orphan")
@@ -367,15 +367,14 @@ class ReportTemplate(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class Report(Base):
+    """Legacy reports table - schema uncertain due to multiple DB migrations.
+
+    Note: This model is not actively used in Client relationships.
+    CASCADE deletion is handled at DB level via ForeignKey constraints.
+    """
     __tablename__ = "reports"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
     client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
-
-    # Only include columns that actually exist in the database
-    # Removed: template_id, title, data, status, generated_at, schedule, created_at, updated_at
-    # These are not present in the current Supabase schema
-
-    client = relationship("Client")
 
 class Notification(Base):
     __tablename__ = "notifications"
