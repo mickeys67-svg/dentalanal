@@ -128,9 +128,24 @@ class ScraperBase:
                     self.logger.warning(f"[Empty Response] Received {len(content)} bytes")
                     return ""
                 
+                # [CRITICAL FIX] Naver API는 <html><pre>JSON</pre></html> 형식으로 응답
+                # HTML wrapper에서 JSON만 추출
                 if content.strip().startswith("<"):
-                    self.logger.error(f"[HTML Response] Expected JSON but got HTML: {content[:100]}")
-                    return ""
+                    self.logger.warning(f"[HTML Wrapper Detected] Extracting JSON from HTML...")
+                    try:
+                        # <pre> 태그에서 JSON 추출
+                        import re
+                        match = re.search(r'<pre>(.*?)</pre>', content, re.DOTALL)
+                        if match:
+                            json_content = match.group(1)
+                            self.logger.info(f"[JSON Extracted] Length: {len(json_content)} bytes")
+                            return json_content
+                        else:
+                            self.logger.error(f"[HTML Parse Failed] Could not find <pre> tag in HTML")
+                            return ""
+                    except Exception as e:
+                        self.logger.error(f"[HTML Extract Error] {e}")
+                        return ""
                 
                 return content
             except asyncio.TimeoutError:
