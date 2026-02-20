@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError, OperationalError
 from typing import List, Optional
 from app.core.database import get_db
 from app.models.models import Client, Agency, User, UserRole
 from app.api.endpoints.auth import get_current_user
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
+from fastapi import APIRouter, HTTPException, Depends
 import uuid
 import datetime
+import logging
 
 router = APIRouter()
 
@@ -153,117 +156,102 @@ def delete_client(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    from app.models.models import (
-        Client, PlatformConnection, Campaign, MetricsDaily, 
-        SWOTAnalysis, StrategyGoal, CollaborativeTask, TaskComment,
-        Report, Settlement, SettlementDetail, Lead, LeadActivity,
-        LeadProfile, LeadEvent, AnalysisHistory, AnalyticsCache, SyncTask, SyncValidation,
-        ApprovalRequest
-    )
+    """
+    Delete a client and all related data using database CASCADE constraints.
+    
+    This endpoint:
+    1. Verifies client exists and user has permission
+    2. Deletes the client record (SQLAlchemy ORM cascade handles related records)
+    3. Returns success/error with detailed error messages for debugging
+    """
+    from app.models.models import Client, Notification
+    from sqlalchemy.exc import IntegrityError, OperationalError
+    
+    logger_instance = logging.getLogger(__name__)
 
+    # 1. Fetch and validate client
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="광고주를 찾을 수 없습니다.")
     
-    # 1. Permission Check
+    # 2. Permission Check
     DEFAULT_AGENCY_ID = "00000000-0000-0000-0000-000000000000"
     agency_id = current_user.agency_id or UUID(DEFAULT_AGENCY_ID)
     if current_user.role != UserRole.SUPER_ADMIN and str(client.agency_id) != str(agency_id):
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
 
     try:
-        logging.getLogger(__name__).info(f"Starting deletion for client {client_id}")
+        logger_instance.info(f"[CLIENT_DELETE_START] Initiating deletion for client_id={client_id}")
         
-        # 2. Manual Cleanup in reverse dependency order
-        # Leads hierarchy
-        lead_ids = [l.id for l in db.query(Lead).filter(Lead.client_id == client_id).all()]
-        if lead_ids:
-            logging.getLogger(__name__).info(f"Deleting {len(lead_ids)} leads and related activities/profiles/events")
-            db.query(LeadActivity).filter(LeadActivity.lead_id.in_(lead_ids)).delete(synchronize_session=False)
-            db.query(LeadProfile).filter(LeadProfile.lead_id.in_(lead_ids)).delete(synchronize_session=False)
-            db.query(LeadEvent).filter(LeadEvent.lead_id.in_(lead_ids)).delete(synchronize_session=False)
-            db.query(Lead).filter(Lead.id.in_(lead_ids)).delete(synchronize_session=False)
-
-        # Marketing Data hierarchy
-        conn_ids = [c.id for c in db.query(PlatformConnection).filter(PlatformConnection.client_id == client_id).all()]
-        if conn_ids:
-            logging.getLogger(__name__).info(f"Deleting {len(conn_ids)} connections and related campaigns/metrics")
-            camp_ids = [camp.id for camp in db.query(Campaign).filter(Campaign.connection_id.in_(conn_ids)).all()]
-            if camp_ids:
-                db.query(MetricsDaily).filter(MetricsDaily.campaign_id.in_(camp_ids)).delete(synchronize_session=False)
-                db.query(Campaign).filter(Campaign.id.in_(camp_ids)).delete(synchronize_session=False)
-            
-            sync_task_ids = [s.id for s in db.query(SyncTask).filter(SyncTask.connection_id.in_(conn_ids)).all()]
-            if sync_task_ids:
-                db.query(SyncValidation).filter(SyncValidation.task_id.in_(sync_task_ids)).delete(synchronize_session=False)
-                db.query(SyncTask).filter(SyncTask.id.in_(sync_task_ids)).delete(synchronize_session=False)
-            
-            db.query(PlatformConnection).filter(PlatformConnection.id.in_(conn_ids)).delete(synchronize_session=False)
-
-        # Collaboration and Strategy
-        logging.getLogger(__name__).info("Deleting tasks, comments, settlements, reports, analysis history, etc.")
-        task_ids = [t.id for t in db.query(CollaborativeTask).filter(CollaborativeTask.client_id == client_id).all()]
-        if task_ids:
-            db.query(TaskComment).filter(TaskComment.task_id.in_(task_ids)).delete(synchronize_session=False)
-            db.query(CollaborativeTask).filter(CollaborativeTask.id.in_(task_ids)).delete(synchronize_session=False)
-
-        settlement_ids = [s.id for s in db.query(Settlement).filter(Settlement.client_id == client_id).all()]
-        if settlement_ids:
-            db.query(SettlementDetail).filter(SettlementDetail.settlement_id.in_(settlement_ids)).delete(synchronize_session=False)
-            db.query(Settlement).filter(Settlement.id.in_(settlement_ids)).delete(synchronize_session=False)
-
-        # Simple relations
-        db.query(SWOTAnalysis).filter(SWOTAnalysis.client_id == client_id).delete(synchronize_session=False)
-        db.query(StrategyGoal).filter(StrategyGoal.client_id == client_id).delete(synchronize_session=False)
-        db.query(Report).filter(Report.client_id == client_id).delete(synchronize_session=False)
-        db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).delete(synchronize_session=False)
-        db.query(AnalyticsCache).filter(AnalyticsCache.client_id == client_id).delete(synchronize_session=False)
-        db.query(ApprovalRequest).filter(ApprovalRequest.client_id == client_id).delete(synchronize_session=False)
-
-        # 2.5 Try deleting from potential orphan tables (handling schema mismatch)
-        # Check information_schema to see if client_id exists before deleting, to avoid transaction errors
-        potential_orphans = ["notifications", "raw_scraping_logs", "crawling_logs", "targets", "keywords"]
-        for table in potential_orphans:
-            try:
-                # Use text() properly for the check
-                check_sql = text(f"SELECT 1 FROM information_schema.columns WHERE table_name = :tname AND column_name = 'client_id'")
-                result = db.execute(check_sql, {"tname": table}).scalar()
-                
-                if result:
-                    logging.getLogger(__name__).info(f"Attempting valid cleanup for potential orphan table: {table}")
-                    db.execute(text(f"DELETE FROM {table} WHERE client_id = :cid"), {"cid": str(client_id)})
-            except Exception as e:
-                # If checking fails, just ignore
-                logging.getLogger(__name__).warning(f"Orphan cleanup check failed for {table}: {e}")
-                pass
-
-        # 3. Finally delete the client
-        logging.getLogger(__name__).info("Deleting client record...")
+        # 3. Delete the client record
+        # SQLAlchemy CASCADE and database-level CASCADE will handle all related records
         db.delete(client)
+        db.flush()  # Flush to catch constraint errors before commit
+        logger_instance.info(f"[CLIENT_DELETE_FLUSH] Client record flushed to transaction, cascade deletions initiated")
+        
         db.commit()
-        logging.getLogger(__name__).info("Deletion completed successfully.")
+        logger_instance.info(f"[CLIENT_DELETE_SUCCESS] Client {client_id} successfully deleted with all related data")
+
+        return {
+            "status": "SUCCESS",
+            "message": "광고주 정보와 모든 관련 데이터가 완전히 삭제되었습니다."
+        }
+
+    except IntegrityError as e:
+        db.rollback()
+        error_msg = f"Database constraint violation: {str(e.orig)}"
+        logger_instance.error(f"[CLIENT_DELETE_INTEGRITY_ERROR] {error_msg}")
+        
+        try:
+            err_notification = Notification(
+                id=uuid.uuid4(),
+                user_id=current_user.id,
+                title="광고주 삭제 실패 - 데이터베이스 제약",
+                content=f"외래키 제약 위반: 일부 데이터가 삭제되지 못했습니다. 관리자에게 문의하세요.",
+                type="ERROR",
+                is_read=0
+            )
+            db.add(err_notification)
+            db.commit()
+        except Exception as notify_err:
+            logger_instance.warning(f"Failed to create error notification: {notify_err}")
+
+        raise HTTPException(
+            status_code=400,
+            detail=f"데이터베이스 제약 조건 위반: {str(e.orig)[:100]}"
+        )
+
+    except OperationalError as e:
+        db.rollback()
+        error_msg = f"Database operational error: {str(e.orig)}"
+        logger_instance.error(f"[CLIENT_DELETE_OPERATIONAL_ERROR] {error_msg}")
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"데이터베이스 오류: {str(e.orig)[:100]}"
+        )
 
     except Exception as e:
         db.rollback()
-        logging.getLogger(__name__).error(f"Client deletion failed: {e}")
+        error_msg = str(e)
+        error_type = type(e).__name__
+        logger_instance.error(f"[CLIENT_DELETE_UNKNOWN_ERROR] type={error_type}, message={error_msg}")
         
-        # Log failure to Notifications so user can see what happened
         try:
-            from app.models.models import Notification
-            err_note = Notification(
+            err_notification = Notification(
                 id=uuid.uuid4(),
                 user_id=current_user.id,
                 title="광고주 삭제 실패",
-                content=f"삭제 중 오류가 발생했습니다: {str(e)}",
-                type="NOTICE",
+                content=f"삭제 중 오류가 발생했습니다: {error_msg[:200]}",
+                type="ERROR",
                 is_read=0
             )
-            db.add(err_note)
+            db.add(err_notification)
             db.commit()
-        except Exception as e:
-            logger.warning(f"Failed to create error note: {e}")
+        except Exception as notify_err:
+            logger_instance.warning(f"Failed to create error notification: {notify_err}")
 
-        # Return exact error for debugging
-        raise HTTPException(status_code=500, detail=f"Data Deletion Error: {str(e)}")
-
-    return {"status": "SUCCESS", "message": "광고주 정보와 모든 관련 데이터가 완전히 삭제되었습니다."}
+        raise HTTPException(
+            status_code=500,
+            detail=f"삭제 처리 중 오류: {error_msg[:100]}"
+        )
