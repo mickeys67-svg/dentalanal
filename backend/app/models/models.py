@@ -369,17 +369,12 @@ class ReportTemplate(Base):
 class Report(Base):
     __tablename__ = "reports"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
-    template_id = Column(GUID, ForeignKey("report_templates.id"), nullable=False)
     client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
-    title = Column(String(255), nullable=False)
-    data = Column(JSON, nullable=True) # Frozen data at the time of report generation
-    status = Column(String, default="PENDING") # PENDING, COMPLETED, FAILED, ARCHIVED
-    generated_at = Column(DateTime(timezone=True), nullable=True)  # 데이터 생성 완료 시각
-    schedule = Column(String, nullable=True)    # 자동 생성 스케줄 (weekly, monthly 등)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    template = relationship("ReportTemplate")
+    # Only include columns that actually exist in the database
+    # Removed: template_id, title, data, status, generated_at, schedule, created_at, updated_at
+    # These are not present in the current Supabase schema
+
     client = relationship("Client")
 
 class Notification(Base):
