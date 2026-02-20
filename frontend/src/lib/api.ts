@@ -52,10 +52,22 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Add a response interceptor to handle 401 Unauthorized globally
+// [FIX Issue #1] Response interceptor: auto-refresh tokens on 401
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+const subscribeTokenRefresh = (cb: (token: string) => void) => {
+    refreshSubscribers.push(cb);
+};
+
+const onRefreshed = (token: string) => {
+    refreshSubscribers.forEach((cb) => cb(token));
+    refreshSubscribers = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         // 상세한 에러 로깅
         console.error('❌ API Error Response:', {
             status: error.response?.status,
@@ -68,13 +80,72 @@ api.interceptors.response.use(
             firstChars: error.response?.data?.toString?.()?.substring(0, 100)
         });
 
-        if (error.response?.status === 401) {
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        // [NEW] Handle 401: Try to refresh token
+        if (error.response?.status === 401 && typeof window !== 'undefined') {
+            const originalRequest = error.config;
+
+            if (!originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
+                originalRequest._retry = true;
+
+                if (!isRefreshing) {
+                    isRefreshing = true;
+
+                    try {
+                        const refreshToken = localStorage.getItem('refreshToken');
+
+                        if (!refreshToken) {
+                            throw new Error('No refresh token available');
+                        }
+
+                        // Call refresh endpoint
+                        const response = await axios.post(
+                            `${API_BASE_URL}/api/v1/auth/refresh`,
+                            { refresh_token: refreshToken },
+                            { headers: { 'Content-Type': 'application/json' } }
+                        );
+
+                        const { access_token, refresh_token } = response.data;
+
+                        // Store new tokens
+                        localStorage.setItem('token', access_token);
+                        localStorage.setItem('refreshToken', refresh_token);
+
+                        // Update default header
+                        api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+                        isRefreshing = false;
+                        onRefreshed(access_token);
+
+                        // Retry original request with new token
+                        originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
+                        return api(originalRequest);
+                    } catch (refreshError) {
+                        // Refresh failed - logout user
+                        isRefreshing = false;
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('refreshToken');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        return Promise.reject(refreshError);
+                    }
+                } else {
+                    // Another request is already refreshing, wait for it
+                    return new Promise((resolve) => {
+                        subscribeTokenRefresh((newToken: string) => {
+                            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                            resolve(api(originalRequest));
+                        });
+                    });
+                }
+            } else if (window.location.pathname !== '/login') {
+                // Token refresh failed or is auth endpoint
                 localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
                 window.location.href = '/login';
             }
         }
+
         return Promise.reject(error);
     }
 );
@@ -481,6 +552,16 @@ export const login = async (email: string, password: string): Promise<{ access_t
     const response = await api.post('/api/v1/auth/login', formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
+
+    // [FIX Issue #1] Store both access and refresh tokens
+    const { access_token, refresh_token } = response.data;
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('token', access_token);
+        if (refresh_token) {
+            localStorage.setItem('refreshToken', refresh_token);
+        }
+    }
+
     return response.data;
 };
 
