@@ -62,9 +62,14 @@ class NaverPlaceScraper(ScraperBase):
                 
             return results
 
-        except json.JSONDecodeError:
-            self.logger.error(f"Failed to parse Naver Place JSON. Response len: {len(response_text)}")
+        except json.JSONDecodeError as e:
+            # [P0 FIX] JSON 파싱 실패 - 실제 응답 내용 로깅
+            self.logger.error(f"[JSON Parse Error] {e}")
+            self.logger.error(f"[Response first 100 chars] {response_text[:100]}")
+            self.logger.error(f"[Response length] {len(response_text)} bytes")
             return []
         except Exception as e:
-            self.logger.error(f"Error parsing Naver Place API: {e}")
+            self.logger.error(f"[Error] {type(e).__name__}: {e}")
+            import traceback
+            self.logger.error(f"[Traceback] {traceback.format_exc()}")
             return []

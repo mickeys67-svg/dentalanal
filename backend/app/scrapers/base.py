@@ -24,6 +24,10 @@ class ScraperBase:
         import os
         cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
         
+        # [P0 FIX] Bright Data 제거 - Naver만 지원하기로 결정
+        # cdp_url을 무시하고 로컬 헤드리스 브라우저만 사용
+        cdp_url = None  # Bright Data 비활성화
+        
         # Sanitize env var (handle potential quotes from YAML)
         if cdp_url:
             cdp_url = cdp_url.strip().strip('"').strip("'")
@@ -56,7 +60,12 @@ class ScraperBase:
                     viewport=viewport,
                     device_scale_factor=3 if is_mobile else 1,
                     is_mobile=is_mobile,
-                    has_touch=is_mobile
+                    has_touch=is_mobile,
+                    # [P0 FIX] Referer 헤더 추가 - Naver의 요청 검증을 통과하기 위함
+                    extra_http_headers={
+                        "Referer": "https://map.naver.com/",
+                        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8"
+                    }
                 )
                 
                 page = await context.new_page()
@@ -64,9 +73,35 @@ class ScraperBase:
                 # Bright Data might require authentication in the URL or other setup,
                 # assumed handled by cdp_url (wss://user:pass@...)
                 
-                # Navigate
+                # Navigate with retry logic
                 self.logger.info(f"Navigating to {url}...")
-                await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                max_retries = 2
+                response = None
+                
+                for attempt in range(max_retries + 1):
+                    try:
+                        response = await page.goto(
+                            url, 
+                            wait_until="domcontentloaded", 
+                            timeout=120000  # [P1 FIX] 타임아웃 60초 → 120초로 증가
+                        )
+                        break
+                    except asyncio.TimeoutError:
+                        if attempt < max_retries:
+                            self.logger.warning(f"[Retry] Timeout on attempt {attempt + 1}, retrying in 2-4 seconds...")
+                            await self.random_sleep(2, 4)
+                        else:
+                            self.logger.error(f"[Timeout] Max retries exceeded for {url}")
+                            return ""
+                
+                # [P0 FIX] HTTP 상태 코드 로깅
+                status = response.status if response else None
+                self.logger.info(f"[HTTP] Status: {status}, URL: {url}")
+                
+                # [P0 FIX] HTTP 상태 코드 검증
+                if status and status != 200:
+                    self.logger.error(f"[HTTP Error] {status} for {url}")
+                    return ""
                 
                 # Explicit wait for SPA rendering (safer than networkidle for Maps)
                 await page.wait_for_timeout(5000) 
@@ -84,9 +119,25 @@ class ScraperBase:
                     await self.random_sleep()
                     
                 content = await page.content()
+                
+                # [P0 FIX] 응답 내용 상세 로깅
+                self.logger.debug(f"[Content] Length: {len(content)}, First 200 chars: {content[:200]}")
+                
+                # [P0 FIX] HTML vs JSON 검증
+                if not content or len(content) < 10:
+                    self.logger.warning(f"[Empty Response] Received {len(content)} bytes")
+                    return ""
+                
+                if content.strip().startswith("<"):
+                    self.logger.error(f"[HTML Response] Expected JSON but got HTML: {content[:100]}")
+                    return ""
+                
                 return content
+            except asyncio.TimeoutError:
+                self.logger.error(f"[Timeout] page.goto() timeout for {url}")
+                return ""
             except Exception as e:
-                self.logger.error(f"Error fetching {url}: {e}")
+                self.logger.error(f"[Error] {type(e).__name__}: {e}")
                 return ""
             finally:
                 if cdp_url:
