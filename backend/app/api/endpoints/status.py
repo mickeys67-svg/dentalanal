@@ -103,3 +103,52 @@ async def seed_client_test_data(
         return {"status": "SUCCESS", "message": f"'{client_id}' 업체에 대한 샘플 데이터 생성이 완료되었습니다."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/dev/reset-all")
+def reset_all_data(db: Session = Depends(get_db)):
+    """
+    [개발 전용] 데이터베이스의 모든 데이터를 초기화합니다.
+    경고: 프로덕션에서는 사용 금지!
+    """
+    try:
+        from app.models.models import (
+            Client, PlatformConnection, Campaign, Leads, MetricsDaily,
+            AnalysisHistory, Notification, SystemConfig
+        )
+        
+        logger.warning("🚨 [DEV] Database reset initiated - deleting all user data")
+        
+        # Delete in correct order to avoid foreign key constraints
+        db.query(MetricsDaily).delete()
+        logger.info("✅ MetricsDaily deleted")
+        
+        db.query(Campaign).delete()
+        logger.info("✅ Campaign deleted")
+        
+        db.query(Leads).delete()
+        logger.info("✅ Leads deleted")
+        
+        db.query(PlatformConnection).delete()
+        logger.info("✅ PlatformConnection deleted")
+        
+        db.query(AnalysisHistory).delete()
+        logger.info("✅ AnalysisHistory deleted")
+        
+        db.query(Client).delete()
+        logger.info("✅ Client deleted")
+        
+        db.query(Notification).delete()
+        logger.info("✅ Notification deleted")
+        
+        db.commit()
+        logger.info("✅ Database reset completed successfully")
+        
+        return {
+            "status": "SUCCESS",
+            "message": "데이터베이스가 완전히 초기화되었습니다. (모든 클라이언트, 연결, 캠페인, 지표 삭제)"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"❌ Database reset failed: {str(e)}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"초기화 실패: {str(e)}")
