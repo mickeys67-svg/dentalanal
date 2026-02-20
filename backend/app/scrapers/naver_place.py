@@ -22,16 +22,29 @@ class NaverPlaceScraper(ScraperBase):
 
         try:
             data = json.loads(response_text)
-            
+
+            # [DEBUG Issue #2] Log the API response structure for troubleshooting
+            self.logger.debug(f"[Naver API] Response first 300 chars: {response_text[:300]}")
+            self.logger.debug(f"[Naver API] Top-level keys: {list(data.keys()) if isinstance(data, dict) else 'NOT_A_DICT'}")
+
             # Structure: result -> place -> list
-            if 'result' not in data or 'place' not in data['result']:
-                # Sometimes it might be in 'address' or 'bus' if keyword is ambiguous, 
-                # but for dental keywords, it should be in 'place'.
-                self.logger.warning(f"No Place data found in API for {keyword}")
+            if 'result' not in data:
+                self.logger.warning(f"[No Place Data] Missing 'result' key for keyword '{keyword}'. Available keys: {list(data.keys())}")
+                self.logger.debug(f"[Full Response] {json.dumps(data, ensure_ascii=False)[:500]}")
                 return []
-                
-            place_list = data['result']['place']['list']
+
+            if not isinstance(data['result'], dict) or 'place' not in data['result']:
+                # Sometimes it might be in 'address' or 'bus' if keyword is ambiguous,
+                # but for dental keywords, it should be in 'place'.
+                result_keys = list(data['result'].keys()) if isinstance(data['result'], dict) else 'NOT_A_DICT'
+                self.logger.warning(f"[No Place Data] Missing 'place' key in result for keyword '{keyword}'. Result keys: {result_keys}")
+                return []
+
+            place_obj = data['result']['place']
+            place_list = place_obj.get('list', []) if isinstance(place_obj, dict) else []
+
             if not place_list:
+                self.logger.warning(f"[No Place Data] Empty place_list for keyword '{keyword}'")
                 return []
                 
             results = []

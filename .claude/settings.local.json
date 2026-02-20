@@ -16,7 +16,8 @@
       "Bash(gh actions:*)",
       "Bash(gcloud --version:*)",
       "Bash(git remote:*)",
-      "mcp__desktop-commander__get_more_search_results"
+      "mcp__desktop-commander__get_more_search_results",
+      "Bash(gcloud run logs read:*)"
     ]
   }
 }

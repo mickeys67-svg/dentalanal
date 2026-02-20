@@ -47,7 +47,19 @@ def execute_place_sync(keyword: str, client_id_str: str = None):
         # Use asyncio.run for a fresh loop in this thread
         results = asyncio.run(run_place_scraper(keyword))
     except Exception as e:
-        logger.error(f"Scraping failed for {keyword}: {e}")
+        # [DEBUG Issue #3] Enhanced error logging with full traceback
+        import traceback
+        logger.error(f"[Scraping Failed] Keyword: '{keyword}', Error: {type(e).__name__}: {e}")
+        logger.error(f"[Stack Trace]\n{traceback.format_exc()}")
+
+        # Try to report to Sentry for monitoring
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+            logger.info(f"[Sentry] Exception reported for keyword: {keyword}")
+        except Exception as sentry_err:
+            logger.warning(f"[Sentry] Failed to report: {sentry_err}")
+
         error_msg = str(e)
         results = []
 
@@ -109,7 +121,17 @@ def execute_view_sync(keyword: str, client_id_str: str = None):
     try:
         results = asyncio.run(run_view_scraper(keyword))
     except Exception as e:
-        logger.error(f"View scraping failed for {keyword}: {e}")
+        # [DEBUG Issue #3] Enhanced error logging
+        import traceback
+        logger.error(f"[View Scraping Failed] Keyword: '{keyword}', Error: {type(e).__name__}: {e}")
+        logger.error(f"[Stack Trace]\n{traceback.format_exc()}")
+
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+        except Exception as sentry_err:
+            logger.warning(f"[Sentry] Failed to report: {sentry_err}")
+
         error_msg = str(e)
         results = []
     
