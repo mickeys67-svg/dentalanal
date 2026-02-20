@@ -248,6 +248,7 @@ class DailyRank(Base):
     keyword_id = Column(GUID, ForeignKey("keywords.id"), nullable=False)
     platform = Column(Enum(PlatformType), nullable=False)
     rank = Column(Integer, nullable=False)
+    rank_change = Column(Integer, nullable=True, default=0)  # [NEW] Rank change from previous
     captured_at = Column(DateTime(timezone=True), server_default=func.now())
     target = relationship("Target", back_populates="daily_ranks")
     keyword = relationship("Keyword", back_populates="daily_ranks")

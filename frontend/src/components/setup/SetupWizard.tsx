@@ -61,6 +61,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const [history, setHistory] = useState<any[]>([]);
     const [scrapeResults, setScrapeResults] = useState<any>(null);
     const [showResults, setShowResults] = useState(false);
+    // [NEW] Error tracking for scraping operations
+    const [scrapeError, setScrapeError] = useState<string | null>(null);
+    const [scrapingStatus, setScrapingStatus] = useState<'idle' | 'scraping' | 'fetching' | 'done' | 'error'>('idle');
 
     // Initial Data Load
     useEffect(() => {
@@ -216,7 +219,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             }
         } else {
             if (!keyword) { toast.error('조사 키워드를 입력해주세요.'); return; }
-            if (isSubmitting) return;
+            if (isSubmitting) {
+                toast.info('이미 조사가 진행 중입니다. 잠시만 기다려주세요.');
+                return;
+            }
+            // Prevent concurrent scraping requests for the same setup
+            if (scrapingStatus === 'scraping' || scrapingStatus === 'fetching') {
+                toast.warning('조사가 진행 중입니다. 완료될 때까지 기다려주세요.');
+                return;
+            }
 
             setIsSubmitting(true);
             try {
@@ -235,6 +246,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 console.log(`🔄 [Step 2] Triggering scraping for platform: ${platform}`);
                 toast.info('조사를 시작했습니다. 결과를 수집 중입니다...');
 
+                // [UPDATED] Error tracking added
+                setScrapingStatus('scraping');
+                setScrapeError(null);
+                
                 if (platform === 'NAVER_PLACE') {
                     scrapePlace(keyword, newClientId!)
                         .then((data) => {
@@ -247,7 +262,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 message: err?.message,
                                 detail: err?.response?.data?.detail
                             });
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                            // [NEW] Set error state
+                            const errorMsg = err?.response?.data?.detail || err?.message || '스크래핑 중 알 수 없는 오류 발생';
+                            setScrapeError(errorMsg);
+                            setScrapingStatus('error');
+                            toast.error(`스크래핑 실패: ${errorMsg}`);
                         });
                 } else if (platform === 'NAVER_VIEW') {
                     scrapeView(keyword, newClientId!)
@@ -261,28 +280,94 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 message: err?.message,
                                 detail: err?.response?.data?.detail
                             });
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
+                            // [NEW] Set error state
+                            const errorMsg = err?.response?.data?.detail || err?.message || '스크래핑 중 알 수 없는 오류 발생';
+                            setScrapeError(errorMsg);
+                            setScrapingStatus('error');
+                            toast.error(`스크래핑 실패: ${errorMsg}`);
                         });
                 }
 
-                // Step 3: Wait a bit for scraping to complete, then fetch results
-                console.log(`⏳ [Step 3] Waiting 2 seconds for scraping to complete...`);
-                setTimeout(async () => {
+                // Step 3: Polling for scraping results (dynamic wait time)
+                console.log(`⏳ [Step 3] Starting to fetch scrape results with polling...`);
+                setScrapingStatus('fetching');
+
+                // Polling function with exponential backoff
+                const pollForResults = async () => {
+                    const maxWaitTime = 30000; // 30 seconds max
+                    const initialPollInterval = 500; // Start with 500ms
+                    const maxPollInterval = 3000; // Max 3 seconds between polls
+                    let pollInterval = initialPollInterval;
+                    let totalWaitTime = 0;
+                    let pollAttempts = 0;
+
+                    const poll = async (): Promise<boolean> => {
+                        pollAttempts++;
+                        try {
+                            console.log(`🔍 [Step 3-A] Poll attempt #${pollAttempts}, waited ${totalWaitTime}ms`);
+                            const results = await getScrapeResults(newClientId!, keyword, platform);
+                            console.log('📊 Scrape results:', results);
+
+                            if (results.has_data && results.results.length > 0) {
+                                console.log(`✅ [Step 3-B] Found ${results.results.length} results after ${pollAttempts} attempts`);
+                                setScrapeResults(results);
+                                setShowResults(true);
+                                setScrapingStatus('done');
+                                toast.success('조사가 완료되었습니다! 결과를 확인하세요.');
+                                return true;
+                            } else {
+                                console.log(`⚠️ [Step 3-B] No data yet, will retry...`);
+
+                                // If we have partial data (keyword exists but no results yet), keep polling
+                                if (results.keyword === keyword && totalWaitTime < maxWaitTime) {
+                                    // Increase poll interval exponentially
+                                    pollInterval = Math.min(pollInterval * 1.5, maxPollInterval);
+
+                                    // Schedule next poll
+                                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                                    totalWaitTime += pollInterval;
+
+                                    return await poll();
+                                } else {
+                                    // Timeout reached or no keyword record
+                                    console.log(`⏱️ [Step 3-C] Polling timeout or no keyword record`);
+                                    setScrapeResults(results);
+                                    setShowResults(true);
+                                    setScrapingStatus('done');
+                                    toast.info('조사가 시작되었습니다. 데이터는 잠시 후 나타날 예정입니다.');
+                                    return true;
+                                }
+                            }
+                        } catch (err) {
+                            console.error(`❌ Poll attempt #${pollAttempts} failed:`, err);
+
+                            if (totalWaitTime < maxWaitTime) {
+                                pollInterval = Math.min(pollInterval * 1.5, maxPollInterval);
+                                await new Promise(resolve => setTimeout(resolve, pollInterval));
+                                totalWaitTime += pollInterval;
+                                return await poll();
+                            } else {
+                                throw err;
+                            }
+                        }
+                    };
+
                     try {
-                        console.log(`🔍 [Step 3-A] Fetching scrape results...`);
-                        const results = await getScrapeResults(newClientId!, keyword, platform);
-                        console.log('📊 Scrape results:', results);
-                        
-                        if (results.has_data && results.results.length > 0) {
-                            console.log(`✅ [Step 3-B] Found ${results.results.length} results`);
-                            setScrapeResults(results);
-                            setShowResults(true);
-                            toast.success('조사가 완료되었습니다! 결과를 확인하세요.');
-                        } else {
-                            console.log(`⚠️ [Step 3-B] No scrape data found yet`);
-                            setScrapeResults(results);
-                            setShowResults(true);
-                            toast.info('조사가 시작되었습니다. 데이터는 잠시 후 나타날 예정입니다.');\n                        }\n                    } catch (err) {\n                        console.error('❌ Failed to fetch scrape results:', err);\n                        toast.warning('결과 수집 중 오류가 발생했습니다. 나중에 다시 확인해주세요.');\n                        setShowResults(false);\n                    } finally {\n                        setIsSubmitting(false);\n                    }\n                }, 2000);
+                        await poll();
+                    } catch (err) {
+                        console.error('❌ Polling failed after all attempts:', err);
+                        const errorMsg = (err as any)?.response?.data?.detail || (err as any)?.message || '결과 수집 중 오류 발생';
+                        setScrapeError(errorMsg);
+                        setScrapingStatus('error');
+                        toast.error(`결과 조회 실패: ${errorMsg}`);
+                        setShowResults(false);
+                    } finally {
+                        setIsSubmitting(false);
+                    }
+                };
+
+                // Start polling asynchronously
+                pollForResults();
             } catch (error: any) {
                 console.error('❌ Analysis setup error:', error);
 
@@ -292,8 +377,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     error?.message ||
                     '분석 이력 저장 중 오류가 발생했습니다.';
 
+                setScrapeError(errorMessage);
+                setScrapingStatus('error');
                 toast.error(`오류: ${errorMessage}`);
-            } finally {
                 setIsSubmitting(false);
             }
         }
@@ -544,9 +630,25 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                             placeholder="예: 강남역 치과"
                                             value={keyword}
                                             onChange={(e) => setKeyword(e.target.value)}
-                                            className="w-full h-16 bg-gray-50/50 border border-gray-100 rounded-2xl pl-12 pr-5 text-xl font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none shadow-sm"
+                                            disabled={scrapingStatus === 'scraping' || scrapingStatus === 'fetching'}
+                                            className="w-full h-16 bg-gray-50/50 border border-gray-100 rounded-2xl pl-12 pr-5 text-xl font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none shadow-sm disabled:opacity-50"
                                         />
                                     </div>
+                                    {scrapeError && scrapingStatus === 'error' && (
+                                        <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                            <p className="text-sm font-semibold text-red-700">⚠️ 조사 실패</p>
+                                            <p className="text-sm text-red-600 mt-1">{scrapeError}</p>
+                                            <button
+                                                onClick={() => {
+                                                    setScrapeError(null);
+                                                    setScrapingStatus('idle');
+                                                }}
+                                                className="text-xs font-bold text-red-700 mt-2 hover:underline"
+                                            >
+                                                다시 시도하기
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4">

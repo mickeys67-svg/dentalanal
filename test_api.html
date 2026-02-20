@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DentalAnal API Test</title>
+</head>
+<body>
+    <h1>Scraping Results API Test</h1>
+    <p id="result">Testing...</p>
+    <script>
+        // Test the new scrape-results endpoint
+        const clientId = '12345678-1234-1234-1234-123456789012'; // Example client ID
+        const url = `https://dentalanal-864421937037.us-west1.run.app/api/v1/analyze/scrape-results/${clientId}?keyword=치과&platform=NAVER_PLACE`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = `
+                    <strong>API Response:</strong><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = `
+                    <strong>Error:</strong><br>
+                    ${error.message}<br>
+                    (Expected: 404 if no data exists - that's normal for new feature)
+                `;
+            });
+    </script>
+</body>
+</html>

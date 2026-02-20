@@ -87,6 +87,7 @@ def execute_place_sync(keyword: str, client_id_str: str = None):
         
     except Exception as e:
         logger.error(f"Saving place results or notifying failed: {e}")
+        db.rollback()  # [NEW] Rollback transaction on error
     finally:
         db.close()
     return results
@@ -147,6 +148,7 @@ def execute_view_sync(keyword: str, client_id_str: str = None):
         logger.info(f"View scrape finished for {keyword}. Items: {count}")
     except Exception as e:
         logger.error(f"Saving view results failed: {e}")
+        db.rollback()  # [NEW] Rollback transaction on error
     finally:
         db.close()
     return results
@@ -216,6 +218,7 @@ def execute_ad_sync(keyword: str, client_id_str: str = None):
         logger.info(f"Ad scrape finished for {keyword}. Items: {count}")
     except Exception as e:
         logger.error(f"Saving ad results failed: {e}")
+        db.rollback()  # [NEW] Rollback transaction on error
     finally:
         db.close()
     return results

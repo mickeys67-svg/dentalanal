@@ -87,10 +87,12 @@ def get_system_status(db: Session = Depends(get_db)):
     }
 
 @router.get("/dev/reset-all")
+@router.post("/dev/reset-all")
 def reset_all_data(db: Session = Depends(get_db)):
     """
     [개발 전용] 데이터베이스의 모든 데이터를 초기화합니다.
     경고: 프로덕션에서는 사용 금지!
+    GET 또는 POST 모두 지원
     """
     try:
         from app.models.models import (
