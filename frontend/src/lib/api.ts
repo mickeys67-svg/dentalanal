@@ -522,6 +522,13 @@ export const getAnalysisHistory = async (clientId: string): Promise<any[]> => {
     return response.data;
 };
 
+export const getScrapeResults = async (clientId: string, keyword?: string, platform: string = 'NAVER_PLACE'): Promise<any> => {
+    const response = await api.get(`/api/v1/analyze/scrape-results/${clientId}`, {
+        params: { keyword, platform }
+    });
+    return response.data;
+};
+
 // --- ROI / Ads APIs ---
 export const getRoasTracking = async (clientId: string, days: number = 30): Promise<any> => {
     const response = await api.post('/api/v1/roi/track-roas', {

@@ -19,7 +19,7 @@ import {
     X
 } from 'lucide-react';
 import clsx from 'clsx';
-import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView } from '@/lib/api';
+import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView, getScrapeResults } from '@/lib/api';
 import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -57,6 +57,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const [keyword, setKeyword] = useState('');
     const [platform, setPlatform] = useState('NAVER_PLACE');
     const [history, setHistory] = useState<any[]>([]);
+    const [scrapeResults, setScrapeResults] = useState<any>(null);
+    const [showResults, setShowResults] = useState(false);
 
     // Initial Data Load
     useEffect(() => {
@@ -227,8 +229,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 console.log('✅ [Step 1] Analysis history saved:', historyResponse);
                 console.log('   Response type:', typeof historyResponse, 'Keys:', Object.keys(historyResponse || {}));
 
-                // Step 2: Trigger scraping (async, don't block)
+                // Step 2: Trigger scraping and fetch results
                 console.log(`🔄 [Step 2] Triggering scraping for platform: ${platform}`);
+                toast.info('조사를 시작했습니다. 결과를 수집 중입니다...');
 
                 if (platform === 'NAVER_PLACE') {
                     scrapePlace(keyword, newClientId!)
@@ -242,7 +245,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 message: err?.message,
                                 detail: err?.response?.data?.detail
                             });
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다. (PLACE)');
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
                         });
                 } else if (platform === 'NAVER_VIEW') {
                     scrapeView(keyword, newClientId!)
@@ -256,21 +259,28 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 message: err?.message,
                                 detail: err?.response?.data?.detail
                             });
-                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다. (VIEW)');
+                            toast.warning('스크래핑이 백그라운드에서 진행 중입니다.');
                         });
                 }
 
-                // Step 3: Navigate to dashboard
-                console.log(`✅ [Step 3] Navigating to dashboard in 500ms`);
-                toast.success('분석이 시작되었습니다! 잠시 후 이동합니다...');
-                setTimeout(() => {
-                    console.log(`🎯 [Step 3-Final] Moving to dashboard`);
-                    if (onComplete) {
-                        onComplete();
-                    } else {
-                        router.push('/dashboard');
-                    }
-                }, 500);
+                // Step 3: Wait a bit for scraping to complete, then fetch results
+                console.log(`⏳ [Step 3] Waiting 2 seconds for scraping to complete...`);
+                setTimeout(async () => {
+                    try {
+                        console.log(`🔍 [Step 3-A] Fetching scrape results...`);
+                        const results = await getScrapeResults(newClientId!, keyword, platform);
+                        console.log('📊 Scrape results:', results);
+                        
+                        if (results.has_data && results.results.length > 0) {
+                            console.log(`✅ [Step 3-B] Found ${results.results.length} results`);
+                            setScrapeResults(results);
+                            setShowResults(true);
+                            toast.success('조사가 완료되었습니다! 결과를 확인하세요.');
+                        } else {
+                            console.log(`⚠️ [Step 3-B] No scrape data found yet`);
+                            setScrapeResults(results);
+                            setShowResults(true);
+                            toast.info('조사가 시작되었습니다. 데이터는 잠시 후 나타날 예정입니다.');\n                        }\n                    } catch (err) {\n                        console.error('❌ Failed to fetch scrape results:', err);\n                        toast.warning('결과 수집 중 오류가 발생했습니다. 나중에 다시 확인해주세요.');\n                        setShowResults(false);\n                    } finally {\n                        setIsSubmitting(false);\n                    }\n                }, 2000);
             } catch (error: any) {
                 console.error('❌ Analysis setup error:', error);
 

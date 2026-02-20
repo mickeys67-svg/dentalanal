@@ -873,6 +873,79 @@ def assistant_stream(
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
+@router.get("/scrape-results/{client_id}")
+def get_scrape_results(
+    client_id: str,
+    keyword: Optional[str] = None,
+    platform: str = "NAVER_PLACE",
+    db: Session = Depends(get_db),
+):
+    """
+    실제 스크래핑 결과 조회 (DailyRank 테이블에서)
+    
+    Args:
+        client_id: 클라이언트 ID
+        keyword: (선택) 특정 키워드만 조회
+        platform: (기본값: NAVER_PLACE) 플랫폼 타입
+        
+    Returns:
+        {
+            "has_data": 데이터 존재 여부,
+            "keyword": 검색 키워드,
+            "platform": 플랫폼,
+            "results": 순위 데이터 배열,
+            "total_count": 결과 총 개수
+        }
+    """
+    try:
+        client_uuid = UUID(client_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid client_id format")
+    
+    # 클라이언트 존재 확인
+    client = db.query(Client).filter(Client.id == client_uuid).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # 키워드 객체 조회 (지정된 경우)
+    keyword_obj = None
+    if keyword:
+        keyword_obj = db.query(Keyword).filter(
+            Keyword.term == keyword,
+            Keyword.client_id == client_uuid
+        ).first()
+    
+    # DailyRank 조회
+    query = db.query(DailyRank).filter(DailyRank.client_id == client_uuid)
+    
+    if keyword_obj:
+        query = query.filter(DailyRank.keyword_id == keyword_obj.id)
+    
+    # 최신 데이터 먼저 정렬
+    results = query.order_by(DailyRank.captured_at.desc()).all()
+    
+    # 응답 구성
+    results_list = []
+    for r in results:
+        result_item = {
+            "rank": r.rank,
+            "rank_change": r.rank_change,
+            "target_name": r.target.name if r.target else None,
+            "target_type": r.target.type.value if r.target and r.target.type else None,
+            "link": r.target.urls.get("default") if r.target and r.target.urls else None,
+            "captured_at": r.captured_at.isoformat() if r.captured_at else None,
+        }
+        results_list.append(result_item)
+    
+    return {
+        "has_data": len(results_list) > 0,
+        "keyword": keyword,
+        "platform": platform,
+        "results": results_list,
+        "total_count": len(results_list),
+    }
+
+
 @router.get("/assistant/sessions")
 def list_chat_sessions(
     db: Session = Depends(get_db),

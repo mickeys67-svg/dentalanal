@@ -1,14 +1,12 @@
-[Feat] Phase 6-3 AI 어시스턴트 심화 — 멀티턴 대화 + Quick-query SSE 스트리밍
+[Feat] Per-client conversion value and fee rate settings (remove hardcoding)
 
-백엔드:
-- _build_prompt(): 대화 히스토리 파라미터 추가 (최근 20개 메시지 → 멀티턴 컨텍스트)
-- _handle_quick_query() 헬퍼 함수 신규 추출 (stream 엔드포인트에서 재사용)
-- /assistant/stream: 세션 기존 메시지 로드 후 프롬프트에 포함
-- /assistant/stream: quick-query ID 감지 → _handle_quick_query() 호출 후 단어 단위 스트리밍
-
-프론트엔드:
-- assistant/page.tsx: sendQuickQuery() → SSE 스트리밍 방식으로 전환
-- Quick-query 버튼 클릭 시 라벨(한국어)을 사용자 메시지로 표시
-- 불필요한 quickMutation, Loader2 제거
-
-TypeScript 에러 0개 ✅
+- Add conversion_value, fee_rate nullable fields to Client model
+- Alembic migration g4b5c6d7e8f9: add two columns to clients table
+- clients.py: expose both fields in ClientUpdate/ClientResponse
+- dashboard_service.py: replace hardcoded 150000/50000 with DB lookup + fallback
+- analysis.py: replace hardcoded 50000 (x2) with _get_client_conversion_value()
+- roi_optimizer.py: conversion_value default None -> DB lookup fallback
+- settlement_service.py: fee_rate 0.15 hardcoding -> DB lookup + 0.15 fallback
+- settings/page.tsx: add inline edit UI for conversion_value (emerald) and fee_rate (amber)
+- api.ts: add conversion_value, fee_rate to updateClient type
+- Supabase DB: clients table now has both FLOAT columns

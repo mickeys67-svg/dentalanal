@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "mcp__desktop-commander__list_directory",
+      "Bash(git remote get-url:*)",
+      "Bash(git commit:*)",
+      "mcp__desktop-commander__read_process_output",
+      "mcp__desktop-commander__start_process",
+      "mcp__desktop-commander__read_file",
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(git push:*)",
+      "Bash(npx tsc:*)",
+      "mcp__desktop-commander__start_search",
+      "Bash(gh actions:*)",
+      "Bash(gcloud --version:*)",
+      "Bash(git remote:*)",
+      "mcp__desktop-commander__get_more_search_results"
     ]
   }
 }
