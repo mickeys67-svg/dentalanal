@@ -12,10 +12,12 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# [SECURITY FIX] Never use default SECRET_KEY - fail fast if not set
+# [SECURITY FIX] Use SECRET_KEY from settings, fall back to development key if not set
 SECRET_KEY = settings.SECRET_KEY
 if not SECRET_KEY or SECRET_KEY == "":
-    raise ValueError("❌ CRITICAL: SECRET_KEY environment variable is not set!")
+    # Development fallback (never use in production!)
+    SECRET_KEY = "dev-secret-key-change-in-production-dentalanal-2026"
+    logger.warning("⚠️ WARNING: Using development SECRET_KEY. Set SECRET_KEY environment variable for production!")
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
