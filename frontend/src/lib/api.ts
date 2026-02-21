@@ -160,35 +160,6 @@ export const scrapeView = async (keyword: string, clientId?: string): Promise<{ 
     return response.data;
 };
 
-export const getScrapeResults = async (
-    clientId: string,
-    keyword: string,
-    platform: string = 'NAVER_PLACE'
-): Promise<{
-    has_data: boolean;
-    keyword: string;
-    platform: string;
-    results: Array<{
-        target_id: string;
-        target_name: string;
-        target_type: string;
-        rank: number;
-        rank_change: number;
-        captured_at: string;
-    }>;
-    total_count: number;
-    message: string;
-}> => {
-    const response = await api.get('/api/v1/scrape/results', {
-        params: {
-            client_id: clientId,
-            keyword,
-            platform
-        }
-    });
-    return response.data;
-};
-
 export const analyzeSOV = async (params: { target_hospital: string, keywords: string[], top_n?: number, platform?: string }): Promise<SOVAnalysisResult[]> => {
     const response = await api.post('/api/v1/analyze/sov', params);
     return response.data;
