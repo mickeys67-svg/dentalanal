@@ -14,7 +14,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import get_current_user
 from app.models.models import User
 from app.debug.data_diagnostic import DataDiagnostic
 import logging
@@ -22,10 +21,16 @@ import logging
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Lazy import to avoid circular dependencies
+def get_get_current_user():
+    """Dynamically import get_current_user to avoid circular imports"""
+    from app.api.endpoints.auth import get_current_user
+    return get_current_user
+
 
 @router.get("/diagnose")
 async def run_data_diagnostic(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(lambda: get_get_current_user()),
     db: Session = Depends(get_db)
 ):
     """
@@ -71,7 +76,7 @@ async def run_data_diagnostic(
 
 @router.get("/stats")
 async def get_quick_stats(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(lambda: get_get_current_user()),
     db: Session = Depends(get_db)
 ):
     """
@@ -111,7 +116,7 @@ async def get_quick_stats(
 async def trace_keyword_flow(
     keyword: str,
     client_id: str = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(lambda: get_get_current_user()),
     db: Session = Depends(get_db)
 ):
     """
@@ -197,7 +202,7 @@ async def trace_keyword_flow(
 
 @router.get("/connections-status")
 async def get_connections_status(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(lambda: get_get_current_user()),
     db: Session = Depends(get_db)
 ):
     """

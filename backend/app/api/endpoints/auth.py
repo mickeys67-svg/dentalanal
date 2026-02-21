@@ -9,6 +9,9 @@ from app.models.models import User, UserRole
 from app.core.security import verify_password
 import logging
 
+# Re-export get_current_user so other modules can import from here
+__all__ = ['router', 'get_current_user', 'get_optional_current_user']
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
