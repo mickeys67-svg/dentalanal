@@ -211,27 +211,60 @@ def health_check():
     return {"status": "ok"}
 
 # Lazy-loaded Routers to prevent top-level import crashes
-from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads, debug
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
-app.include_router(debug.router, prefix="/api/v1/debug", tags=["Debug"])
+logger.info("[ROUTER] Starting endpoint imports...")
+try:
+    from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads, debug
+    logger.info("[ROUTER] All endpoints imported successfully")
+except Exception as e:
+    logger.error(f"[ROUTER] ERROR importing endpoints: {e}", exc_info=True)
+    raise
+
+logger.info("[ROUTER] Starting router registration...")
+try:
+    app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+    logger.info("[ROUTER] Registered: auth")
+    app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+    logger.info("[ROUTER] Registered: users")
+    app.include_router(status.router, prefix="/api/v1/status", tags=["Status"])
+    logger.info("[ROUTER] Registered: status")
+    app.include_router(debug.router, prefix="/api/v1/debug", tags=["Debug"])
+    logger.info("[ROUTER] Registered: debug")
+except Exception as e:
+    logger.error(f"[ROUTER] ERROR registering routers: {e}", exc_info=True)
+    raise
 app.include_router(scrape.router, prefix="/api/v1/scrape", tags=["Scraping"])
+logger.info("[ROUTER] Registered: scrape")
 app.include_router(analyze.router, prefix="/api/v1/analyze", tags=["Analysis"])
+logger.info("[ROUTER] Registered: analyze")
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
+logger.info("[ROUTER] Registered: dashboard")
 app.include_router(connectors.router, prefix="/api/v1/connectors", tags=["Connectors"])
+logger.info("[ROUTER] Registered: connectors")
 app.include_router(strategy.router, prefix="/api/v1/strategy", tags=["Strategy"])
+logger.info("[ROUTER] Registered: strategy")
 app.include_router(collaboration.router, prefix="/api/v1/collaboration", tags=["Collaboration"])
+logger.info("[ROUTER] Registered: collaboration")
 app.include_router(automation.router, prefix="/api/v1/automation", tags=["Automation"])
+logger.info("[ROUTER] Registered: automation")
 app.include_router(clients.router, prefix="/api/v1/clients", tags=["Clients"])
+logger.info("[ROUTER] Registered: clients")
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+logger.info("[ROUTER] Registered: reports")
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
+logger.info("[ROUTER] Registered: notifications")
 app.include_router(settlement.router, prefix="/api/v1/settlement", tags=["Settlement"])
+logger.info("[ROUTER] Registered: settlement")
 app.include_router(competitors.router, prefix="/api/v1/competitors", tags=["Competitor Intelligence"])
+logger.info("[ROUTER] Registered: competitors")
 app.include_router(roi_optimization.router, prefix="/api/v1/roi", tags=["ROI Optimization"])
+logger.info("[ROUTER] Registered: roi_optimization")
 app.include_router(trends.router, prefix="/api/v1/trends", tags=["Trend Analysis"])
+logger.info("[ROUTER] Registered: trends")
 app.include_router(leads.router, prefix="/api/v1/leads", tags=["Leads"])
+logger.info("[ROUTER] Registered: leads")
 app.include_router(naver_ads.router, prefix="/api/v1/naver", tags=["Naver Ads Data"])
+logger.info("[ROUTER] Registered: naver_ads")
+logger.info("[ROUTER] All routers registered successfully!")
 
 @app.get("/")
 def read_root():
