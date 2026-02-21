@@ -54,7 +54,7 @@ jobs:
             NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
             NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
             BRIGHT_DATA_CDP_URL=${{ secrets.BRIGHT_DATA_CDP_URL }}
-          flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=1Gi --timeout=300"
+          flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=2Gi --timeout=600 --startup-cpu-boost"
 
       # [SECURITY FIX] Validate backend URL before using it in frontend build
       - name: Validate Backend Deployment URL

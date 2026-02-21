@@ -20,4 +20,12 @@ ENV PORT=8080
 # Cloud Run sets the PORT environment variable.
 # We use shell form to allow the variable to be expanded.
 # We also add --proxy-headers for real IP detection and --workers 1 for consistency in small instances.
-CMD python3 -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --proxy-headers --workers 1 --log-level info
+# Increase startup timeout to handle database initialization
+CMD python3 -m uvicorn app.main:app \
+  --host 0.0.0.0 \
+  --port ${PORT:-8080} \
+  --proxy-headers \
+  --workers 1 \
+  --log-level info \
+  --timeout-keep-alive 120 \
+  --timeout-graceful-shutdown 30
