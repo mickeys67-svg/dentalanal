@@ -24,9 +24,11 @@ class ScraperBase:
         import os
         cdp_url = os.getenv("BRIGHT_DATA_CDP_URL")
         
-        # [P0 FIX] Bright Data 제거 - Naver만 지원하기로 결정
-        # cdp_url을 무시하고 로컬 헤드리스 브라우저만 사용
-        cdp_url = None  # Bright Data 비활성화
+        # [CRITICAL FIX] Bright Data 재활성화 - Naver 차단 우회
+        # Bright Data 주택 IP 프록시로 데이터센터 IP 차단 회피
+        # cdp_url이 설정되면 Bright Data 사용, 없으면 로컬 브라우저
+        if not cdp_url:
+            self.logger.warning("⚠️ BRIGHT_DATA_CDP_URL not set - will use local browser (may be blocked by Naver)")
         
         # Sanitize env var (handle potential quotes from YAML)
         if cdp_url:
