@@ -5,9 +5,9 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Standard Pydantic V2 Settings
-    # Database
-    DATABASE_URL: str = ""
-    DATABASE_PASSWORD: Optional[str] = None # Default value removed for security. 
+    # Database (Development default - override in GitHub Secrets for production)
+    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/dentalanal_dev"
+    DATABASE_PASSWORD: Optional[str] = "password" # Development only 
     
     # Supabase (New Keys)
     SUPABASE_URL: Optional[str] = None
@@ -38,10 +38,10 @@ class Settings(BaseSettings):
     NAVER_CLIENT_SECRET: Optional[str] = None
     NAVER_REDIRECT_URI: str = "http://localhost:8000/api/v1/naver/callback"
     
-    # Auth
-    SECRET_KEY: str = ""
-    ADMIN_EMAIL: str = "admin@dmind.com"
-    ADMIN_PASSWORD: str = ""
+    # Auth (Development defaults - override in GitHub Secrets for production)
+    SECRET_KEY: str = "dev-secret-key-change-in-production-dentalanal-2026"
+    ADMIN_EMAIL: str = "admin@example.com"
+    ADMIN_PASSWORD: str = "admin123!"
 
     # CORS Configuration [FIX Issue #5]
     # Comma-separated list of allowed origins
@@ -56,11 +56,12 @@ class Settings(BaseSettings):
     @property
     def get_database_url(self) -> str:
         """
-        [EXPLICIT] Returns the database URL strictly from environment variables.
-        No auto-correction or hidden logic.
+        Returns the database URL from environment or defaults to development URL.
+        For production, set DATABASE_URL in GitHub Secrets.
         """
-        if not self.DATABASE_URL:
-            raise ValueError("DATABASE_URL 환경변수가 설정되지 않았습니다. GitHub Secrets 또는 .env 파일을 확인하세요.")
+        if not self.DATABASE_URL or self.DATABASE_URL.startswith("postgresql://postgres:password"):
+            import logging
+            logging.warning("⚠️ Using development DATABASE_URL. Set DATABASE_URL in GitHub Secrets for production!")
         return self.DATABASE_URL
 
     model_config = SettingsConfigDict(
