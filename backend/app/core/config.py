@@ -5,8 +5,8 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Standard Pydantic V2 Settings
-    # Database (Development default - override in GitHub Secrets for production)
-    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/dentalanal_dev"
+    # Database (Use Supabase in cloud, localhost in local dev)
+    DATABASE_URL: str = "postgresql://postgres:password@db.xklppnykoeezgtxmomrl.supabase.co:6543/postgres?sslmode=require"
     DATABASE_PASSWORD: Optional[str] = "password" # Development only 
     
     # Supabase (New Keys)
