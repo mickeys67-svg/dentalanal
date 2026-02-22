@@ -368,14 +368,25 @@ class ReportTemplate(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class Report(Base):
-    """Legacy reports table - schema uncertain due to multiple DB migrations.
+    """Reports table for storing generated reports and templates.
 
-    Note: This model is not actively used in Client relationships.
-    CASCADE deletion is handled at DB level via ForeignKey constraints.
+    Relationships:
+    - client_id: References the Client who owns this report
+    - template_id: References the ReportTemplate used to generate this report
     """
     __tablename__ = "reports"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    template_id = Column(GUID, ForeignKey("report_templates.id"), nullable=False)
     client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    data = Column(JSON, nullable=True)
+    status = Column(String, default="PENDING", nullable=False)
+    period_start = Column(Date, nullable=True)
+    period_end = Column(Date, nullable=True)
+    generated_at = Column(DateTime(timezone=True), nullable=True)
+    schedule = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class Notification(Base):
     __tablename__ = "notifications"
