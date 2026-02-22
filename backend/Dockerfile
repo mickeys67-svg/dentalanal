@@ -21,7 +21,9 @@ ENV PORT=8080
 # We use shell form to allow the variable to be expanded.
 # We also add --proxy-headers for real IP detection and --workers 1 for consistency in small instances.
 # Increase startup timeout to handle database initialization
-CMD python3 -m uvicorn app.main:app \
+# Run database migrations before starting the app
+CMD alembic upgrade head && \
+  python3 -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port ${PORT:-8080} \
   --proxy-headers \
