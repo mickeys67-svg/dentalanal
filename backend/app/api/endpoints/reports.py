@@ -149,17 +149,28 @@ def get_all_reports(
     current_user: User = Depends(get_current_user)
 ):
     """Get all reports accessible to the current user's agency"""
-    # Get all clients owned by current user's agency
-    agency_clients = db.query(Client).filter(
-        Client.agency_id == current_user.agency_id
-    ).all()
-    agency_client_ids = [c.id for c in agency_clients]
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+    try:
+        # Get all clients owned by current user's agency
+        agency_clients = db.query(Client).filter(
+            Client.agency_id == current_user.agency_id
+        ).all()
+        agency_client_ids = [c.id for c in agency_clients]
 
-    # Get all reports for those clients
-    reports = db.query(Report).filter(
-        Report.client_id.in_(agency_client_ids)
-    ).all()
-    return reports
+        # Guard: empty list causes SQL issues on some DB drivers
+        if not agency_client_ids:
+            return []
+
+        # Get all reports for those clients
+        reports = db.query(Report).filter(
+            Report.client_id.in_(agency_client_ids)
+        ).all()
+        return reports
+    except Exception as e:
+        import traceback as _tb
+        _log.error(f"[reports/all] Unexpected error: {e}\n{_tb.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"리포트 조회 실패: {str(e)}")
 
 @router.get("/detail/{report_id}", response_model=ReportResponse)
 def get_report(

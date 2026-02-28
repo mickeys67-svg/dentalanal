@@ -20,11 +20,29 @@ class NaverAdsService:
         self.db = db
         self.base_url = "https://api.searchad.naver.com"
         
-        # 기본값은 settings에서 가져오되, 전달된 credentials가 있으면 우선함
+        # [FIX] env vars (GitHub Secrets) 항상 최우선.
+        # DB credentials는 env var가 없을 때만 폴백으로 사용.
+        # "demo_key", "your_key" 등 placeholder 값은 무시.
+        _PLACEHOLDER = {'demo_key', 'your_key', 'test_key', 'placeholder', 'none', '', None}
+
         creds = credentials or {}
-        self.customer_id = creds.get('customer_id') or settings.NAVER_AD_CUSTOMER_ID
-        self.access_license = creds.get('api_key') or creds.get('access_license') or settings.NAVER_AD_ACCESS_LICENSE
-        self.secret_key = creds.get('secret_key') or settings.NAVER_AD_SECRET_KEY
+
+        def _valid(v):
+            return v if v and v.strip().lower() not in _PLACEHOLDER else None
+
+        db_customer_id    = _valid(creds.get('customer_id'))
+        db_access_license = _valid(creds.get('api_key') or creds.get('access_license'))
+        db_secret_key     = _valid(creds.get('secret_key'))
+
+        self.customer_id    = settings.NAVER_AD_CUSTOMER_ID  or db_customer_id
+        self.access_license = settings.NAVER_AD_ACCESS_LICENSE or db_access_license
+        self.secret_key     = settings.NAVER_AD_SECRET_KEY    or db_secret_key
+
+        logger.info(
+            f"[NaverAds] Init — customer_id={'set' if self.customer_id else 'MISSING'} "
+            f"license={'set' if self.access_license else 'MISSING'} "
+            f"secret={'set' if self.secret_key else 'MISSING'}"
+        )
 
         # Setup Retry Strategy
         self.session = requests.Session()

@@ -31,9 +31,9 @@ class ReportCreate(ReportBase):
 
 class ReportResponse(ReportBase):
     id: UUID
-    data: Optional[Dict[str, Any]]
-    created_at: datetime
-    updated_at: datetime
+    data: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
