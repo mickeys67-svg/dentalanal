@@ -12,11 +12,17 @@ export default function DashboardLayout({
             <AppSidebar />
             <div className="md:ml-64 flex flex-col min-h-screen">
                 <AppHeader />
-                <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <main className="flex-1 p-5 md:p-6 space-y-6 overflow-y-auto">
                     {children}
                 </main>
             </div>
-            <Toaster position="top-right" richColors />
+            <Toaster
+                position="top-right"
+                richColors
+                toastOptions={{
+                    style: { borderRadius: "12px" },
+                }}
+            />
         </div>
     );
 }
