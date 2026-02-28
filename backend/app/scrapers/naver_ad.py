@@ -75,10 +75,11 @@ class NaverAdScraper:
         results = []
 
         # 파워링크 광고 컨테이너 탐색 (여러 셀렉터 - UI 변경 대응)
+        # 우선순위: .ad_section > 파워링크 섹션 > 구형 구조
         ad_list = (
-            soup.select(".power_link_body .lst_type > li")
+            soup.select(".ad_section ul > li")
+            or soup.select(".power_link_body .lst_type > li")
             or soup.select("ul.lst_type > li[data-atrank]")
-            or soup.select(".ad_section ul > li")
             or soup.select("li.lst_type")
         )
 
@@ -96,9 +97,10 @@ class NaverAdScraper:
 
         for index, item in enumerate(ad_list):
             try:
-                # 제목
+                # 제목 (lnk_head가 최신, lnk_tit은 구형)
                 title_tag = (
-                    item.select_one(".lnk_tit")
+                    item.select_one("a.lnk_head")
+                    or item.select_one(".lnk_tit")
                     or item.select_one("a.tit")
                     or item.select_one(".ad_tit a")
                     or item.select_one("a[class*='tit']")
@@ -109,17 +111,19 @@ class NaverAdScraper:
                 if not title:
                     continue
 
-                # 표시 URL
+                # 표시 URL (lnk_url이 최신)
                 url_tag = (
-                    item.select_one(".url_area .url")
+                    item.select_one("a.lnk_url")
+                    or item.select_one(".url_area .url")
                     or item.select_one(".ad_url")
                     or item.select_one(".dsp_url")
                 )
                 display_url = url_tag.get_text(strip=True) if url_tag else ""
 
-                # 설명
+                # 설명 (link_desc가 최신)
                 desc_tag = (
-                    item.select_one(".ad_dsc .dsc")
+                    item.select_one("a.link_desc")
+                    or item.select_one(".ad_dsc .dsc")
                     or item.select_one(".dsc_txt")
                     or item.select_one(".ad_desc")
                 )

@@ -149,96 +149,74 @@ class NaverViewScraper:
         return []
 
     def _parse_view_html(self, html: str, keyword: str) -> list:
+        """
+        Naver VIEW 탭 HTML 파싱.
+
+        Naver가 React 앱으로 전환하여 클래스명이 해시화됨.
+        안정적 접근: blog.naver.com/{user}/{postId} URL 패턴으로 직접 추출.
+        """
+        import re as _re
         soup = BeautifulSoup(html, "html.parser")
         results = []
+        seen_urls: set = set()
 
-        # Naver VIEW 탭 결과 컨테이너 (여러 셀렉터 시도 - UI 변경 대응)
-        # Strategy 1: .lst_total .bx (최신 구조)
-        items = soup.select(".lst_total .bx")
+        # 블로그 포스트 URL 패턴: blog.naver.com/{username}/{12자리 이상 숫자 ID}
+        POST_URL_RE = _re.compile(r"https://blog\.naver\.com/[A-Za-z0-9_]+/\d{8,}")
 
-        # Strategy 2: .total_area .bx
-        if not items:
-            items = soup.select(".total_area .bx")
+        all_post_links = soup.find_all("a", href=POST_URL_RE)
+        self.logger.debug(f"[NaverView HTML] blog.naver.com 포스트 링크: {len(all_post_links)}개")
 
-        # Strategy 3: .view_tab1 .lst_total li (구형 구조)
-        if not items:
-            items = soup.select(".view_tab1 .lst_total li")
-
-        # Strategy 4: 더 넓은 셀렉터
-        if not items:
-            items = soup.select(".api_subject_bx")
-
-        self.logger.debug(f"[NaverView HTML] 파싱된 아이템 수: {len(items)}")
-
-        for idx, item in enumerate(items):
-            try:
-                # 제목 추출
-                title_tag = (
-                    item.select_one(".total_tit a")
-                    or item.select_one(".api_txt_lines.total_tit")
-                    or item.select_one("a.link_tit")
-                    or item.select_one(".title_area a")
-                    or item.select_one("a[class*='tit']")
-                )
-                if not title_tag:
-                    continue
-
-                title = _clean_html_tags(title_tag.get_text())
-                link = title_tag.get("href", "")
-
-                # 블로그명/작성자
-                author_tag = (
-                    item.select_one(".sub_name")
-                    or item.select_one(".name")
-                    or item.select_one(".user_name")
-                    or item.select_one(".source a")
-                )
-                author = author_tag.get_text(strip=True) if author_tag else "Unknown"
-
-                # 날짜
-                date_tag = (
-                    item.select_one(".sub_time")
-                    or item.select_one("time")
-                    or item.select_one(".date")
-                    or item.select_one("[class*='date']")
-                )
-                date = ""
-                if date_tag:
-                    date = date_tag.get("datetime", "") or date_tag.get_text(strip=True)
-
-                # 본문 요약
-                desc_tag = (
-                    item.select_one(".total_dsc")
-                    or item.select_one(".api_txt_lines.dsc_txt")
-                    or item.select_one(".dsc_txt")
-                    or item.select_one(".desc")
-                )
-                snippet = _clean_html_tags(desc_tag.get_text()) if desc_tag else ""
-
-                if not title:
-                    continue
-
-                results.append({
-                    "rank": idx + 1,
-                    "title": title,
-                    "blog_name": author,
-                    "link": link,
-                    "keyword": keyword,
-                    "created_at": date,
-                    "is_ad": False,
-                    "snippet": snippet[:200],
-                    "source_type": "Blog",
-                })
-
-            except Exception as e:
-                self.logger.debug(f"[NaverView HTML] 아이템 파싱 오류: {e}")
+        for link in all_post_links:
+            href = link.get("href", "")
+            if href in seen_urls:
                 continue
 
-        # 결과가 없으면 HTML 저장해서 디버깅 (로컬 환경에서만 유용)
+            title = _clean_html_tags(link.get_text()).strip()
+            if len(title) < 5:
+                continue
+
+            seen_urls.add(href)
+
+            # 블로그 사용자명을 URL에서 추출 (display name 대신 안정적인 ID)
+            m = _re.match(r"https://blog\.naver\.com/([A-Za-z0-9_]+)/", href)
+            blog_id = m.group(1) if m else "Unknown"
+
+            # 같은 컨테이너 내 display name 탐색 (sds-comps-profile-info-title-text)
+            blog_name = blog_id
+            parent = link.find_parent()
+            depth = 0
+            while parent and depth < 6:
+                profile_link = parent.find(
+                    "a",
+                    href=_re.compile(rf"blog\.naver\.com/{_re.escape(blog_id)}$"),
+                )
+                if profile_link:
+                    display = profile_link.get_text().strip()
+                    if display:
+                        blog_name = display
+                    break
+                parent = parent.find_parent()
+                depth += 1
+
+            results.append({
+                "rank": len(results) + 1,
+                "title": title,
+                "blog_name": blog_name,
+                "link": href,
+                "keyword": keyword,
+                "created_at": "",
+                "is_ad": False,
+                "snippet": "",
+                "source_type": "Blog",
+            })
+
+            if len(results) >= 30:
+                break
+
         if not results:
             self.logger.warning(
                 f"[NaverView HTML] '{keyword}' 결과 없음. "
-                f"HTML 길이: {len(html)}자. 셀렉터가 변경되었을 수 있음."
+                f"HTML 길이: {len(html)}자."
             )
 
         return results
