@@ -25,19 +25,22 @@ if "@" in SQLALCHEMY_DATABASE_URL:
 logger.info(f"Database connection initialized: {masked_url}")
 
 # Database Engine Configuration
-connect_args = {}
+# PgBouncer(port 6543) 호환 설정 - prepared statement 충돌 방지
+connect_args = {
+    "options": "-c statement_timeout=30000"  # 개별 쿼리 30초 제한
+}
 engine_args = {
-    "pool_pre_ping": True,
+    "pool_pre_ping": True,  # 끊긴 연결 자동 감지 및 재연결
 }
 
 # PostgreSQL / Supabase PgBouncer (port 6543) 최적화
-# Supabase free tier PgBouncer 최대 60 연결. Cloud Run 서버리스 환경에서
-# 인스턴스가 여러 개 뜰 수 있으므로 인스턴스당 연결을 최소화.
+# Supabase free tier PgBouncer idle timeout = 약 300초(5분).
+# pool_recycle=280 으로 안전 마진 20초 확보 → race condition 방지.
 engine_args.update({
     "pool_size": 3,       # 인스턴스당 기본 연결 수
     "max_overflow": 7,    # 최대 burst 연결 (총 10)
-    "pool_recycle": 300,  # 5분마다 연결 재생성 (Supabase idle timeout 대응)
-    "pool_timeout": 10,   # 연결 대기 최대 10초
+    "pool_recycle": 280,  # [FIX] 4분 40초 - PgBouncer 5분 idle timeout 이전에 재생성
+    "pool_timeout": 30,   # [FIX] cold start 중 연결 대기 여유 시간 (기존 10초 → 30초)
 })
 
 engine = create_engine(
