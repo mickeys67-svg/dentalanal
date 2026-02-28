@@ -5,6 +5,9 @@ from app.services.ai_service import AIService
 from app.core.database import get_db
 from sqlalchemy.orm import Session
 from uuid import UUID
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 ai_service = AIService()

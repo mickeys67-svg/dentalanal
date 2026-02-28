@@ -200,8 +200,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # Explicit methods
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],  # Explicit headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Health Check Endpoint - CRITICAL for Cloud Run
