@@ -3,130 +3,157 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from app.core.database import get_db
 from app.schemas.scraping import ScrapeRequest, ScrapeResponse
-from app.worker.tasks import scrape_place_task, scrape_view_task
+from app.worker.tasks import scrape_place_task, scrape_view_task, scrape_ad_task
 from app.api.endpoints.auth import get_current_user
 from app.models.models import User, DailyRank, Keyword, Target, PlatformType
 from datetime import datetime, timedelta
 import uuid
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Global tracking of active scraping tasks (prevent concurrent requests)
-# Format: {f"{client_id}:{keyword}:{platform}": task_id}
-_active_scraping_tasks = {}
+# 동시 스크래핑 방지 추적 (메모리, 재시작 시 초기화)
+# Format: {"{client_id}:{platform}:{keyword}": task_id}
+_active_scraping_tasks: dict = {}
+
+PLATFORM_ENUM_MAP = {
+    "NAVER_PLACE": PlatformType.NAVER_PLACE,
+    "NAVER_VIEW": PlatformType.NAVER_VIEW,
+    "NAVER_AD": PlatformType.NAVER_AD,
+}
+
+
+def _make_task_key(client_id: str, platform: str, keyword: str) -> str:
+    return f"{client_id}:{platform}:{keyword}"
+
 
 @router.post("/place", response_model=ScrapeResponse)
-def trigger_place_scrape(
+async def trigger_place_scrape(
     request: ScrapeRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Check for concurrent scraping on the same parameters
-    task_key = f"{request.client_id}:naver_place:{request.keyword}"
+    task_key = _make_task_key(request.client_id, "naver_place", request.keyword)
     if task_key in _active_scraping_tasks:
         raise HTTPException(
             status_code=409,
-            detail=f"네이버 플레이스 '{request.keyword}' 조사가 이미 진행 중입니다. 완료될 때까지 기다려주세요."
+            detail=f"네이버 플레이스 '{request.keyword}' 조사가 이미 진행 중입니다.",
         )
 
     task_id = str(uuid.uuid4())
     _active_scraping_tasks[task_key] = task_id
 
-    def cleanup_task():
-        """Cleanup function to remove task from tracking after completion"""
-        _active_scraping_tasks.pop(task_key, None)
+    async def _run_and_cleanup():
+        try:
+            await scrape_place_task(request.keyword, request.client_id)
+        finally:
+            _active_scraping_tasks.pop(task_key, None)
 
-    # Offload to BackgroundTasks ( Celery delay is mocked out/unstable in this env )
-    background_tasks.add_task(scrape_place_task, request.keyword, request.client_id)
-    background_tasks.add_task(cleanup_task)
+    background_tasks.add_task(_run_and_cleanup)
 
     return ScrapeResponse(
         task_id=task_id,
-        message=f"네이버 플레이스 조사({request.keyword})가 백그라운드에서 시작되었습니다."
+        message=f"네이버 플레이스 조사({request.keyword})가 시작되었습니다.",
     )
+
 
 @router.post("/view", response_model=ScrapeResponse)
-def trigger_view_scrape(
+async def trigger_view_scrape(
     request: ScrapeRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Check for concurrent scraping on the same parameters
-    task_key = f"{request.client_id}:naver_view:{request.keyword}"
+    task_key = _make_task_key(request.client_id, "naver_view", request.keyword)
     if task_key in _active_scraping_tasks:
         raise HTTPException(
             status_code=409,
-            detail=f"네이버 VIEW '{request.keyword}' 조사가 이미 진행 중입니다. 완료될 때까지 기다려주세요."
+            detail=f"네이버 VIEW '{request.keyword}' 조사가 이미 진행 중입니다.",
         )
 
     task_id = str(uuid.uuid4())
     _active_scraping_tasks[task_key] = task_id
 
-    def cleanup_task():
-        """Cleanup function to remove task from tracking after completion"""
-        _active_scraping_tasks.pop(task_key, None)
+    async def _run_and_cleanup():
+        try:
+            await scrape_view_task(request.keyword, request.client_id)
+        finally:
+            _active_scraping_tasks.pop(task_key, None)
 
-    # Offload to BackgroundTasks
-    background_tasks.add_task(scrape_view_task, request.keyword, request.client_id)
-    background_tasks.add_task(cleanup_task)
+    background_tasks.add_task(_run_and_cleanup)
 
     return ScrapeResponse(
         task_id=task_id,
-        message=f"네이버 VIEW 조사({request.keyword})가 백그라운드에서 시작되었습니다."
+        message=f"네이버 VIEW 조사({request.keyword})가 시작되었습니다.",
     )
+
 
 @router.post("/ad", response_model=ScrapeResponse)
-def trigger_ad_scrape(
+async def trigger_ad_scrape(
     request: ScrapeRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Check for concurrent scraping on the same parameters
-    task_key = f"{request.client_id}:naver_ad:{request.keyword}"
+    task_key = _make_task_key(request.client_id, "naver_ad", request.keyword)
     if task_key in _active_scraping_tasks:
         raise HTTPException(
             status_code=409,
-            detail=f"네이버 광고 '{request.keyword}' 조사가 이미 진행 중입니다. 완료될 때까지 기다려주세요."
+            detail=f"네이버 광고 '{request.keyword}' 조사가 이미 진행 중입니다.",
         )
 
     task_id = str(uuid.uuid4())
     _active_scraping_tasks[task_key] = task_id
 
-    def cleanup_task():
-        """Cleanup function to remove task from tracking after completion"""
-        _active_scraping_tasks.pop(task_key, None)
+    async def _run_and_cleanup():
+        try:
+            await scrape_ad_task(request.keyword, request.client_id)
+        finally:
+            _active_scraping_tasks.pop(task_key, None)
 
-    from app.worker.tasks import scrape_ad_task
-    # Offload to BackgroundTasks
-    background_tasks.add_task(scrape_ad_task, request.keyword, request.client_id)
-    background_tasks.add_task(cleanup_task)
+    background_tasks.add_task(_run_and_cleanup)
 
     return ScrapeResponse(
         task_id=task_id,
-        message=f"네이버 광고 조사({request.keyword})가 백그라운드에서 시작되었습니다."
+        message=f"네이버 광고 조사({request.keyword})가 시작되었습니다.",
     )
+
 
 @router.get("/results")
 def get_scrape_results(
     client_id: str = Query(..., description="Client ID"),
-    keyword: str = Query(..., description="Keyword to search for"),
-    platform: str = Query("NAVER_PLACE", description="Platform: NAVER_PLACE, NAVER_VIEW, NAVER_AD"),
+    keyword: str = Query(..., description="검색 키워드"),
+    platform: str = Query("NAVER_PLACE", description="NAVER_PLACE | NAVER_VIEW | NAVER_AD"),
+    hours: int = Query(24, description="최근 N시간 데이터"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Fetch scraping results for a given client, keyword, and platform.
-    Returns the most recent ranking data from the last 24 hours.
+    스크래핑 결과 조회.
+    - client_id 파라미터로 키워드 검색 (버그 수정)
+    - target_type을 target.type 직접 참조로 수정 (AttributeError 수정)
     """
     try:
-        # Find keyword by client_id and term
+        # [BUG FIX 1] 요청의 client_id 파라미터를 실제로 사용 (기존: current_user.id로 잘못 참조)
         keyword_obj = db.query(Keyword).filter(
-            Keyword.client_id == current_user.agency_id if current_user.role.value == 'AGENCY' else current_user.id,
-            Keyword.term == keyword
+            Keyword.client_id == client_id,
+            Keyword.term == keyword,
         ).first()
+
+        # client_id로 못 찾으면 현재 유저 소속 에이전시에서도 탐색
+        if not keyword_obj and current_user.agency_id:
+            from app.models.models import Client
+            agency_client_ids = [
+                c.id for c in db.query(Client).filter(
+                    Client.agency_id == current_user.agency_id
+                ).all()
+            ]
+            keyword_obj = db.query(Keyword).filter(
+                Keyword.client_id.in_(agency_client_ids),
+                Keyword.term == keyword,
+            ).first()
 
         if not keyword_obj:
             return {
@@ -135,26 +162,22 @@ def get_scrape_results(
                 "platform": platform,
                 "results": [],
                 "total_count": 0,
-                "message": "No keyword record found"
+                "message": "키워드 레코드를 찾을 수 없습니다. 먼저 스크래핑을 실행하세요.",
             }
 
-        # Map platform string to enum
-        platform_enum_map = {
-            "NAVER_PLACE": PlatformType.NAVER_PLACE,
-            "NAVER_VIEW": PlatformType.NAVER_VIEW,
-            "NAVER_AD": PlatformType.NAVER_AD
-        }
+        platform_enum = PLATFORM_ENUM_MAP.get(platform.upper(), PlatformType.NAVER_PLACE)
+        since = datetime.utcnow() - timedelta(hours=hours)
 
-        platform_enum = platform_enum_map.get(platform, PlatformType.NAVER_PLACE)
-
-        # Query recent ranks for this keyword and platform (last 24 hours)
-        since = datetime.utcnow() - timedelta(hours=24)
-
-        daily_ranks = db.query(DailyRank).filter(
-            DailyRank.keyword_id == keyword_obj.id,
-            DailyRank.platform == platform_enum,
-            DailyRank.captured_at >= since
-        ).order_by(desc(DailyRank.captured_at)).all()
+        daily_ranks = (
+            db.query(DailyRank)
+            .filter(
+                DailyRank.keyword_id == keyword_obj.id,
+                DailyRank.platform == platform_enum,
+                DailyRank.captured_at >= since,
+            )
+            .order_by(desc(DailyRank.captured_at))
+            .all()
+        )
 
         if not daily_ranks:
             return {
@@ -163,24 +186,36 @@ def get_scrape_results(
                 "platform": platform,
                 "results": [],
                 "total_count": 0,
-                "message": "No ranking data found yet"
+                "message": f"최근 {hours}시간 내 데이터 없음. 스크래핑 실행 후 잠시 기다려주세요.",
             }
 
-        # Group by target and get the latest rank for each
-        target_ranks = {}
+        # 타겟별 최신 순위만 유지
+        seen_targets: dict = {}
         for rank_record in daily_ranks:
-            target = db.query(Target).filter(Target.id == rank_record.target_id).first()
-            if target and target.id not in target_ranks:
-                target_ranks[target.id] = {
-                    "target_id": str(target.id),
-                    "target_name": target.name,
-                    "target_type": str(rank_record.client.targets.filter_by(id=rank_record.target_id).first().type) if rank_record.client else "UNKNOWN",
-                    "rank": rank_record.rank,
-                    "rank_change": rank_record.rank_change or 0,
-                    "captured_at": rank_record.captured_at.isoformat() if rank_record.captured_at else None
-                }
+            if rank_record.target_id in seen_targets:
+                continue
 
-        results = list(target_ranks.values())
+            target = db.query(Target).filter(Target.id == rank_record.target_id).first()
+            if not target:
+                continue
+
+            # [BUG FIX 2] rank_record.client.targets.filter_by() 제거 → target.type 직접 참조
+            seen_targets[rank_record.target_id] = {
+                "target_id": str(target.id),
+                "target_name": target.name,
+                "target_type": target.type.value if target.type else "OTHERS",
+                "rank": rank_record.rank,
+                "rank_change": rank_record.rank_change or 0,
+                "captured_at": (
+                    rank_record.captured_at.isoformat()
+                    if rank_record.captured_at
+                    else None
+                ),
+            }
+
+        results = list(seen_targets.values())
+        # 순위 오름차순 정렬
+        results.sort(key=lambda x: x["rank"])
 
         return {
             "has_data": len(results) > 0,
@@ -188,17 +223,26 @@ def get_scrape_results(
             "platform": platform,
             "results": results,
             "total_count": len(results),
-            "message": f"Found {len(results)} targets"
+            "message": f"{len(results)}개 타겟 데이터",
         }
 
     except Exception as e:
-        import logging
-        logging.error(f"Error fetching scrape results: {str(e)}")
+        import traceback
+        logger.error(f"get_scrape_results 오류: {e}\n{traceback.format_exc()}")
         return {
             "has_data": False,
             "keyword": keyword,
             "platform": platform,
             "results": [],
             "total_count": 0,
-            "message": f"Error: {str(e)}"
+            "message": f"서버 오류: {str(e)}",
         }
+
+
+@router.get("/status")
+def get_scraping_status():
+    """현재 진행 중인 스크래핑 작업 목록"""
+    return {
+        "active_tasks": len(_active_scraping_tasks),
+        "tasks": list(_active_scraping_tasks.keys()),
+    }

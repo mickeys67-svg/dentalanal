@@ -1,255 +1,195 @@
-from app.core.celery_app import celery_app
-from app.scrapers.naver_place import NaverPlaceScraper
-from app.scrapers.naver_view import NaverViewScraper
-from app.scrapers.safe_wrapper import SafeScraperWrapper
-from app.schemas.response import ResponseStatus
-import asyncio
+"""
+Scraping Tasks - 완전 async 버전
+
+asyncio.run() 완전 제거 → FastAPI BackgroundTasks와 호환.
+Playwright 의존성 없음 - httpx 기반 스크래퍼 직접 사용.
+"""
 import logging
+from uuid import UUID, uuid4
 
 logger = logging.getLogger("worker")
 
+
+# ────────────────────────────────────────────────────────────
+# 공통 DB 저장 + 알림 처리
+# ────────────────────────────────────────────────────────────
+
+def _save_and_notify(keyword: str, results: list, client_uuid, platform_label: str,
+                     save_fn, error_msg: str = None):
+    """스크래핑 결과 DB 저장 + 관리자 알림 (동기 함수, SessionLocal 사용)."""
+    from app.core.database import SessionLocal
+    from app.models.models import Notification, User, UserRole
+
+    count = len(results)
+    db = SessionLocal()
+    try:
+        save_fn(db, keyword, results, client_uuid)
+
+        # 관리자 알림
+        if error_msg:
+            title = f"{platform_label} 조사 실패"
+            content = f"'{keyword}' 키워드 오류: {error_msg}"
+        elif count == 0:
+            title = f"{platform_label} 조사 결과 없음"
+            content = f"'{keyword}' - 데이터 0건"
+        else:
+            title = f"{platform_label} 조사 완료"
+            content = f"'{keyword}' 완료 ({count}건 수집)"
+
+        admins = db.query(User).filter(
+            User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])
+        ).all()
+        for admin in admins:
+            db.add(Notification(
+                id=uuid4(),
+                user_id=admin.id,
+                title=title,
+                content=content,
+                type="NOTICE",
+                is_read=0,
+            ))
+        db.commit()
+        logger.info(f"[{platform_label}] '{keyword}' 저장 완료 ({count}건)")
+    except Exception as e:
+        logger.error(f"[{platform_label}] DB 저장 실패: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+# ────────────────────────────────────────────────────────────
+# Place 저장 함수 (동기)
+# ────────────────────────────────────────────────────────────
+
+def _save_place(db, keyword, results, client_uuid):
+    from app.services.analysis import AnalysisService
+    if results:
+        AnalysisService(db).save_place_results(keyword, results, client_uuid)
+
+
+def _save_view(db, keyword, results, client_uuid):
+    from app.services.analysis import AnalysisService
+    if results:
+        AnalysisService(db).save_view_results(keyword, results, client_uuid)
+
+
+def _save_ad(db, keyword, results, client_uuid):
+    from app.services.analysis import AnalysisService
+    if results:
+        AnalysisService(db).save_ad_results(keyword, results, client_uuid)
+
+
+# ────────────────────────────────────────────────────────────
+# async Task 함수들 (FastAPI BackgroundTasks에서 직접 await)
+# ────────────────────────────────────────────────────────────
+
+async def scrape_place_task(keyword: str, client_id: str = None):
+    """네이버 플레이스 스크래핑 - httpx 직접 호출, asyncio.run() 없음."""
+    from app.scrapers.naver_place import NaverPlaceScraper
+
+    client_uuid = UUID(client_id) if client_id else None
+    results = []
+    error_msg = None
+
+    try:
+        scraper = NaverPlaceScraper()
+        results = await scraper.get_rankings(keyword)
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        logger.error(f"[Place] '{keyword}' 스크래핑 실패: {type(e).__name__}: {e}")
+        logger.debug(traceback.format_exc())
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+        except Exception:
+            pass
+
+    _save_and_notify(keyword, results, client_uuid, "플레이스", _save_place, error_msg)
+    return results
+
+
+async def scrape_view_task(keyword: str, client_id: str = None):
+    """네이버 VIEW 스크래핑 - httpx HTML 파싱, asyncio.run() 없음."""
+    from app.scrapers.naver_view import NaverViewScraper
+
+    client_uuid = UUID(client_id) if client_id else None
+    results = []
+    error_msg = None
+
+    try:
+        scraper = NaverViewScraper()
+        results = await scraper.get_rankings(keyword)
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        logger.error(f"[View] '{keyword}' 스크래핑 실패: {type(e).__name__}: {e}")
+        logger.debug(traceback.format_exc())
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+        except Exception:
+            pass
+
+    _save_and_notify(keyword, results, client_uuid, "VIEW", _save_view, error_msg)
+    return results
+
+
+async def scrape_ad_task(keyword: str, client_id: str = None):
+    """네이버 광고 순위 스크래핑 - httpx, asyncio.run() 없음."""
+    from app.scrapers.naver_ad import NaverAdScraper
+
+    client_uuid = UUID(client_id) if client_id else None
+    results = []
+    error_msg = None
+
+    try:
+        scraper = NaverAdScraper()
+        results = await scraper.get_ad_rankings(keyword)
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        logger.error(f"[Ad] '{keyword}' 스크래핑 실패: {type(e).__name__}: {e}")
+        logger.debug(traceback.format_exc())
+        try:
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+        except Exception:
+            pass
+
+    _save_and_notify(keyword, results, client_uuid, "광고", _save_ad, error_msg)
+    return results
+
+
+# ────────────────────────────────────────────────────────────
+# 스케줄러 호환용 sync wrapper (scheduler.py에서 호출)
+# ────────────────────────────────────────────────────────────
+
+def run_place_scraper_sync(keyword: str, client_id: str = None):
+    """스케줄러(BackgroundScheduler)에서 호출용 - 별도 이벤트 루프에서 실행."""
+    import asyncio
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(scrape_place_task(keyword, client_id))
+    finally:
+        loop.close()
+
+
+def run_view_scraper_sync(keyword: str, client_id: str = None):
+    import asyncio
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(scrape_view_task(keyword, client_id))
+    finally:
+        loop.close()
+
+
+# 하위호환성 - sync_data.py 등에서 사용
 async def run_place_scraper(keyword: str):
-    scraper = NaverPlaceScraper()
-    wrapper = SafeScraperWrapper(scraper)
-    response = await wrapper.run("get_rankings", keyword)
-    
-    if response.status == ResponseStatus.SUCCESS and response.data:
-        return response.data
-    # On failure, SafeWrapper has already logged to Sentry.
-    # We return empty list to maintain compatibility with existing DB logic.
-    return []
+    from app.scrapers.naver_place import NaverPlaceScraper
+    return await NaverPlaceScraper().get_rankings(keyword)
+
 
 async def run_view_scraper(keyword: str):
-    scraper = NaverViewScraper()
-    wrapper = SafeScraperWrapper(scraper)
-    response = await wrapper.run("get_rankings", keyword)
-    
-    if response.status == ResponseStatus.SUCCESS and response.data:
-        return response.data
-    return []
-
-def execute_place_sync(keyword: str, client_id_str: str = None):
-    """Inline execution of place scraping and saving."""
-    import asyncio
-    import logging
-    from app.core.database import SessionLocal
-    from app.services.analysis import AnalysisService
-    from app.models.models import Notification, User, UserRole
-    from uuid import UUID, uuid4
-
-    logger = logging.getLogger("worker")
-    error_msg = None
-    
-    # Convert string ID to UUID safely
-    client_uuid = UUID(client_id_str) if client_id_str else None
-    
-    try:
-        # Use asyncio.run for a fresh loop in this thread
-        results = asyncio.run(run_place_scraper(keyword))
-    except Exception as e:
-        # [DEBUG Issue #3] Enhanced error logging with full traceback
-        import traceback
-        logger.error(f"[Scraping Failed] Keyword: '{keyword}', Error: {type(e).__name__}: {e}")
-        logger.error(f"[Stack Trace]\n{traceback.format_exc()}")
-
-        # Try to report to Sentry for monitoring
-        try:
-            import sentry_sdk
-            sentry_sdk.capture_exception(e)
-            logger.info(f"[Sentry] Exception reported for keyword: {keyword}")
-        except Exception as sentry_err:
-            logger.warning(f"[Sentry] Failed to report: {sentry_err}")
-
-        error_msg = str(e)
-        results = []
-
-    db = SessionLocal()
-    try:
-        service = AnalysisService(db)
-        if results:
-            service.save_place_results(keyword, results, client_uuid)
-        
-        # Notify Admins
-        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
-        count = len(results) if results else 0
-        
-        if error_msg:
-            title = "플레이스 조사 실패"
-            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
-        elif count == 0:
-             title = "플레이스 조사 결과 없음"
-             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
-        else:
-            title = "플레이스 조사 완료"
-            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
-
-        for admin in admins:
-            note = Notification(
-                id=uuid4(),
-                user_id=admin.id,
-                title=title,
-                content=content,
-                type="NOTICE",
-                is_read=0
-            )
-            db.add(note)
-        db.commit()
-        
-        logger.info(f"Place scrape finished for {keyword}. Items: {count}")
-        
-    except Exception as e:
-        logger.error(f"Saving place results or notifying failed: {e}")
-        db.rollback()  # [NEW] Rollback transaction on error
-    finally:
-        db.close()
-    return results
-
-def execute_view_sync(keyword: str, client_id_str: str = None):
-    """Inline execution of view scraping and saving."""
-    import asyncio
-    import logging
-    from app.core.database import SessionLocal
-    from app.services.analysis import AnalysisService
-    from app.models.models import Notification, User, UserRole
-    from uuid import UUID, uuid4
-    
-    logger = logging.getLogger("worker")
-    error_msg = None
-    
-    client_uuid = UUID(client_id_str) if client_id_str else None
-
-    try:
-        results = asyncio.run(run_view_scraper(keyword))
-    except Exception as e:
-        # [DEBUG Issue #3] Enhanced error logging
-        import traceback
-        logger.error(f"[View Scraping Failed] Keyword: '{keyword}', Error: {type(e).__name__}: {e}")
-        logger.error(f"[Stack Trace]\n{traceback.format_exc()}")
-
-        try:
-            import sentry_sdk
-            sentry_sdk.capture_exception(e)
-        except Exception as sentry_err:
-            logger.warning(f"[Sentry] Failed to report: {sentry_err}")
-
-        error_msg = str(e)
-        results = []
-    
-    db = SessionLocal()
-    try:
-        service = AnalysisService(db)
-        if results:
-            service.save_view_results(keyword, results, client_uuid)
-        
-        # Notify Admins
-        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
-        count = len(results) if results else 0
-        
-        if error_msg:
-            title = "VIEW 조사 실패"
-            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
-        elif count == 0:
-             title = "VIEW 조사 결과 없음"
-             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
-        else:
-            title = "VIEW 조사 완료"
-            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
-
-        for admin in admins:
-            note = Notification(
-                id=uuid4(),
-                user_id=admin.id,
-                title=title,
-                content=content,
-                type="NOTICE",
-                is_read=0
-            )
-            db.add(note)
-        db.commit()
-
-        logger.info(f"View scrape finished for {keyword}. Items: {count}")
-    except Exception as e:
-        logger.error(f"Saving view results failed: {e}")
-        db.rollback()  # [NEW] Rollback transaction on error
-    finally:
-        db.close()
-    return results
-
-def execute_ad_sync(keyword: str, client_id_str: str = None):
-    """Inline execution of ad scraping and saving."""
-    from app.scrapers.naver_ad import NaverAdScraper
-    import asyncio
-    import logging
-    from app.core.database import SessionLocal
-    from app.services.analysis import AnalysisService
-    from app.models.models import Notification, User, UserRole
-    from uuid import UUID, uuid4
-    
-    logger = logging.getLogger("worker")
-    scraper = NaverAdScraper()
-    wrapper = SafeScraperWrapper(scraper)
-    error_msg = None
-    
-    client_uuid = UUID(client_id_str) if client_id_str else None
-
-    try:
-        response = asyncio.run(wrapper.run("get_ad_rankings", keyword))
-        if response.status == ResponseStatus.SUCCESS and response.data:
-            results = response.data
-        else:
-            results = []
-            if response.message:
-                error_msg = response.message # Capture wrapper error message if any
-    except Exception as e:
-        logger.error(f"Ad scraping failed for {keyword}: {e}")
-        error_msg = str(e)
-        results = []
-    
-    db = SessionLocal()
-    try:
-        service = AnalysisService(db)
-        if results:
-            service.save_ad_results(keyword, results, client_uuid)
-        
-        # Notify Admins
-        admins = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).all()
-        count = len(results) if results else 0
-        
-        if error_msg:
-            title = "광고 조사 실패"
-            content = f"'{keyword}' 키워드 조사 중 오류가 발생했습니다: {error_msg}"
-        elif count == 0:
-             title = "광고 조사 결과 없음"
-             content = f"'{keyword}' 키워드에 대한 데이터가 발견되지 않았습니다. (0건)"
-        else:
-            title = "광고 조사 완료"
-            content = f"'{keyword}' 키워드에 대한 조사가 완료되었습니다. (수집: {count}건)"
-
-        for admin in admins:
-            note = Notification(
-                id=uuid4(),
-                user_id=admin.id,
-                title=title,
-                content=content,
-                type="NOTICE",
-                is_read=0
-            )
-            db.add(note)
-        db.commit()
-
-        logger.info(f"Ad scrape finished for {keyword}. Items: {count}")
-    except Exception as e:
-        logger.error(f"Saving ad results failed: {e}")
-        db.rollback()  # [NEW] Rollback transaction on error
-    finally:
-        db.close()
-    return results
-
-def scrape_place_task(keyword: str, client_id: str = None):
-    return execute_place_sync(keyword, client_id)
-
-def scrape_view_task(keyword: str, client_id: str = None):
-    return execute_view_sync(keyword, client_id)
-
-def scrape_ad_task(keyword: str, client_id: str = None):
-    return execute_ad_sync(keyword, client_id)
+    from app.scrapers.naver_view import NaverViewScraper
+    return await NaverViewScraper().get_rankings(keyword)

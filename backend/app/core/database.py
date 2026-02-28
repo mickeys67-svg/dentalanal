@@ -30,12 +30,15 @@ engine_args = {
     "pool_pre_ping": True,
 }
 
-# PostgreSQL specific engine args - Enhanced for production performance
+# PostgreSQL / Supabase PgBouncer (port 6543) 최적화
+# Supabase free tier PgBouncer 최대 60 연결. Cloud Run 서버리스 환경에서
+# 인스턴스가 여러 개 뜰 수 있으므로 인스턴스당 연결을 최소화.
 engine_args.update({
-        "pool_size": 20,
-        "max_overflow": 40,
-        "pool_recycle": 1800, # More aggressive recycle
-    })
+    "pool_size": 3,       # 인스턴스당 기본 연결 수
+    "max_overflow": 7,    # 최대 burst 연결 (총 10)
+    "pool_recycle": 300,  # 5분마다 연결 재생성 (Supabase idle timeout 대응)
+    "pool_timeout": 10,   # 연결 대기 최대 10초
+})
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
