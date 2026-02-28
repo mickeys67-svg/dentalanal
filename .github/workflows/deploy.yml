@@ -54,6 +54,8 @@ jobs:
             NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
             NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}
             BRIGHT_DATA_CDP_URL=${{ secrets.BRIGHT_DATA_CDP_URL }}
+            SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+            ALLOWED_ORIGINS=https://dentalanal-864421937037.us-west1.run.app,http://localhost:3000
           flags: "--allow-unauthenticated --port=8080 --cpu=1 --memory=2Gi --timeout=600"
 
       # [SECURITY FIX] Validate backend URL before using it in frontend build
