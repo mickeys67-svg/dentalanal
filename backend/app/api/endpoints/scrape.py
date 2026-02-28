@@ -246,3 +246,37 @@ def get_scraping_status():
         "active_tasks": len(_active_scraping_tasks),
         "tasks": list(_active_scraping_tasks.keys()),
     }
+
+
+@router.post("/test-scraper")
+async def test_scraper_direct(
+    platform: str = Query("view", description="place | view | ad"),
+    keyword: str = Query("강남역치과"),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    서버에서 직접 스크래퍼 실행 후 즉시 결과 반환 (DB 저장 없음).
+    Cloud Run 환경에서 Naver 접근 가능 여부 진단용.
+    """
+    try:
+        if platform == "place":
+            from app.scrapers.naver_place import NaverPlaceScraper
+            results = await NaverPlaceScraper().get_rankings(keyword)
+        elif platform == "view":
+            from app.scrapers.naver_view import NaverViewScraper
+            results = await NaverViewScraper().get_rankings(keyword)
+        elif platform == "ad":
+            from app.scrapers.naver_ad import NaverAdScraper
+            results = await NaverAdScraper().get_ad_rankings(keyword)
+        else:
+            return {"error": "platform must be place | view | ad"}
+
+        return {
+            "platform": platform,
+            "keyword": keyword,
+            "count": len(results),
+            "results": results[:5],  # 상위 5개만
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}

@@ -62,21 +62,21 @@ def _save_and_notify(keyword: str, results: list, client_uuid, platform_label: s
 # ────────────────────────────────────────────────────────────
 
 def _save_place(db, keyword, results, client_uuid):
+    """결과가 0건이어도 항상 호출 - keyword 레코드는 항상 생성."""
     from app.services.analysis import AnalysisService
-    if results:
-        AnalysisService(db).save_place_results(keyword, results, client_uuid)
+    AnalysisService(db).save_place_results(keyword, results, client_uuid)
 
 
 def _save_view(db, keyword, results, client_uuid):
+    """결과가 0건이어도 항상 호출 - keyword 레코드는 항상 생성."""
     from app.services.analysis import AnalysisService
-    if results:
-        AnalysisService(db).save_view_results(keyword, results, client_uuid)
+    AnalysisService(db).save_view_results(keyword, results, client_uuid)
 
 
 def _save_ad(db, keyword, results, client_uuid):
+    """결과가 0건이어도 항상 호출 - keyword 레코드는 항상 생성."""
     from app.services.analysis import AnalysisService
-    if results:
-        AnalysisService(db).save_ad_results(keyword, results, client_uuid)
+    AnalysisService(db).save_ad_results(keyword, results, client_uuid)
 
 
 # ────────────────────────────────────────────────────────────
