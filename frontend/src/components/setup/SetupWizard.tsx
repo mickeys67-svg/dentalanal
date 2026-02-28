@@ -20,7 +20,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
-import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView, getScrapeResults } from '@/lib/api';
+import { createClient, updateBulkTargets, searchClients, searchTargets, saveAnalysisHistory, getAnalysisHistory, getClients, scrapePlace, scrapeView, scrapeAd, getScrapeResults } from '@/lib/api'; // [FIX Bug#9] scrapeAd 추가
 import { toast } from 'sonner';
 import { useClient } from '@/components/providers/ClientProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -280,7 +280,24 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 message: err?.message,
                                 detail: err?.response?.data?.detail
                             });
-                            // [NEW] Set error state
+                            const errorMsg = err?.response?.data?.detail || err?.message || '스크래핑 중 알 수 없는 오류 발생';
+                            setScrapeError(errorMsg);
+                            setScrapingStatus('error');
+                            toast.error(`스크래핑 실패: ${errorMsg}`);
+                        });
+                } else if (platform === 'NAVER_AD') {
+                    // [FIX Bug#8] NAVER_AD 스크래핑 추가
+                    scrapeAd(keyword, newClientId!)
+                        .then((data) => {
+                            console.log('✅ [Step 2-C] Ad scraping triggered');
+                            console.log('   Response:', data);
+                        })
+                        .catch((err) => {
+                            console.error('⚠️ [Step 2-C] Ad scraping failed:', {
+                                status: err?.response?.status,
+                                message: err?.message,
+                                detail: err?.response?.data?.detail
+                            });
                             const errorMsg = err?.response?.data?.detail || err?.message || '스크래핑 중 알 수 없는 오류 발생';
                             setScrapeError(errorMsg);
                             setScrapingStatus('error');
@@ -294,7 +311,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 // Polling function with exponential backoff
                 const pollForResults = async () => {
-                    const maxWaitTime = 30000; // 30 seconds max
+                    const maxWaitTime = 90000; // [FIX Bug#10] 30s → 90s (스크래핑 완료 시간 고려)
                     const initialPollInterval = 500; // Start with 500ms
                     const maxPollInterval = 3000; // Max 3 seconds between polls
                     let pollInterval = initialPollInterval;
@@ -656,7 +673,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                     <div className="flex gap-4">
                                         {[
                                             { id: 'NAVER_PLACE', name: '네이버 플레이스', color: 'bg-green-500' },
-                                            { id: 'NAVER_VIEW', name: '네이버 VIEW(블로그)', color: 'bg-emerald-500' }
+                                            { id: 'NAVER_VIEW', name: '네이버 VIEW(블로그)', color: 'bg-emerald-500' },
+                                            { id: 'NAVER_AD', name: '네이버 파워링크(광고)', color: 'bg-blue-500' } // [FIX Bug#8]
                                         ].map(p => (
                                             <button
                                                 key={p.id}

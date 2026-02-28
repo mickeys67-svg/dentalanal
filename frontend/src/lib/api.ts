@@ -160,6 +160,12 @@ export const scrapeView = async (keyword: string, clientId?: string): Promise<{ 
     return response.data;
 };
 
+// [FIX Bug#3] scrapeAd 함수 추가 (기존에 누락됨)
+export const scrapeAd = async (keyword: string, clientId?: string): Promise<{ message: string }> => {
+    const response = await api.post('/api/v1/scrape/ad', { keyword, client_id: clientId });
+    return response.data;
+};
+
 export const analyzeSOV = async (params: { target_hospital: string, keywords: string[], top_n?: number, platform?: string }): Promise<SOVAnalysisResult[]> => {
     const response = await api.post('/api/v1/analyze/sov', params);
     return response.data;
@@ -603,9 +609,10 @@ export const getAnalysisHistory = async (clientId: string): Promise<any[]> => {
     return response.data;
 };
 
-export const getScrapeResults = async (clientId: string, keyword?: string, platform: string = 'NAVER_PLACE'): Promise<any> => {
-    const response = await api.get(`/api/v1/analyze/scrape-results/${clientId}`, {
-        params: { keyword, platform }
+// [FIX Bug#2] 올바른 엔드포인트 /api/v1/scrape/results 사용 (platform/시간 필터 지원)
+export const getScrapeResults = async (clientId: string, keyword?: string, platform: string = 'NAVER_PLACE', hours: number = 24): Promise<any> => {
+    const response = await api.get(`/api/v1/scrape/results`, {
+        params: { client_id: clientId, keyword, platform, hours }
     });
     return response.data;
 };

@@ -8,7 +8,6 @@ from app.models.models import Client, Agency, User, UserRole
 from app.api.endpoints.auth import get_current_user
 from pydantic import BaseModel, ConfigDict
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends
 import uuid
 import datetime
 import logging

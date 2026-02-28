@@ -915,12 +915,24 @@ def get_scrape_results(
             Keyword.client_id == client_uuid
         ).first()
     
-    # DailyRank 조회
+    # DailyRank 조회 - [FIX Bug#4] platform 필터, [FIX Bug#5] 24시간 time window 추가
+    platform_enum_map = {
+        "NAVER_PLACE": PlatformType.NAVER_PLACE,
+        "NAVER_VIEW": PlatformType.NAVER_VIEW,
+        "NAVER_AD": PlatformType.NAVER_AD,
+    }
+    platform_enum = platform_enum_map.get(platform.upper(), PlatformType.NAVER_PLACE)
+
+    from datetime import timedelta
+    since = datetime.utcnow() - timedelta(hours=24)
+
     query = db.query(DailyRank).filter(DailyRank.client_id == client_uuid)
-    
+    query = query.filter(DailyRank.platform == platform_enum)      # [FIX] platform 필터
+    query = query.filter(DailyRank.captured_at >= since)           # [FIX] 24h 타임윈도우
+
     if keyword_obj:
         query = query.filter(DailyRank.keyword_id == keyword_obj.id)
-    
+
     # 최신 데이터 먼저 정렬
     results = query.order_by(DailyRank.captured_at.desc()).all()
     
