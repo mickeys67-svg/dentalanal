@@ -1,4 +1,4 @@
-# [PROD] DentalAnal Backend API - Deployment v1.0.3 (Secrets Updated by User)
+# [PROD] KeywordLens Backend API - Deployment v1.0.3 (Secrets Updated by User)
 from fastapi import FastAPI, Response, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -119,7 +119,7 @@ async def run_startup_tasks():
             agency_id = "00000000-0000-0000-0000-000000000000"
             agency = session.query(Agency).filter(Agency.id == agency_id).first()
             if not agency:
-                agency = Agency(id=agency_id, name="D-MIND Default Agency")
+                agency = Agency(id=agency_id, name="KeywordLens Default Agency")
                 session.add(agency)
                 logger.info("Seeding: Default Agency created.")
             
@@ -195,7 +195,7 @@ async def lifespan(app: FastAPI):
     if not init_task.done():
         init_task.cancel()
 
-app = FastAPI(title="D-MIND API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="KeywordLens API", version="1.0.0", lifespan=lifespan)
 
 # [FIX Issue #5] CORS Configuration - now environment-based instead of hardcoded
 # Parse comma-separated origins from ALLOWED_ORIGINS env var
@@ -289,7 +289,7 @@ logger.info("[ROUTER] All routers registered successfully!")
 
 @app.get("/")
 def read_root():
-    return {"message": "D-MIND API Service is running", "version": "1.0.0"}
+    return {"message": "KeywordLens API Service is running", "version": "1.0.0"}
 
 # Catch-all for 404 Debugging
 @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])

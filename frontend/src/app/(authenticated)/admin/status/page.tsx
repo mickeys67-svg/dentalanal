@@ -68,7 +68,7 @@ export default function StatusPage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-indigo-600 font-bold">
                                 <ShieldAlert className="w-5 h-5" />
-                                <span>Gemini AI Engine</span>
+                                <span>AI Engine</span>
                             </div>
                             <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">Connected</span>
                         </div>

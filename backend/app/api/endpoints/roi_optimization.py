@@ -31,7 +31,7 @@ def track_campaign_roas(
         "campaigns": [
             {
                 "campaign_id": "uuid",
-                "campaign_name": "브랜드_임플란트",
+                "campaign_name": "브랜드_다이어트",
                 "platform": "NAVER_AD",
                 "total_spend": 1500000,
                 "total_conversions": 25,
@@ -49,7 +49,7 @@ def track_campaign_roas(
         "summary": {
             "total_campaigns": 5,
             "avg_roas": 180.5,
-            "best_performer": "브랜드_임플란트",
+            "best_performer": "브랜드_다이어트",
             "worst_performer": "디스플레이_리타겟팅"
         }
     }
@@ -164,7 +164,7 @@ def recommend_budget_reallocation(
         "net_change": -300000,
         "recommendations": [
             {
-                "campaign_name": "브랜드_임플란트",
+                "campaign_name": "브랜드_다이어트",
                 "current_spend": 1500000,
                 "recommended_spend": 1800000,
                 "change": "+300000원 (+20%)",

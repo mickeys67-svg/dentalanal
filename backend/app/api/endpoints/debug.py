@@ -123,7 +123,7 @@ async def trace_keyword_flow(
     특정 키워드의 데이터 흐름 추적
     
     Parameters:
-        - keyword: 추적할 키워드 (예: "임플란트")
+        - keyword: 추적할 키워드 (예: "다이어트")
         - client_id: 클라이언트 ID (선택사항)
     
     Returns:

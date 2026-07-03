@@ -44,7 +44,7 @@ const WIDGET_TYPES = [
   {
     type: "AI_DIAGNOSIS",
     title: "AI 진단 리포트",
-    description: "Gemini AI 기반 성과 분석",
+    description: "AI 기반 성과 분석",
     icon: "🤖",
   },
   {

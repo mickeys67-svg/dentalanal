@@ -42,8 +42,8 @@ export default function AdsPage() {
     if (!selectedClient) {
         return (
             <EmptyClientPlaceholder
-                title="분석할 업체를 선택해주세요"
-                description="업체를 선택하면 광고 성과 분석 및 ROI 최적화 데이터를 확인할 수 있습니다."
+                title="분석할 프로젝트를 선택해주세요"
+                description="프로젝트를 선택하면 광고 성과 분석 및 ROI 최적화 데이터를 확인할 수 있습니다."
             />
         );
     }

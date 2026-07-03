@@ -225,7 +225,7 @@ export default function LeadsPage() {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                 <Users className="w-12 h-12 mb-3 opacity-30" />
-                <p className="font-medium">광고주를 먼저 선택해주세요.</p>
+                <p className="font-medium">분석 대상을 먼저 선택해주세요.</p>
             </div>
         );
     }

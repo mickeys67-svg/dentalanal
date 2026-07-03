@@ -124,7 +124,7 @@ class DashboardService:
                 sov_data = []
 
             # Get last keyword
-            last_keyword = "치과"
+            last_keyword = ""
             if client_id:
                 history = self.db.query(AnalysisHistory).filter(AnalysisHistory.client_id == client_id).order_by(AnalysisHistory.created_at.desc()).first()
                 if history:

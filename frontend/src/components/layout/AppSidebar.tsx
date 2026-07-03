@@ -115,7 +115,7 @@ export function AppSidebar() {
                             <BrainCircuit className="h-[18px] w-[18px] text-white" />
                         </div>
                         <div className="flex items-baseline gap-1.5">
-                            <span className="text-white font-bold text-[15px] tracking-tight">D-MIND</span>
+                            <span className="text-white font-bold text-[15px] tracking-tight">KeywordLens</span>
                             <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-semibold tracking-wide">
                                 Pro
                             </span>
@@ -175,7 +175,7 @@ export function AppSidebar() {
                                 {user?.name || "Admin"}
                             </p>
                             <p className="text-xs text-slate-500 truncate">
-                                {user?.email || "admin@dmind.com"}
+                                {user?.email || "admin@keywordlens.com"}
                             </p>
                         </div>
                         <button

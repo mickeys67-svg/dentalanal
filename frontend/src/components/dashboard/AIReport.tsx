@@ -36,8 +36,8 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
                         <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-semibold text-slate-900">AI 마케팅 성과 분석 리포트</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">Gemini AI 기반 심층 분석</p>
+                        <h3 className="text-[15px] font-semibold text-slate-900">AI 마케팅 데이터 분석 리포트</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">AI 기반 심층 분석</p>
                     </div>
                 </div>
                 <button
@@ -66,7 +66,7 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
                             <Sparkles className="w-6 h-6 text-indigo-400" />
                         </div>
                         <p className="text-slate-600 font-medium text-sm">AI 마케팅 분석을 시작하세요</p>
-                        <p className="text-xs text-slate-400 mt-1">경쟁사 SOV와 내 병원 데이터를 비교 분석합니다.</p>
+                        <p className="text-xs text-slate-400 mt-1">경쟁 브랜드 SOV와 내 브랜드 데이터를 비교 분석합니다.</p>
                     </div>
                 )}
 

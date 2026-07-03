@@ -191,7 +191,7 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>📊 D-MIND 성과 리포트</h1>
+                    <h1>📊 KeywordLens 성과 리포트</h1>
                     <p style="margin: 10px 0 0 0; color: #6B7280;">{{ client_name }} 리포트</p>
                 </div>
 
@@ -213,8 +213,8 @@ class EmailService:
                 </div>
 
                 <div class="footer">
-                    <p>본 이메일은 D-MIND 자동화 리포팅 시스템에서 발송되었습니다.</p>
-                    <p>© 2026 D-MIND. All rights reserved.</p>
+                    <p>본 이메일은 KeywordLens 자동화 리포팅 시스템에서 발송되었습니다.</p>
+                    <p>© 2026 KeywordLens. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -240,7 +240,7 @@ class EmailService:
         """
         return self.send_report_email(
             to_emails=[to_email],
-            subject="[테스트] D-MIND 리포트 이메일",
+            subject="[테스트] KeywordLens 리포트 이메일",
             report_title="테스트 리포트",
             client_name="테스트 클라이언트",
             summary="이메일 발송 테스트입니다. SMTP 설정이 정상적으로 작동하고 있습니다."

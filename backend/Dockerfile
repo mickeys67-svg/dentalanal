@@ -21,8 +21,9 @@ ENV PORT=8080
 # We use shell form to allow the variable to be expanded.
 # We also add --proxy-headers for real IP detection and --workers 1 for consistency in small instances.
 # Increase startup timeout to handle database initialization
-# Run database migrations before starting the app
-CMD alembic upgrade head && \
+# 마이그레이션은 non-fatal: 실패해도(빈 DB / 알려진 마이그레이션 enum 버그) 컨테이너를 죽이지 않는다.
+# 실제 스키마는 앱 시작 시 create_all(main.py)이 checkfirst=True 로 안전하게 생성한다.
+CMD alembic upgrade head || echo "[startup] alembic upgrade failed — schema will be built by create_all on app startup"; \
   python3 -m uvicorn app.main:app \
   --host 0.0.0.0 \
   --port ${PORT:-8080} \

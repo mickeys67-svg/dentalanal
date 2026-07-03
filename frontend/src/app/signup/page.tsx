@@ -9,9 +9,9 @@ import { Loader2, Mail, Lock, User as UserIcon, ShieldCheck, Cake, Eye, EyeOff, 
 import Link from 'next/link';
 
 const FEATURES = [
-    { icon: TrendingUp, text: "실시간 광고 성과 및 순위 모니터링" },
-    { icon: Zap, text: "Gemini AI 기반 마케팅 전략 제안" },
-    { icon: ShieldCheck, text: "경쟁사 분석 및 SOV 점유율 추적" },
+    { icon: TrendingUp, text: "네이버 검색량·순위 실시간 모니터링" },
+    { icon: Zap, text: "4대 SNS 언급량 다중 키워드 분석" },
+    { icon: ShieldCheck, text: "키워드별 점유율 추적 및 엑셀 추출" },
 ];
 
 export default function SignupPage() {
@@ -76,19 +76,19 @@ export default function SignupPage() {
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-white font-bold text-xl tracking-tight">D-MIND</span>
+                    <span className="text-white font-bold text-xl tracking-tight">KeywordLens</span>
                 </div>
 
                 <div className="relative z-10 space-y-6">
                     <div>
                         <h1 className="text-4xl font-bold text-white leading-tight tracking-tight">
-                            지금 시작하면<br />
+                            데이터로 읽는<br />
                             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                                경쟁사를 앞섭니다
+                                마케팅 인사이트
                             </span>
                         </h1>
                         <p className="mt-4 text-slate-400 text-base leading-relaxed max-w-sm">
-                            D-MIND로 치과 마케팅 데이터를 한눈에 파악하고, AI 전략으로 성과를 극대화하세요.
+                            KeywordLens로 검색량과 SNS 언급량을 한눈에 파악하고, 다중 키워드 분석으로 인사이트를 얻으세요.
                         </p>
                     </div>
                     <ul className="space-y-3">
@@ -103,7 +103,7 @@ export default function SignupPage() {
                     </ul>
                 </div>
 
-                <p className="relative z-10 text-slate-600 text-xs">© 2025 D-MIND Enterprise. All rights reserved.</p>
+                <p className="relative z-10 text-slate-600 text-xs">© 2025 KeywordLens. All rights reserved.</p>
             </div>
 
             {/* Right form panel */}
@@ -112,7 +112,7 @@ export default function SignupPage() {
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-slate-900 font-bold text-xl">D-MIND</span>
+                    <span className="text-slate-900 font-bold text-xl">KeywordLens</span>
                 </div>
 
                 <div className="w-full max-w-sm animate-fade-in-up">

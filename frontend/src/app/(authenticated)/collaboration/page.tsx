@@ -124,7 +124,7 @@ export default function CollaborationPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">영업 및 협업 센터</h1>
-                    <p className="text-gray-500">대행사와 광고주 간의 원활한 소통과 업무를 관리하세요.</p>
+                    <p className="text-gray-500">팀과 프로젝트 간의 원활한 소통과 업무를 관리하세요.</p>
                 </div>
                 <div className="flex gap-3">
                     <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -170,7 +170,7 @@ export default function CollaborationPage() {
                             />
                         </div>
                         <div>
-                            <label htmlFor="modal-task-client" className="block text-sm font-medium text-gray-700 mb-1">광고주</label>
+                            <label htmlFor="modal-task-client" className="block text-sm font-medium text-gray-700 mb-1">프로젝트</label>
                             <select
                                 id="modal-task-client"
                                 name="client_id"
@@ -200,7 +200,7 @@ export default function CollaborationPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Task Management Section */}
                 <div className="lg:col-span-2 space-y-6">
-                    <DashboardWidget title="진행 중인 협업 업무" subtitle="팀원 및 광고주와 공유된 주요 과업입니다.">
+                    <DashboardWidget title="진행 중인 협업 업무" subtitle="팀원 및 프로젝트와 공유된 주요 과업입니다.">
                         <div className="space-y-3">
                             {isTasksLoading ? (
                                 <div className="p-4 text-center text-gray-400">불러오는 중...</div>
@@ -218,7 +218,7 @@ export default function CollaborationPage() {
                                             <div>
                                                 <h4 className="text-sm font-semibold text-gray-900">{task.title}</h4>
                                                 <div className="mt-1 flex items-center gap-3 text-[10px] text-gray-400">
-                                                    <span className="font-bold text-gray-500 uppercase">광고주</span>
+                                                    <span className="font-bold text-gray-500 uppercase">프로젝트</span>
                                                     <span>• 담당자: {task.owner || '미지정'}</span>
                                                     <span>• 기한: {task.deadline || '미정'}</span>
                                                 </div>
@@ -247,7 +247,7 @@ export default function CollaborationPage() {
                     </DashboardWidget>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <DashboardWidget title="광고주 승인 요청">
+                        <DashboardWidget title="프로젝트 승인 요청">
                             <div className="space-y-4">
                                 {approvals && approvals.length > 0 ? (
                                     approvals.map((req: ApprovalRequest) => (
@@ -345,10 +345,10 @@ export default function CollaborationPage() {
 
                 {/* Client / Agency Hub */}
                 <div className="space-y-6">
-                    <DashboardWidget title="광고주 관리 현황">
+                    <DashboardWidget title="프로젝트 관리 현황">
                         <div className="relative mb-4">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            <input type="text" placeholder="광고주 또는 브랜드 검색..." className="w-full pl-10 pr-4 py-2 text-xs border border-gray-100 rounded-lg focus:outline-none focus:border-primary" />
+                            <input type="text" placeholder="프로젝트 또는 브랜드 검색..." className="w-full pl-10 pr-4 py-2 text-xs border border-gray-100 rounded-lg focus:outline-none focus:border-primary" />
                         </div>
                         <div className="space-y-4">
                             {clients.map((client, idx) => (
@@ -401,7 +401,7 @@ export default function CollaborationPage() {
                         </div>
                         <div>
                             <h3 className="font-bold text-gray-900">전사 공지 및 업무 가이드</h3>
-                            <p className="text-xs text-gray-400">대행사 및 내부 인원 전체 공유 게시판</p>
+                            <p className="text-xs text-gray-400">마케팅팀 및 내부 인원 전체 공유 게시판</p>
                         </div>
                     </div>
                 </div>

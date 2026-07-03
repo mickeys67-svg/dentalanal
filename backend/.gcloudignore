@@ -1,0 +1,17 @@
+# gcloud run deploy --source 업로드 제외 (Cloud Build 소스 컨텍스트)
+# .dockerignore 와 동일 취지 + 비밀(.env)은 업로드 안 함 (env-vars-file 로 주입)
+.env
+.env.*
+!.env.example
+*.db
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.git/
+.github/
+dist/
+build/
+*.log
+venv/
+env/
+.pytest_cache/

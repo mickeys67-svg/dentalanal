@@ -37,7 +37,7 @@ export function DashboardGrid({
                             <p className="text-2xl font-bold text-blue-700">{sovData.total}개</p>
                         </div>
                         <div className="p-4 bg-blue-50 rounded-xl">
-                            <p className="text-sm text-gray-500 mb-1">나의 병원 노출</p>
+                            <p className="text-sm text-gray-500 mb-1">내 브랜드 노출</p>
                             <p className="text-2xl font-bold text-blue-700">{sovData.hits}개</p>
                         </div>
                         <div className="p-4 bg-blue-50 rounded-xl">

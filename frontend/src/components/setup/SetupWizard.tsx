@@ -41,7 +41,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
     // Step 1 State: Client Info
     const [clientName, setClientName] = useState('');
-    const [industry, setIndustry] = useState('치과의원');
+    const [industry, setIndustry] = useState('이커머스');
     const [newClientId, setNewClientId] = useState<string | null>(null);
     const [clientSuggestions, setClientSuggestions] = useState<Client[]>([]);
     const [recentClients, setRecentClients] = useState<Client[]>([]);
@@ -128,7 +128,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         } else if (selectedClient) {
             setNewClientId(selectedClient.id);
             setClientName(selectedClient.name);
-            setIndustry(selectedClient.industry || '치과의원');
+            setIndustry(selectedClient.industry || '이커머스');
             getAnalysisHistory(selectedClient.id).then(h => {
                 setHistory(h);
                 if (h.length > 0) {
@@ -141,7 +141,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
     const handleSelectExistingClient = (client: Client) => {
         setClientName(client.name);
-        setIndustry(client.industry || '치과의원');
+        setIndustry(client.industry || '이커머스');
         setNewClientId(client.id);
         setSelectedClient(client);
 
@@ -170,7 +170,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
     const handleNext = async () => {
         if (currentStep === 1) {
-            if (!clientName) { toast.error('업체명을 입력해주세요.'); return; }
+            if (!clientName) { toast.error('브랜드명을 입력해주세요.'); return; }
             try {
                 const existing = clientSuggestions.find(c => c.name === clientName) || recentClients.find(c => c.name === clientName);
                 if (existing) {
@@ -198,7 +198,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
                 setCurrentStep(2);
             } catch {
-                toast.error('업체 등록 중 오류가 발생했습니다.');
+                toast.error('브랜드 등록 중 오류가 발생했습니다.');
             }
         } else if (currentStep === 2) {
             // Filter out targets with completely empty names
@@ -431,7 +431,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                         currentStep === 1 ? "w-0" : currentStep === 2 ? "w-1/2" : "w-full")} />
 
                     {[
-                        { step: 1, icon: UserPlus, label: '광고주' },
+                        { step: 1, icon: UserPlus, label: '브랜드' },
                         { step: 2, icon: Target, label: '타켓' },
                         { step: 3, icon: Search, label: '조사' }
                     ].map((s) => (
@@ -456,14 +456,14 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     {currentStep === 1 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">누구를 위한 분석인가요?</h2>
-                                <p className="text-gray-500">기존 업체를 선택하거나 새 업체를 등록해주세요.</p>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">어떤 브랜드를 분석할까요?</h2>
+                                <p className="text-gray-500">기존 브랜드를 선택하거나 새 브랜드를 등록해주세요.</p>
                             </div>
 
                             {recentClients.length > 0 && (
                                 <div className="space-y-4">
                                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <Briefcase className="w-4 h-4 text-primary" /> 등록된 업체 (퀵 셀렉트)
+                                        <Briefcase className="w-4 h-4 text-primary" /> 등록된 브랜드 (퀵 셀렉트)
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         {recentClients.slice(0, 6).map(client => (
@@ -483,13 +483,13 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                             <div className="space-y-6 max-w-md relative pt-6 border-t border-gray-50">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <Plus className="w-4 h-4 text-primary" /> 새 업체 등록
+                                        <Plus className="w-4 h-4 text-primary" /> 새 브랜드 등록
                                     </label>
                                     <input
                                         type="text"
                                         value={clientName}
                                         onChange={(e) => setClientName(e.target.value)}
-                                        placeholder="업체명을 입력하세요"
+                                        placeholder="브랜드명을 입력하세요"
                                         className="w-full h-14 bg-gray-50/50 border border-gray-100 rounded-2xl px-5 text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none"
                                     />
                                     {clientSuggestions.length > 0 && (
@@ -511,9 +511,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">업종 카테고리</label>
+                                    <label className="text-sm font-bold text-gray-700">카테고리</label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        {['치과의원', '성형외과', '피부과', '기타'].map(opt => (
+                                        {['이커머스', '뷰티', '식음료', '기타'].map(opt => (
                                             <button
                                                 key={opt}
                                                 onClick={() => setIndustry(opt)}
@@ -535,13 +535,13 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-2">분석 대상을 지정해주세요</h2>
-                                <p className="text-gray-500">우리 병원과 비교하고 싶은 라이벌 병원을 등록합니다.</p>
+                                <p className="text-gray-500">우리 브랜드와 비교하고 싶은 경쟁 브랜드를 등록합니다.</p>
                             </div>
 
                             {recentTargets.length > 0 && (
                                 <div className="space-y-4">
                                     <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-primary" /> 추천/최근 병원 (퀵 셀렉트)
+                                        <Sparkles className="w-4 h-4 text-primary" /> 추천/최근 브랜드 (퀵 셀렉트)
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {recentTargets.slice(0, 8).map(s => (
@@ -576,7 +576,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                             <div className="relative">
                                                 <input
                                                     type="text"
-                                                    placeholder="병원 이름"
+                                                    placeholder="브랜드 이름"
                                                     value={t.name}
                                                     onFocus={() => setActiveTargetIdx(idx)}
                                                     onBlur={() => setTimeout(() => setActiveTargetIdx(null), 200)}
@@ -644,7 +644,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                         <input
                                             type="text"
-                                            placeholder="예: 강남역 치과"
+                                            placeholder="예: 제주도여행"
                                             value={keyword}
                                             onChange={(e) => setKeyword(e.target.value)}
                                             disabled={scrapingStatus === 'scraping' || scrapingStatus === 'fetching'}

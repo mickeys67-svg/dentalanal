@@ -93,7 +93,7 @@ class NaverDataLabClient:
     ) -> Dict[str, Any]:
         """
         검색어 트렌드 조회. 반환은 상대지수(0~100) 시계열.
-        keyword_groups: [{"groupName": "임플란트", "keywords": ["임플란트", "치아임플란트"]}]
+        keyword_groups: [{"groupName": "다이어트", "keywords": ["다이어트", "다이어트약"]}]
         """
         if not self.is_configured():
             raise ValueError("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 미설정 (데이터랩 API 사용 불가).")

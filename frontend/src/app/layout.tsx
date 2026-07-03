@@ -14,12 +14,12 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "D-MIND | 통합 모니터링 & AI 분석 솔루션",
-  description: "데이터 기반의 치과 경영 분석 및 AI 전략 제안 플랫폼, D-MIND.",
-  keywords: ["치과 분석", "AI 전략", "병원 경영", "모니터링 솔루션", "D-MIND"],
+  title: "KeywordLens | 키워드·SNS 통합 분석 어드민",
+  description: "네이버 검색량과 4대 SNS 언급량을 다중 키워드로 조회·분석하는 통합 어드민, KeywordLens.",
+  keywords: ["키워드 분석", "검색량 분석", "SNS 언급량", "마케팅 데이터", "KeywordLens"],
   openGraph: {
-    title: "D-MIND - 통합 분석 솔루션",
-    description: "데이터 기반의 스마트한 병원 경영을 시작하세요.",
+    title: "KeywordLens - 키워드·SNS 통합 분석 어드민",
+    description: "데이터로 읽는 마케팅 인사이트를 시작하세요.",
     type: "website",
     locale: "ko_KR",
   },

@@ -95,7 +95,7 @@ def predict_search_trends(
     {
         "analysis_period": "2025-11-17 ~ 2026-02-17",
         "predictions": {
-            "임플란트": {
+            "다이어트": {
                 "trend_data": [
                     {"date": "2025-11-17", "appearances": 12, "avg_rank": 3.5},
                     ...
@@ -144,7 +144,7 @@ def create_ranking_drop_alert(
         "drops": [
             {
                 "keyword_id": "uuid",
-                "keyword": "임플란트",
+                "keyword": "다이어트",
                 "previous_rank": 2,
                 "current_rank": 8,
                 "drop": 6

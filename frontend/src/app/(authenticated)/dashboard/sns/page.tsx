@@ -111,7 +111,7 @@ export default function SnsPage() {
                     <div className="flex gap-2">
                         <Input
                             value={keyword}
-                            placeholder="검색어 입력 (예: 임플란트)"
+                            placeholder="검색어 입력 (예: 다이어트)"
                             onChange={(e) => setKeyword(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && keyword.trim() && mutation.mutate(keyword.trim())}
                         />

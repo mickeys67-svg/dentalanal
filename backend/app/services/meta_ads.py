@@ -12,8 +12,8 @@ class MetaAdsService:
         """
         if not self.access_token:
             return [
-                {"id": "m1", "name": "Meta_IG_임플란트_메인", "status": "ACTIVE", "budget": 45000},
-                {"id": "m2", "name": "Meta_FB_치아미백_이벤트", "status": "ACTIVE", "budget": 15000}
+                {"id": "m1", "name": "Meta_IG_다이어트_메인", "status": "ACTIVE", "budget": 45000},
+                {"id": "m2", "name": "Meta_FB_여름세일_이벤트", "status": "ACTIVE", "budget": 15000}
             ]
         return []
 

@@ -79,8 +79,8 @@ export default function PortalPage() {
                             <BarChart3 className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <span className="font-bold text-gray-900">D-MIND</span>
-                            <span className="ml-2 text-xs text-gray-400">클라이언트 포털</span>
+                            <span className="font-bold text-gray-900">KeywordLens</span>
+                            <span className="ml-2 text-xs text-gray-400">프로젝트 포털</span>
                         </div>
                     </div>
                     <div className="text-xs text-gray-400">
@@ -116,7 +116,7 @@ export default function PortalPage() {
                 )}
 
                 <footer className="text-center text-xs text-gray-300 pt-8 pb-4">
-                    Powered by D-MIND · 이 페이지는 읽기 전용입니다
+                    Powered by KeywordLens · 이 페이지는 읽기 전용입니다
                 </footer>
             </main>
         </div>

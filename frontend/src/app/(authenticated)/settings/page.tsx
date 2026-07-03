@@ -34,7 +34,7 @@ export default function SettingsPage() {
         try {
             await deleteClient(id);
             await refreshClients();
-            toast.success('광고주가 성공적으로 삭제되었습니다.');
+            toast.success('분석 대상이 성공적으로 삭제되었습니다.');
         } catch (error: any) {
             const errorDetail = error?.response?.data?.detail || error?.message || '알 수 없는 오류';
             toast.error(`삭제 실패: ${errorDetail}`);
@@ -106,7 +106,7 @@ export default function SettingsPage() {
             <div className="flex items-end justify-between border-b border-gray-100 pb-8">
                 <div>
                     <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">프로젝트 관리 허브</h1>
-                    <p className="text-lg text-gray-500 font-medium">광고주 업체 정보를 관리하고 새로운 분석 프로젝트를 시작하세요.</p>
+                    <p className="text-lg text-gray-500 font-medium">분석 대상 정보를 관리하고 새로운 분석 프로젝트를 시작하세요.</p>
                 </div>
                 {viewMode === 'LIST' ? (
                     <button

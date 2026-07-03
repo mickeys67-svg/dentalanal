@@ -129,7 +129,7 @@ export default function StrategyPage() {
             const result = await generateAdCopy({
                 swot_data: swotState,
                 target_audience: "현재 지역 거주 잠재 고객",
-                key_proposition: "전문적이며 과잉 진료 없는 정직한 진료"
+                key_proposition: "전문성과 신뢰를 갖춘 정직한 브랜드"
             });
             if (result && result.length > 0) {
                 setAiCopy(result[0].content);
@@ -177,11 +177,11 @@ export default function StrategyPage() {
                     <div className="max-w-2xl">
                         <div className="flex items-center gap-2 text-indigo-100 text-sm font-semibold mb-4">
                             <Cpu className="h-5 w-5" />
-                            <span>Gemini AI 분석 리포트</span>
+                            <span>AI 분석 리포트</span>
                         </div>
                         <h2 className="text-2xl font-bold mb-4">현재 캠페인 최적화 전략 제안</h2>
                         <p className="text-indigo-50 leading-relaxed">
-                            {isGenerating ? "Gemini AI가 데이터를 기반으로 최적의 전략을 구성하고 있습니다..." :
+                            {isGenerating ? "AI가 데이터를 기반으로 최적의 전략을 구성하고 있습니다..." :
                                 aiCopy || "최근 데이터를 분석한 결과와 수립된 SWOT 분석을 바탕으로 AI가 구체적인 매체 믹스 및 광고 타겟팅 전략을 제안할 준비가 되었습니다. 'AI 전략 생성' 버튼을 클릭해 주세요."}
                         </p>
                     </div>

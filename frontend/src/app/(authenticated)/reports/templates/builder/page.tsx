@@ -15,10 +15,10 @@ const AVAILABLE_WIDGETS = [
     { type: 'FUNNEL', name: '전환 퍼널 분석', icon: PieChart, description: '유입부터 전환까지의 단계를 분석합니다.' },
     { type: 'LINE_CHART', name: '성과 추이 차트', icon: BarChart3, description: '날짜별 지표 변화를 그래프로 매핑합니다.' },
     { type: 'BENCHMARK', name: '업종 평균 비교', icon: LayoutGrid, description: '내 성과와 업종 평균 데이터를 비교합니다.' },
-    { type: 'SOV', name: '노출 점유율 (SOV)', icon: Activity, description: '경쟁사 대비 우리 병원의 노출 비중 분석.' },
+    { type: 'SOV', name: '노출 점유율 (SOV)', icon: Activity, description: '경쟁사 대비 우리 브랜드의 노출 비중 분석.' },
     { type: 'COMPETITORS', name: '경쟁사 정밀 분석', icon: LayoutGrid, description: '상위 노출되는 경쟁사 명단 및 점유율.' },
     { type: 'RANKINGS', name: '실시간 순위 현황', icon: BarChart3, description: '주요 키워드별 현재 노출 순위 리스트.' },
-    { type: 'AI_DIAGNOSIS', name: 'Gemini AI 성과 진단', icon: Brain, description: 'AI가 제공하는 맞춤형 인사이트와 조언.' },
+    { type: 'AI_DIAGNOSIS', name: 'AI 성과 진단', icon: Brain, description: 'AI가 제공하는 맞춤형 인사이트와 조언.' },
 ];
 
 export default function TemplateBuilderPage() {
@@ -131,7 +131,7 @@ export default function TemplateBuilderPage() {
                         <h1 className="text-2xl font-bold text-gray-900">
                             {isEditMode ? '리포트 템플릿 편집' : '리포트 템플릿 제작'}
                         </h1>
-                        <p className="text-sm text-gray-500">원하는 위젯을 조합하여 병원만의 리포트 형식을 만드세요.</p>
+                        <p className="text-sm text-gray-500">원하는 위젯을 조합하여 브랜드만의 리포트 형식을 만드세요.</p>
                     </div>
                 </div>
                 <button

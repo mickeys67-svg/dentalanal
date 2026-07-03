@@ -54,25 +54,15 @@ class CompetitorService:
 
     def estimate_ad_spend(self, keywords: List[str]) -> List[dict]:
         """
-        Estimates monthly ad spend for dental keywords.
-        In a real app, this would fetch from Naver Search Ads API / Google Ads API.
-        Mocking with dental industry averages for now.
+        Estimates monthly ad spend for keywords.
+        [MOCK/추정] 실데이터 아님 — 실제로는 네이버 검색광고 키워드도구(NaverKeywordToolClient)의
+        월간검색수를 사용해야 함. 현재는 임시 추정치. (가짜 데이터 금지: 실연동으로 교체 필요)
         """
         results = []
         for kw in keywords:
-            # Dental Industry Mock Data
-            if "임플란트" in kw:
-                cpc = 5200
-                volume = 8500
-            elif "교정" in kw:
-                cpc = 3800
-                volume = 6200
-            elif "치과" in kw:
-                cpc = 3200
-                volume = 12000
-            else:
-                cpc = 1500
-                volume = 2000
+            # 임시 추정 (실 키워드도구 연동 전 placeholder)
+            cpc = 1500
+            volume = 2000
             
             monthly_est = (cpc * volume * 0.05) # Assume 5% CTR for estimate
             results.append({

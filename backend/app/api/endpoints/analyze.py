@@ -555,7 +555,7 @@ def assistant_query(
         except (ValueError, TypeError):
             return {"report": "업체 ID가 올바르지 않습니다.", "type": "error"}
         client = db.query(Client).filter(Client.id == validated_id).first()
-        hospital_name = client.name if client else "해당 병원"
+        hospital_name = client.name if client else "해당 브랜드"
         report = ai_service.generate_swot_analysis(hospital_name=hospital_name, competitor_info=[])
         return {"report": report, "type": "markdown"}
 
@@ -575,7 +575,7 @@ def assistant_query(
                 except Exception:
                     pass
 
-            prompt = f"""당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.
+            prompt = f"""당신은 마케팅 데이터 분석 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.
 {context}
 
 질문: {query}
@@ -683,7 +683,7 @@ def _handle_quick_query(
         except (ValueError, TypeError):
             return "업체 ID가 올바르지 않습니다."
         client = db.query(Client).filter(Client.id == validated_id).first()
-        hospital_name = client.name if client else "해당 병원"
+        hospital_name = client.name if client else "해당 브랜드"
         return ai_service.generate_swot_analysis(hospital_name=hospital_name, competitor_info=[])
 
     return f"알 수 없는 빠른 질문 ID: {query}"
@@ -726,7 +726,7 @@ def _build_prompt(
         history_text = "\n\n[이전 대화]\n" + "\n".join(lines)
 
     return (
-        f"당신은 치과 마케팅 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.{context}{history_text}\n\n"
+        f"당신은 마케팅 데이터 분석 전문 AI 어시스턴트입니다. 한국어로 답변해주세요.{context}{history_text}\n\n"
         f"질문: {query}\n\n답변 (마크다운 형식으로, 간결하고 실용적으로):"
     )
 

@@ -155,7 +155,7 @@ export default function EfficiencyPage() {
                     value={`${review?.total_conversions || 0}건`}
                     icon={Target}
                     color="indigo"
-                    subtitle="유효 상담 포함"
+                    subtitle="유효 문의 포함"
                 />
                 <EfficiencyCard
                     title="총 광고비"
@@ -222,7 +222,7 @@ export default function EfficiencyPage() {
                     <div className="bg-white h-full rounded-3xl border border-gray-100 shadow-sm flex flex-col">
                         <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                             <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4 text-primary" /> Gemini 성과 비평
+                                <MessageSquare className="w-4 h-4 text-primary" /> AI 성과 비평
                             </h3>
                             <div className="flex gap-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

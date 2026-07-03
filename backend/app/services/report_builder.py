@@ -324,7 +324,7 @@ class ReportBuilderService:
             }
 
         elif widget_type == "BENCHMARK":
-            # 업종 평균 비교 — 클라이언트 지표 vs 치과 업종 평균 (고정값)
+            # 업종 평균 비교 — 지표 vs 업종 평균 (고정값, 실데이터 아님 — 향후 실벤치마크 연동 필요)
             metrics = self.db.query(
                 func.sum(MetricsDaily.spend).label("spend"),
                 func.sum(MetricsDaily.clicks).label("clicks"),
@@ -348,7 +348,7 @@ class ReportBuilderService:
             cvr = (conversions / clicks * 100) if clicks > 0 else 0
 
             return {
-                "industry": "치과",
+                "industry": "일반",
                 "client_kpis": {"ctr": round(ctr, 2), "cpc": round(cpc), "cvr": round(cvr, 2)},
                 "industry_avg": {"avg_ctr": 2.5, "avg_cpc": 800, "avg_cvr": 3.2}
             }

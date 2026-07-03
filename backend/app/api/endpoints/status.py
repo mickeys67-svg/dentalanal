@@ -91,9 +91,9 @@ def seed_test_data(db: Session = Depends(get_db)):
     """
     [개발 전용] 테스트 데이터를 데이터베이스에 시드합니다.
     Phase 2 polling 기능을 테스트하기 위한 필수 데이터:
-    - Agency (D-MIND 대행사)
-    - Client A (A 치과)
-    - Keywords (임플란트, 치아교정, 강남역치과)
+    - Agency (KeywordLens 팀)
+    - Client A (샘플 브랜드 A)
+    - Keywords (다이어트, 제주도여행, 화장품)
     - Platform Connections (NAVER_AD, NAVER_PLACE, NAVER_VIEW)
     - Sample DailyRank data (지난 3일치)
     """
@@ -101,7 +101,7 @@ def seed_test_data(db: Session = Depends(get_db)):
         from app.models.models import Agency, Client, Keyword, Target
 
         # Check if seed data already exists
-        existing_client = db.query(Client).filter(Client.name == "A 치과").first()
+        existing_client = db.query(Client).filter(Client.name == "샘플 브랜드 A").first()
         if existing_client and db.query(Keyword).filter(Keyword.client_id == existing_client.id).first():
             return {
                 "status": "ALREADY_SEEDED",
@@ -114,7 +114,7 @@ def seed_test_data(db: Session = Depends(get_db)):
         seed_data()
 
         # Fetch the created client to return its ID
-        client_a = db.query(Client).filter(Client.name == "A 치과").first()
+        client_a = db.query(Client).filter(Client.name == "샘플 브랜드 A").first()
 
         logger.info("✅ Test data seeding completed successfully")
 
@@ -123,9 +123,9 @@ def seed_test_data(db: Session = Depends(get_db)):
             "message": "테스트 데이터가 성공적으로 생성되었습니다.",
             "client_id": str(client_a.id),
             "details": {
-                "agency": "D-MIND 대행사",
-                "client": "A 치과",
-                "keywords": ["임플란트", "치아교정", "강남역치과"],
+                "agency": "KeywordLens 팀",
+                "client": "샘플 브랜드 A",
+                "keywords": ["다이어트", "제주도여행", "화장품"],
                 "platforms": ["NAVER_AD", "NAVER_PLACE", "NAVER_VIEW"],
                 "sample_ranks": "지난 3일치 데이터 (테스트용)"
             }

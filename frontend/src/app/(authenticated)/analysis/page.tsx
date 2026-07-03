@@ -35,7 +35,7 @@ export default function AnalysisPage() {
     // All hooks must be declared before any conditional return (React Rules of Hooks)
     const [selectedType, setSelectedType] = useState('funnel');
     const [attrModel, setAttrModel] = useState<'first_touch' | 'last_touch' | 'linear'>('linear');
-    const [rankingKeyword, setRankingKeyword] = useState('치과 마케팅');
+    const [rankingKeyword, setRankingKeyword] = useState('다이어트');
     const [rankingPlatform, setRankingPlatform] = useState('NAVER_AD');
 
     // 1. Funnel Data
@@ -87,7 +87,7 @@ export default function AnalysisPage() {
     const { data: sovData, isLoading: isSOVLoading } = useQuery({
         queryKey: ['sov', clientId],
         queryFn: () => import('@/lib/api').then(mod => mod.analyzeSOV({
-            keywords: ['치과', '임플란트', '교정'],
+            keywords: ['다이어트', '제주도여행', '화장품'],
             target_hospital: selectedClient?.name || '',
             platform: 'NAVER_PLACE',
             top_n: 10
@@ -269,7 +269,7 @@ export default function AnalysisPage() {
                         value={rankingKeyword}
                         onChange={(e) => setRankingKeyword(e.target.value)}
                         className="border rounded px-3 py-2 text-sm"
-                        placeholder="키워드 입력 (예: 치과 마케팅)"
+                        placeholder="키워드 입력 (예: 다이어트)"
                     />
                     <select
                         value={rankingPlatform}
@@ -460,7 +460,7 @@ export default function AnalysisPage() {
     return (
         <div className="space-y-8 p-6 animate-in fade-in duration-500">
             <Head>
-                <title>심층 데이터 분석 | D-MIND</title>
+                <title>심층 데이터 분석 | KeywordLens</title>
                 <meta name="description" content="퍼널 분석, 코호트 분석 등을 통해 마케팅 성과를 심층적으로 분석합니다." />
             </Head>
             <div className="flex flex-col gap-8">
@@ -534,7 +534,7 @@ export default function AnalysisPage() {
                                     <div className="mt-1 h-2 w-2 rounded-full bg-amber-400"></div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">주의 필요</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">상담 신청 단계에서의 이탈률이 0.5% 증가했습니다. 폼 최적화가 필요합니다.</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">문의 신청 단계에서의 이탈률이 0.5% 증가했습니다. 폼 최적화가 필요합니다.</p>
                                     </div>
                                 </li>
                             </ul>
@@ -545,7 +545,7 @@ export default function AnalysisPage() {
                                     "현재 분석 데이터에 따르면 초기 유입은 소셜 매체가 우세하나, 최종 전환은 검색 광고가 리드하고 있습니다. 크로스 채널 리마케팅 비중을 20% 높이는 전략을 추천합니다."
                                 </p>
                                 <div className="mt-4 flex items-center gap-2 text-[10px] text-indigo-400">
-                                    <TrendingUp className="h-3 w-3" /> Gemini AI 심층 분석 결과
+                                    <TrendingUp className="h-3 w-3" /> AI 심층 분석 결과
                                 </div>
                             </div>
                         </DashboardWidget>

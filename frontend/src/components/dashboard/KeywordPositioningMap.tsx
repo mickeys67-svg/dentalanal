@@ -101,7 +101,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
             키워드 포지셔닝 맵
             <InfoTooltip
               title="키워드 포지셔닝 맵"
-              content="클라이언트와 경쟁사의 키워드별 순위를 비교합니다. 숫자가 작을수록 높은 순위입니다."
+              content="내 브랜드와 경쟁 브랜드의 키워드별 순위를 비교합니다. 숫자가 작을수록 높은 순위입니다."
             />
           </CardTitle>
 

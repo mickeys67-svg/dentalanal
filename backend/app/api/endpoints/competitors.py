@@ -57,7 +57,7 @@ def discover_competitors(
             "shared_keywords": 13,
             "total_keywords": 20,
             "keywords_appeared": 15,
-            "shared_keyword_terms": ["임플란트", "치아교정", ...]
+            "shared_keyword_terms": ["다이어트", "제주도여행", ...]
         }
     ]
     ```
@@ -116,7 +116,7 @@ def analyze_competitor_strategy(
         "analysis_period": "2026-01-17 ~ 2026-02-17",
         "top_keywords": [
             {
-                "term": "임플란트",
+                "term": "다이어트",
                 "appearances": 45,
                 "avg_rank": 2.3,
                 "best_rank": 1
@@ -172,11 +172,11 @@ def get_keyword_positioning_map(
     **Response**:
     ```json
     {
-        "keywords": ["임플란트", "치아교정", "스케일링"],
+        "keywords": ["다이어트", "제주도여행", "캠핑용품"],
         "targets": [
             {
                 "id": "uuid",
-                "name": "우리 병원",
+                "name": "우리 브랜드",
                 "type": "OWNER",
                 "ranks": [1, 3, 2]
             },

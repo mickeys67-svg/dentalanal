@@ -7,9 +7,9 @@ import { Loader2, Mail, Lock, Eye, EyeOff, TrendingUp, ShieldCheck, Zap } from '
 import Link from 'next/link';
 
 const FEATURES = [
-    { icon: TrendingUp, text: "실시간 광고 성과 및 순위 모니터링" },
-    { icon: Zap, text: "Gemini AI 기반 마케팅 전략 제안" },
-    { icon: ShieldCheck, text: "경쟁사 분석 및 SOV 점유율 추적" },
+    { icon: TrendingUp, text: "네이버 검색량·순위 실시간 모니터링" },
+    { icon: Zap, text: "4대 SNS 언급량 다중 키워드 분석" },
+    { icon: ShieldCheck, text: "키워드별 점유율 추적 및 엑셀 추출" },
 ];
 
 export default function LoginPage() {
@@ -67,7 +67,7 @@ export default function LoginPage() {
                         <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <span className="text-white font-bold text-xl tracking-tight">D-MIND</span>
+                        <span className="text-white font-bold text-xl tracking-tight">KeywordLens</span>
                         <span className="ml-2 text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-semibold">
                             Pro
                         </span>
@@ -78,14 +78,14 @@ export default function LoginPage() {
                 <div className="relative z-10 space-y-6">
                     <div>
                         <h1 className="text-4xl font-bold text-white leading-tight tracking-tight">
-                            데이터 기반의<br />
+                            데이터로 읽는<br />
                             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                                스마트한 치과 경영
+                                마케팅 인사이트
                             </span>
                         </h1>
                         <p className="mt-4 text-slate-400 text-base leading-relaxed max-w-sm">
-                            광고 성과, 순위 모니터링, AI 분석을 하나의 플랫폼에서.
-                            경쟁사를 앞서는 데이터 전략을 시작하세요.
+                            네이버 검색량과 4대 SNS 언급량을 다중 키워드로
+                            조회·시각화·엑셀 추출까지 한곳에서.
                         </p>
                     </div>
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 {/* Footer */}
                 <div className="relative z-10">
                     <p className="text-slate-600 text-xs">
-                        © 2025 D-MIND Enterprise. All rights reserved.
+                        © 2025 KeywordLens. All rights reserved.
                     </p>
                 </div>
             </div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-slate-900 font-bold text-xl">D-MIND</span>
+                    <span className="text-slate-900 font-bold text-xl">KeywordLens</span>
                 </div>
 
                 <div className="w-full max-w-sm animate-fade-in-up">
@@ -135,7 +135,7 @@ export default function LoginPage() {
                                 <input
                                     type="email"
                                     required
-                                    placeholder="admin@dmind.com"
+                                    placeholder="admin@keywordlens.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl

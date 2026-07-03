@@ -20,7 +20,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # --- Add build arguments for Next.js env vars ---
-ARG NEXT_PUBLIC_API_URL
+# 기본값 = snsproject 백엔드 URL. gcloud run deploy --source 는 --build-arg 를 못 넘기므로
+# 기본값으로 구워둔다. CI(deploy.yml)에서 --build-arg 로 넘기면 그 값이 우선한다.
+ARG NEXT_PUBLIC_API_URL=https://dentalanal-backend-hncihcsqta-uw.a.run.app
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build

@@ -30,7 +30,7 @@ export function DashboardEmptyState({ onSync, isSyncing }: DashboardEmptyStatePr
             <p className="text-slate-500 text-center max-w-sm text-sm leading-relaxed mb-8">
                 {selectedClient
                     ? `'${selectedClient.name}' 프로젝트의 광고 성과 데이터가 비어있습니다. 실시간 조사를 시작하여 마케팅 인사이트를 확인해보세요.`
-                    : "상단 헤더에서 분석할 치과 프로젝트를 선택하면 성과 데이터와 AI 인사이트가 표시됩니다."}
+                    : "상단 헤더에서 분석할 프로젝트를 선택하면 성과 데이터와 AI 인사이트가 표시됩니다."}
             </p>
 
             {selectedClient && (

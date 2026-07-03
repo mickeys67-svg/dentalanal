@@ -114,7 +114,7 @@ export default function DashboardPage() {
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">대시보드</h1>
                     <p className="text-sm text-slate-500 mt-0.5">
                         {selectedClient
-                            ? `${selectedClient.name}의 마케팅 성과 현황`
+                            ? `${selectedClient.name}의 마케팅 데이터 현황`
                             : "분석할 프로젝트를 선택해주세요."}
                     </p>
                 </div>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {[
                             { title: "채널별 점유율 (SOV)", desc: "네이버 vs 인스타 vs 블로그 비율 분석" },
-                            { title: "키워드 랭킹 요약", desc: "주요 키워드(임플란트 등) 순위 변동" },
+                            { title: "키워드 랭킹 요약", desc: "주요 키워드(다이어트 등) 순위 변동" },
                         ].map((item) => (
                             <div
                                 key={item.title}
@@ -217,7 +217,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-900">AI 빠른 인사이트</h3>
-                                    <p className="text-xs text-slate-400">Gemini AI 기반 마케팅 분석</p>
+                                    <p className="text-xs text-slate-400">AI 기반 마케팅 분석</p>
                                 </div>
                             </div>
                             <Link

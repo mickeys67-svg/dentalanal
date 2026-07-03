@@ -24,7 +24,7 @@ interface LocalMessage {
 
 const WELCOME: LocalMessage = {
     role: 'assistant',
-    content: '안녕하세요! **D-MIND AI 마케팅 어시스턴트**입니다.\n\n아래의 빠른 질문을 클릭하거나, 궁금한 것을 자유롭게 입력해 주세요.',
+    content: '안녕하세요! **KeywordLens AI 마케팅 어시스턴트**입니다.\n\n아래의 빠른 질문을 클릭하거나, 궁금한 것을 자유롭게 입력해 주세요.',
     type: 'markdown',
 };
 
@@ -367,7 +367,7 @@ export default function AssistantPage() {
                 </div>
 
                 <p className="text-center text-[10px] text-gray-300 mt-2">
-                    Powered by Gemini AI · 분석 결과는 참고용입니다
+                    Powered by KeywordLens AI · 분석 결과는 참고용입니다
                 </p>
             </div>
         </div>

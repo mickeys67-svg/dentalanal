@@ -27,7 +27,7 @@ const serviceItems = [
 
 const adminItems = [
     { name: '사용자 및 권한', href: '/admin/users', icon: UserCog },
-    { name: '업체 데이터 관리', href: '/settings', icon: Settings },
+    { name: '브랜드 데이터 관리', href: '/settings', icon: Settings },
     { name: '인프라 현황', href: '/admin/status', icon: Activity },
 ];
 
@@ -61,7 +61,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <div className="bg-indigo-600 p-1.5 rounded-lg" aria-hidden="true">
                             <LayoutDashboard className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight">D-MIND</span>
+                        <span className="text-xl font-bold tracking-tight">KeywordLens</span>
                     </div>
                 </div>
                 <nav className="flex-1 space-y-6 px-3 py-6 overflow-y-auto">

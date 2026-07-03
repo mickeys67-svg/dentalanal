@@ -179,7 +179,7 @@ export function WidgetRenderer({ widget, data }: WidgetRendererProps) {
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">🤖</span>
-            <h3 className="text-lg font-semibold m-0">Gemini AI 진단</h3>
+            <h3 className="text-lg font-semibold m-0">AI 진단</h3>
           </div>
           <div className="text-sm text-gray-700 whitespace-pre-wrap">
             {data.diagnosis || data.message || "AI 분석 결과가 없습니다."}

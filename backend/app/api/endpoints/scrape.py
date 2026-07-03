@@ -251,7 +251,7 @@ def get_scraping_status():
 @router.post("/test-scraper")
 async def test_scraper_direct(
     platform: str = Query("view", description="place | view | ad"),
-    keyword: str = Query("강남역치과"),
+    keyword: str = Query("다이어트"),
     current_user: User = Depends(get_current_user),
 ):
     """

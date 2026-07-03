@@ -77,7 +77,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <p className="text-sm border-none bg-gray-50 rounded-md px-2 py-1 focus:ring-0 cursor-pointer text-primary truncate">통합 분석 솔루션</p>
                     <div className="hidden sm:block h-6 w-px bg-gray-200"></div>
                     <div className="hidden md:flex items-center gap-2 truncate">
-                        <label htmlFor="client-selector" className="text-xs font-bold text-gray-400 uppercase tracking-wider">업체:</label>
+                        <label htmlFor="client-selector" className="text-xs font-bold text-gray-400 uppercase tracking-wider">브랜드:</label>
                         <select
                             id="client-selector"
                             name="client-id"
@@ -87,10 +87,10 @@ export function Header({ onMenuClick }: HeaderProps) {
                                 if (client) setSelectedClient(client);
                             }}
                             className="text-sm font-semibold border-none bg-gray-50 rounded-md px-2 py-1 focus:ring-0 cursor-pointer text-primary"
-                            aria-label="분석 대상 업체 선택"
+                            aria-label="분석 대상 브랜드 선택"
                         >
                             {clients.length === 0 && (
-                                <option value="">{isClientsLoading ? "로딩 중..." : "업체 없음"}</option>
+                                <option value="">{isClientsLoading ? "로딩 중..." : "브랜드 없음"}</option>
                             )}
                             {clients.map(client => (
                                 <option key={client.id} value={client.id}>

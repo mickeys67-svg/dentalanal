@@ -225,7 +225,7 @@ def get_rank_history(
     """
     특정 키워드의 순위 변화 조회
 
-    예: /api/v1/naver/rank-history?client_id=xxx&keyword=임플란트&days=7
+    예: /api/v1/naver/rank-history?client_id=xxx&keyword=다이어트&days=7
     """
     try:
         # 키워드 찾기

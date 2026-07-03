@@ -245,7 +245,7 @@ export default function ReportDetailPage() {
             <div className="hidden print:block text-center border-b-2 border-gray-900 pb-8 mb-10">
                 <div className="text-3xl font-black mb-2">DIGITAL AD PERFORMANCE REPORT</div>
                 <div className="text-sm text-gray-400">{report.title} | {new Date(report.created_at).toLocaleDateString()}</div>
-                <div className="text-xs mt-4 text-gray-400">Copyright © 2024 Dental Analytics All Right Reserved.</div>
+                <div className="text-xs mt-4 text-gray-400">Copyright © 2024 KeywordLens All Right Reserved.</div>
             </div>
 
             {/* Dynamic Widgets */}
@@ -335,7 +335,7 @@ function renderWidget(widget: any) {
                         <table className="w-full text-sm text-left">
                             <thead>
                                 <tr className="text-gray-400 font-bold border-b border-gray-50 uppercase tracking-tighter text-[10px]">
-                                    <th className="pb-4">병원명</th>
+                                    <th className="pb-4">브랜드명</th>
                                     <th className="pb-4">노출 횟수</th>
                                     <th className="pb-4">평균 순위</th>
                                     <th className="pb-4">점유율</th>
@@ -553,7 +553,7 @@ function renderWidget(widget: any) {
                         <div className="p-2 bg-white rounded-lg shadow-sm">
                             <AlertCircle className="w-5 h-5" />
                         </div>
-                        <h3 className="text-lg font-bold">Gemini AI 마케팅 정밀 진단</h3>
+                        <h3 className="text-lg font-bold">AI 마케팅 정밀 진단</h3>
                     </div>
                     <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 prose max-w-none">
                         <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-sans text-sm md:text-base">

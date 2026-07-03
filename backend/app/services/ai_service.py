@@ -17,19 +17,19 @@ class AIService:
         comp_str = "\n".join([f"- {c['name']}: 점유율 {c['share']:.1f}%, 평균 순위 {c['avg_rank']:.1f}위" for c in competitors[:5]])
         
         prompt = f"""
-치과 마케팅 분석 리포트를 작성해줘. 너는 구글의 Gemini AI 마케팅 전문 컨설턴트야.
+마케팅 분석 리포트를 작성해줘. 너는 AI 마케팅 전문 컨설턴트야.
 
 [분석 환경]
 - 분석 키워드: {keyword}
 - 플랫폼: {platform_name}
-- 우리 병원( {os.getenv('TARGET_HOSPITAL_NAME', '우리 병원')} )의 점유율(SOV): {sov_data:.1f}%
+- 우리 브랜드( {os.getenv('TARGET_HOSPITAL_NAME', '우리 브랜드')} )의 점유율(SOV): {sov_data:.1f}%
 
 [상위 경쟁사 현황]
 {comp_str}
 
 위 데이터를 바탕으로 다음 내용을 포함한 마케팅 리포트를 전문적이고 분석적으로 작성해줘 (한국어):
-1. 시장 지배력 분석: 현재 키워드 시장에서의 우리 병원의 위치와 경쟁 강도
-2. 경쟁사 전략 추론: 상위 노출되는 병원들의 공용 강점(리뷰 수, 정보 충실도 등) 분석
+1. 시장 지배력 분석: 현재 키워드 시장에서의 우리 브랜드의 위치와 경쟁 강도
+2. 경쟁사 전략 추론: 상위 노출되는 브랜드들의 공용 강점(리뷰 수, 정보 충실도 등) 분석
 3. 전략적 개선안: 점유율 확대를 위한 구체적인 실행 방안 (예: 블로그 콘텐츠 최적화, 플레이스 예약 연동 등)
 4. 성과 예측: 제언을 실행했을 시 예상되는 노출 및 유입 증대 효과
 
@@ -57,7 +57,7 @@ class AIService:
         prompt = f"""
         너는 전문 퍼포먼스 마케팅 카피라이터야. 아래 정보를 바탕으로 클릭율(CTR)을 극대화할 수 있는 광고 카피 3가지를 작성해줘.
         
-        [병원 SWOT 분석]
+        [브랜드 SWOT 분석]
         - 강점: {', '.join(swot_data.get('strengths', []))}
         - 약점: {', '.join(swot_data.get('weaknesses', []))}
         - 기회: {', '.join(swot_data.get('opportunities', []))}
@@ -129,16 +129,16 @@ class AIService:
         diff = benchmark_data.get("comparison", {})
 
         prompt = f"""
-        너는 대한민국 마케팅 시장 분석 전문가이자 Gemini AI 컨설턴트야. 
-        우리 병원의 광고 성과를 업종({benchmark_data.get('industry')}) 평균 데이터와 비교하여 정밀 진단 리포트를 작성해줘.
+        너는 대한민국 마케팅 시장 분석 전문가이자 AI 컨설턴트야.
+        우리 브랜드의 광고 성과를 업종({benchmark_data.get('industry')}) 평균 데이터와 비교하여 정밀 진단 리포트를 작성해줘.
 
         [성과 비교 데이터]
-        1. 클릭률 (CTR): 우리 병원 {client_kpis.get('ctr')}% vs 업종 평균 {industry_avg.get('avg_ctr')}% (차이: {diff.get('ctr_diff')}%)
-        2. 클릭당 비용 (CPC): 우리 병원 {client_kpis.get('cpc')}원 vs 업종 평균 {industry_avg.get('avg_cpc')}원 (차이: {diff.get('cpc_diff')}원)
-        3. 전환율 (CVR): 우리 병원 {client_kpis.get('cvr')}% vs 업종 평균 {industry_avg.get('avg_cvr')}% (차이: {diff.get('cvr_diff')}%)
+        1. 클릭률 (CTR): 우리 브랜드 {client_kpis.get('ctr')}% vs 업종 평균 {industry_avg.get('avg_ctr')}% (차이: {diff.get('ctr_diff')}%)
+        2. 클릭당 비용 (CPC): 우리 브랜드 {client_kpis.get('cpc')}원 vs 업종 평균 {industry_avg.get('avg_cpc')}원 (차이: {diff.get('cpc_diff')}원)
+        3. 전환율 (CVR): 우리 브랜드 {client_kpis.get('cvr')}% vs 업종 평균 {industry_avg.get('avg_cvr')}% (차이: {diff.get('cvr_diff')}%)
 
         [요청 사항]
-        - 위 수치를 바탕으로 현재 우리 병원이 업종 내에서 어느 정도 수준(상/중/하)인지 객관적으로 평가해줘.
+        - 위 수치를 바탕으로 현재 우리 브랜드이 업종 내에서 어느 정도 수준(상/중/하)인지 객관적으로 평가해줘.
         - 특히 차이가 크게 발생하는 지표(예: CTR이 낮거나 CPC가 높음)에 대해 원인을 분석하고, 이를 해결하기 위한 '즉시 개선 가능한 3가지 액션 플랜'을 마케팅 용어를 사용하여 제안해줘.
         - 리포트 마지막에는 이번 달의 총평과 다음 달 목표를 한 문장으로 제시해줘.
 
@@ -162,12 +162,12 @@ class AIService:
         comp_data = "\n".join([f"- {c['name']}: {c['share']:.1f}% 점유" for c in competitor_info[:3]])
         
         prompt = f"""
-        우리 병원({hospital_name})을 위한 마케팅 SWOT 분석을 해줘.
+        우리 브랜드({hospital_name})을 위한 마케팅 SWOT 분석을 해줘.
         
         [주요 경쟁사 점유율]
         {comp_data}
         
-        주변 경쟁 상황을 고려하여 우리 병원의 강점(Strengths), 약점(Weaknesses), 기회(Opportunities), 위협(Threats) 요인을 전문적인 마케팅 시각에서 분석해줘.
+        주변 경쟁 상황을 고려하여 우리 브랜드의 강점(Strengths), 약점(Weaknesses), 기회(Opportunities), 위협(Threats) 요인을 전문적인 마케팅 시각에서 분석해줘.
         각 항목별로 2~3가지의 구체적인 포인트를 짚어줘.
         """
         try:

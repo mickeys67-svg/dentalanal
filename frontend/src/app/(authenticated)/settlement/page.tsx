@@ -63,7 +63,7 @@ export default function SettlementPage() {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
                 <Calculator className="w-16 h-16 mb-4 opacity-10" />
-                <p>업체를 선택하면 정산 내역을 확인할 수 있습니다.</p>
+                <p>프로젝트를 선택하면 정산 내역을 확인할 수 있습니다.</p>
             </div>
         );
     }
