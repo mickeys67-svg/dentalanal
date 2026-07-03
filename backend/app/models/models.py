@@ -254,6 +254,23 @@ class DailyRank(Base):
     keyword = relationship("Keyword", back_populates="daily_ranks")
     client = relationship("Client", back_populates="daily_ranks")
 
+class KeywordSearchStat(Base):
+    """
+    키워드 검색량 스냅샷 (네이버 검색광고 키워드도구 실측값).
+    검색할 때마다 1행 기록 → 최초검색일(RFP 2-1) = MIN(captured_at),
+    동시에 우리 시스템 자체 수집 이력(월간검색수 변화)을 축적.
+    신규 테이블이므로 배포 시 create_all 로 자동 생성됨.
+    """
+    __tablename__ = "keyword_search_stats"
+    id = Column(GUID, primary_key=True, default=uuid.uuid4)
+    client_id = Column(GUID, ForeignKey("clients.id", ondelete="CASCADE"), nullable=True)
+    term = Column(String, nullable=False, index=True)
+    monthly_pc = Column(Integer, nullable=True)
+    monthly_mobile = Column(Integer, nullable=True)
+    monthly_total = Column(Integer, nullable=True)
+    comp_idx = Column(String, nullable=True)
+    captured_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
 class ContentsMetric(Base):
     __tablename__ = "contents_metrics"
     id = Column(GUID, primary_key=True, default=uuid.uuid4)

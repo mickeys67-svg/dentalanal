@@ -13,6 +13,9 @@ import {
     X,
     PieChart,
     Users,
+    Search,
+    TrendingUp,
+    Youtube,
     LogOut
 } from "lucide-react";
 import { useState } from "react";
@@ -23,6 +26,21 @@ const menuItems = [
         title: "대시보드",
         href: "/dashboard",
         icon: LayoutDashboard,
+    },
+    {
+        title: "키워드 검색량",
+        href: "/dashboard/keywords",
+        icon: Search,
+    },
+    {
+        title: "검색 트렌드",
+        href: "/dashboard/trends",
+        icon: TrendingUp,
+    },
+    {
+        title: "SNS 언급량",
+        href: "/dashboard/sns",
+        icon: Youtube,
     },
     {
         title: "광고 성과",

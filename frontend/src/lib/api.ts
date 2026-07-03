@@ -817,6 +817,159 @@ export const analyzeCompetitorStrategy = async (params: {
     return response.data;
 };
 
+// --- Keyword Intelligence (RFP 2-1 / 2-3) ---
+// 데이터 출처: 네이버 검색광고 키워드도구 API (direct-real 실측)
+
+export interface KeywordStat {
+    keyword: string;
+    monthly_pc: number | null;
+    monthly_mobile: number | null;
+    monthly_total: number | null;
+    masked: boolean; // true → "10 미만" 마스킹 포함(실측 아님)
+    comp_idx: string | null;
+    no_data: boolean;
+    first_seen: string | null; // 최초검색일 (RFP 2-1). null이면 이번이 최초.
+}
+
+export interface RelatedKeyword {
+    keyword: string;
+    monthly_total: number | null; // 마스킹("< 10") 시 null
+    masked: boolean;
+}
+
+export interface KeywordSearchResult {
+    source: string;
+    keywords: KeywordStat[];
+    related: Record<string, RelatedKeyword[]>;
+}
+
+export const searchKeywords = async (
+    keywords: string[],
+    relatedLimit = 20
+): Promise<KeywordSearchResult> => {
+    const response = await api.post('/api/v1/keywords/search', {
+        keywords,
+        related_limit: relatedLimit,
+    });
+    return response.data;
+};
+
+// --- 데이터랩 트렌드 (상대지수 0~100, 절대검색량 아님) ---
+
+export interface TrendPoint {
+    period: string;
+    ratio: number;
+}
+
+export interface KeywordTrend {
+    keyword: string;
+    series: TrendPoint[];
+    by_month: Record<string, number>;
+    by_dow: Record<string, number>;
+}
+
+export interface TrendResult {
+    source: string;
+    value_type: string; // "RELATIVE_INDEX_0_100"
+    note: string;
+    results: KeywordTrend[];
+}
+
+export interface TrendParams {
+    keywords: string[];
+    start_date: string;
+    end_date: string;
+    time_unit?: 'date' | 'week' | 'month';
+    device?: '' | 'pc' | 'mo';
+    gender?: '' | 'm' | 'f';
+    ages?: string[];
+}
+
+export const getKeywordTrend = async (params: TrendParams): Promise<TrendResult> => {
+    const response = await api.post('/api/v1/keywords/trend', {
+        keywords: params.keywords,
+        start_date: params.start_date,
+        end_date: params.end_date,
+        time_unit: params.time_unit ?? 'date',
+        device: params.device ?? '',
+        gender: params.gender ?? '',
+        ages: params.ages ?? null,
+    });
+    return response.data;
+};
+
+export interface DemographicSegment {
+    segment: string;
+    index: number | null;
+    failed?: boolean; // true → 조회 실패(레이트리밋 등). '데이터 없음'과 구분.
+}
+
+export interface DemographicsResult {
+    source: string;
+    keyword: string;
+    gender: DemographicSegment[];
+    age: DemographicSegment[];
+    partial?: boolean; // 일부 세그먼트 조회 실패 여부
+    note: string;
+}
+
+export const getKeywordDemographics = async (
+    keyword: string,
+    start_date: string,
+    end_date: string
+): Promise<DemographicsResult> => {
+    const response = await api.post('/api/v1/keywords/demographics', {
+        keyword,
+        start_date,
+        end_date,
+    });
+    return response.data;
+};
+
+// --- SNS: YouTube (direct-real, Data API v3) ---
+
+export interface YouTubeVideo {
+    videoId: string;
+    title: string;
+    channel: string;
+    publishedAt: string;
+    viewCount: number;
+    likeCount: number;
+    commentCount: number;
+}
+
+export interface YouTubeStats {
+    source: string;
+    keyword: string;
+    total_matching_approx: number;
+    sampled_count: number;
+    total_views_sampled: number;
+    videos: YouTubeVideo[];
+    by_upload_month: Record<string, { videos: number; views: number }>;
+}
+
+export const getYouTubeStats = async (
+    keyword: string,
+    maxResults = 25
+): Promise<YouTubeStats> => {
+    const response = await api.post('/api/v1/sns/youtube', {
+        keyword,
+        max_results: maxResults,
+    });
+    return response.data;
+};
+
+export interface SnsChannelStatus {
+    supported: boolean;
+    configured: boolean;
+    method: string;
+}
+
+export const getSnsStatus = async (): Promise<Record<string, SnsChannelStatus>> => {
+    const response = await api.get('/api/v1/sns/status');
+    return response.data;
+};
+
 // --- Notification Types ---
 
 export interface Notification {

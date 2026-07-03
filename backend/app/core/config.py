@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://localhost:6379/0"
     GOOGLE_API_KEY: Optional[str] = None
+    # YouTube Data API v3 (검색어 포함 영상 수/조회수). 미설정 시 GOOGLE_API_KEY 폴백.
+    YOUTUBE_API_KEY: Optional[str] = None
     
     # Scraper & Ads
     BRIGHT_DATA_CDP_URL: Optional[str] = None

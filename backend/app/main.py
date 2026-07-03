@@ -230,7 +230,7 @@ def health_check():
 # Lazy-loaded Routers to prevent top-level import crashes
 logger.info("[ROUTER] Starting endpoint imports...")
 try:
-    from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads, debug
+    from app.api.endpoints import auth, scrape, analyze, dashboard, connectors, strategy, collaboration, automation, clients, users, status, reports, notifications, settlement, competitors, roi_optimization, trends, leads, naver_ads, debug, keywords, sns
     logger.info("[ROUTER] All endpoints imported successfully")
 except Exception as e:
     logger.error(f"[ROUTER] ERROR importing endpoints: {e}", exc_info=True)
@@ -281,6 +281,10 @@ app.include_router(leads.router, prefix="/api/v1/leads", tags=["Leads"])
 logger.info("[ROUTER] Registered: leads")
 app.include_router(naver_ads.router, prefix="/api/v1/naver", tags=["Naver Ads Data"])
 logger.info("[ROUTER] Registered: naver_ads")
+app.include_router(keywords.router, prefix="/api/v1/keywords", tags=["Keyword Intelligence"])
+logger.info("[ROUTER] Registered: keywords")
+app.include_router(sns.router, prefix="/api/v1/sns", tags=["SNS Data"])
+logger.info("[ROUTER] Registered: sns")
 logger.info("[ROUTER] All routers registered successfully!")
 
 @app.get("/")
