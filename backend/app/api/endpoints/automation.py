@@ -58,8 +58,8 @@ async def trigger_full_sync(
         # Just return message asking user to connect manually.
         return {"status": "SKIPPED", "message": "활성화된 플랫폼 연결이 없습니다. 설정 > 데이터 연결에서 연동을 먼저 진행해주세요."}
     
-    from app.tasks.sync_data import sync_all_channels
-    background_tasks.add_task(sync_all_channels, db)
+    from app.tasks.sync_data import sync_all_channels, run_sync_process
+    background_tasks.add_task(run_sync_process, db)
     return {"status": "SUCCESS", "message": "전체 채널 데이터 동기화가 시작되었습니다."}
 
 @router.post("/cron-sync")

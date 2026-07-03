@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { getAIReport } from '@/lib/api';
-import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface AIReportProps {
     keyword: string;
@@ -24,69 +24,94 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
         onError: (error: Error & { response?: { data?: { detail?: string } } }) => {
             setErrorStatus(error.response?.data?.detail || error.message || '리포트 생성 중 오류가 발생했습니다.');
             setReport(null);
-        }
+        },
     });
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow mt-8">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-purple-600" />
-                    <h3 className="text-xl font-bold text-gray-900">AI 마케팅 성과 분석 리포트</h3>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200">
+                        <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-[15px] font-semibold text-slate-900">AI 마케팅 성과 분석 리포트</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">Gemini AI 기반 심층 분석</p>
+                    </div>
                 </div>
                 <button
                     onClick={() => mutation.mutate()}
                     disabled={mutation.isPending || !keyword || !targetHospital}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700
+                               text-white px-4 py-2 rounded-xl text-sm font-semibold
+                               shadow-sm shadow-indigo-200 transition-all
+                               disabled:opacity-50 disabled:cursor-not-allowed
+                               active:scale-[0.98]"
                 >
                     {mutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                        <Sparkles className="w-4 h-4" />
+                        <Sparkles className="w-3.5 h-3.5" />
                     )}
-                    {mutation.isPending ? '리포트 생성 중...' : 'AI 분석 요청'}
+                    {mutation.isPending ? '생성 중...' : 'AI 분석 요청'}
                 </button>
             </div>
 
-            {!report && !mutation.isPending && (
-                <div className="bg-gray-50 border-2 border-dashed rounded-xl p-12 text-center">
-                    <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 font-medium">현재 데이터를 기반으로 AI 마케팅 제언을 받아보세요.</p>
-                    <p className="text-sm text-gray-400 mt-2">상위 노출된 경쟁사와 나의 SOV를 비교 분석합니다.</p>
-                </div>
-            )}
-
-            {mutation.isPending && (
-                <div className="space-y-4 animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
-                </div>
-            )}
-
-            {errorStatus && (
-                <div className="bg-red-50 border border-red-100 rounded-xl p-6 text-red-700 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 mt-0.5" />
-                    <div>
-                        <p className="font-bold">분석 실패</p>
-                        <p className="text-sm">{errorStatus}</p>
-                        <p className="text-xs mt-2 text-red-500">* Google Gemini API 키가 .env 파일에 GOOGLE_API_KEY로 올바르게 설정되어 있는지 확인해주세요.</p>
+            <div className="p-6">
+                {/* Empty state */}
+                {!report && !mutation.isPending && !errorStatus && (
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-10 text-center bg-slate-50/50">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+                            <Sparkles className="w-6 h-6 text-indigo-400" />
+                        </div>
+                        <p className="text-slate-600 font-medium text-sm">AI 마케팅 분석을 시작하세요</p>
+                        <p className="text-xs text-slate-400 mt-1">경쟁사 SOV와 내 병원 데이터를 비교 분석합니다.</p>
                     </div>
-                </div>
-            )}
+                )}
 
-            {report && (
-                <div className="bg-purple-50 rounded-xl p-6 border border-purple-100 prose prose-purple max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-sans">
-                        {report}
+                {/* Loading skeleton */}
+                {mutation.isPending && (
+                    <div className="space-y-3 animate-pulse">
+                        {[3, 5, 4, 6, 3].map((w, i) => (
+                            <div key={i} className={`h-4 bg-slate-100 rounded-lg w-${w}/6`} />
+                        ))}
                     </div>
-                    <div className="mt-8 pt-4 border-t border-purple-200 text-xs text-purple-400 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        본 리포트는 인공지능에 의해 생성된 마켓 분석이며, 참고용으로 활용해 주세요.
+                )}
+
+                {/* Error */}
+                {errorStatus && (
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
+                        <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-sm font-semibold text-red-700">분석 실패</p>
+                            <p className="text-xs text-red-600 mt-0.5">{errorStatus}</p>
+                            <p className="text-xs text-red-400 mt-2">
+                                * GOOGLE_API_KEY가 .env 파일에 올바르게 설정되어 있는지 확인해주세요.
+                            </p>
+                            <button
+                                onClick={() => mutation.mutate()}
+                                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700"
+                            >
+                                <RefreshCw className="w-3 h-3" /> 다시 시도
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Report content */}
+                {report && (
+                    <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100">
+                        <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
+                            {report}
+                        </div>
+                        <div className="mt-5 pt-4 border-t border-indigo-100 flex items-center gap-1.5 text-xs text-indigo-400">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            본 리포트는 AI에 의해 생성된 분석이며, 참고용으로 활용해 주세요.
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

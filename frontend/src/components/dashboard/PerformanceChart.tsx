@@ -7,7 +7,7 @@ import {
     Tooltip,
     ResponsiveContainer,
     AreaChart,
-    Area
+    Area,
 } from "recharts";
 
 interface DataPoint {
@@ -21,54 +21,77 @@ interface PerformanceChartProps {
     color?: string;
 }
 
-export function PerformanceChart({ data, title, color = "#4F46E5" }: PerformanceChartProps) {
+export function PerformanceChart({
+    data,
+    title,
+    color = "#4F46E5",
+}: PerformanceChartProps) {
     return (
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm h-full">
-            <div className="p-6 pb-2">
-                <h3 className="font-semibold leading-none tracking-tight">{title} 추이</h3>
-                <p className="text-sm text-muted-foreground pt-1">최근 30일 성과 그래프</p>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-card h-full flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-50 flex-shrink-0">
+                <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">최근 30일 성과 그래프</p>
             </div>
-            <div className="p-6 pt-0 h-[300px] w-full">
+            <div className="flex-1 p-4 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart
+                        data={data}
+                        margin={{ top: 8, right: 8, left: -24, bottom: 0 }}
+                    >
                         <defs>
-                            <linearGradient id={`color-${title}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                            <linearGradient id={`grad-${title}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={color} stopOpacity={0.15} />
                                 <stop offset="95%" stopColor={color} stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                            vertical={false}
+                            stroke="#F1F5F9"
+                        />
                         <XAxis
                             dataKey="date"
-                            stroke="#888888"
-                            fontSize={12}
+                            stroke="#94A3B8"
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
-                            tickMargin={10}
+                            tickMargin={8}
                         />
                         <YAxis
-                            stroke="#888888"
-                            fontSize={12}
+                            stroke="#94A3B8"
+                            fontSize={11}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => `${value}`}
+                            tickFormatter={(v) => `${v}`}
                         />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: "hsl(var(--background))",
-                                borderColor: "hsl(var(--border))",
-                                borderRadius: "8px",
+                                backgroundColor: "#ffffff",
+                                borderColor: "#E2E8F0",
+                                borderRadius: "10px",
                                 fontSize: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                             }}
-                            cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                            cursor={{
+                                stroke: "#94A3B8",
+                                strokeWidth: 1,
+                                strokeDasharray: "4 4",
+                            }}
                         />
                         <Area
                             type="monotone"
                             dataKey="value"
                             stroke={color}
-                            fillOpacity={1}
-                            fill={`url(#color-${title})`}
                             strokeWidth={2}
+                            fillOpacity={1}
+                            fill={`url(#grad-${title})`}
+                            dot={false}
+                            activeDot={{
+                                r: 5,
+                                fill: color,
+                                stroke: "#ffffff",
+                                strokeWidth: 2,
+                            }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
