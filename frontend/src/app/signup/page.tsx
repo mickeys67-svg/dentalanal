@@ -73,9 +73,6 @@ export default function SignupPage() {
                 />
 
                 <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                        <ShieldCheck className="w-5 h-5 text-white" />
-                    </div>
                     <span className="text-white font-bold text-xl tracking-tight">KeywordLens</span>
                 </div>
 
@@ -109,9 +106,6 @@ export default function SignupPage() {
             {/* Right form panel */}
             <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background">
                 <div className="lg:hidden flex items-center gap-2 mb-8">
-                    <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-                        <ShieldCheck className="w-5 h-5 text-white" />
-                    </div>
                     <span className="text-foreground font-bold text-xl">KeywordLens</span>
                 </div>
 
