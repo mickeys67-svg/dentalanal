@@ -854,6 +854,14 @@ export const searchKeywords = async (
     return response.data;
 };
 
+// 최근 검색한 키워드 목록(실측 저장분, 최신순) — 로그인 후 자동 복원용
+export const getRecentKeywords = async (limit = 8): Promise<string[]> => {
+    const response = await api.get('/api/v1/keywords/recent', {
+        params: { limit },
+    });
+    return response.data?.terms ?? [];
+};
+
 // --- 데이터랩 트렌드 (상대지수 0~100, 절대검색량 아님) ---
 
 export interface TrendPoint {

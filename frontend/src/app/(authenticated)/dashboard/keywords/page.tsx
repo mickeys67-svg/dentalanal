@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, AlertCircle, Download, X, Plus } from "lucide-react";
 import {
     searchKeywords,
+    getRecentKeywords,
     KeywordSearchResult,
     RelatedKeyword,
 } from "@/lib/api";
@@ -72,6 +73,26 @@ export default function KeywordIntelligencePage() {
             setResult(null);
         },
     });
+
+    // 로그인 후 진입 시, 최근 검색한 키워드(실측 저장분)를 자동 복원해 실데이터 조회.
+    // 사용자가 아직 입력·조회하지 않은 초기 상태에서 1회만 실행 → 빈 화면 방지.
+    const autoRanRef = useRef(false);
+    const { data: recentTerms } = useQuery({
+        queryKey: ["recent-keywords"],
+        queryFn: () => getRecentKeywords(6),
+        staleTime: 60_000,
+    });
+
+    useEffect(() => {
+        if (autoRanRef.current) return;
+        if (!recentTerms || recentTerms.length === 0) return;
+        if (result || mutation.isPending) return;
+        if (inputs.some((s) => s.trim())) return; // 사용자가 이미 입력함
+        autoRanRef.current = true;
+        setInputs(recentTerms.length >= 2 ? recentTerms : [...recentTerms, ""]);
+        mutation.mutate(recentTerms);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recentTerms]);
 
     const cleaned = useMemo(
         () => Array.from(new Set(inputs.map((s) => s.trim()).filter(Boolean))),

@@ -164,6 +164,33 @@ async def search_keywords(
     return KeywordSearchResponse(keywords=keywords, related=related)
 
 
+class RecentKeywordsResponse(BaseModel):
+    terms: List[str]
+
+
+@router.get("/recent", response_model=RecentKeywordsResponse)
+async def recent_keywords(
+    limit: int = 8,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    최근 검색한 키워드 목록(중복 제거, 최신순)을 반환.
+    저장된 KeywordSearchStat(네이버 실측 스냅샷)에서 term별 최신 captured_at 기준 정렬.
+    → 프론트가 로그인 후 진입 시 이 목록으로 실데이터 조회를 자동 복원(빈 화면 방지).
+    """
+    limit = max(1, min(limit, MAX_KEYWORDS))
+    last_seen = sa_func.max(KeywordSearchStat.captured_at).label("last_seen")
+    rows = (
+        db.query(KeywordSearchStat.term, last_seen)
+        .group_by(KeywordSearchStat.term)
+        .order_by(last_seen.desc())
+        .limit(limit)
+        .all()
+    )
+    return RecentKeywordsResponse(terms=[r[0] for r in rows])
+
+
 # =========================================================================
 # 데이터랩 검색어 트렌드 (RFP 2-3) — 상대지수(0~100). 절대검색량 아님.
 # =========================================================================
