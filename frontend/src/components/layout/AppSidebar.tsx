@@ -29,6 +29,7 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 
+// badge: "연동" → 외부 계정/데이터 소스 연동 시 실측값이 표출되는 항목(빈 화면 오해 방지).
 const menuGroups = [
     {
         label: "개요",
@@ -37,7 +38,8 @@ const menuGroups = [
         ],
     },
     {
-        label: "키워드·SNS 분석",
+        // 핵심 제품 — 실데이터로 작동 (배지 없음)
+        label: "키워드·SNS 인텔리전스",
         items: [
             { title: "키워드 검색량", href: "/dashboard/keywords", icon: Search },
             { title: "검색 트렌드", href: "/dashboard/trends", icon: TrendingUp },
@@ -45,20 +47,20 @@ const menuGroups = [
         ],
     },
     {
-        label: "성과 분석",
+        label: "광고·성과 분석",
         items: [
-            { title: "광고 성과", href: "/dashboard/ads", icon: BarChart3 },
+            { title: "광고 성과", href: "/dashboard/ads", icon: BarChart3, badge: "연동" },
             { title: "플레이스 순위", href: "/dashboard/place", icon: MapPin },
             { title: "바이럴 모니터링", href: "/dashboard/viral", icon: MessageSquare },
             { title: "심층 분석", href: "/analysis", icon: TrendingUp },
         ],
     },
     {
-        label: "비즈니스",
+        label: "대행사 운영",
         items: [
             { title: "리드 관리", href: "/leads", icon: Users },
             { title: "리포트", href: "/reports", icon: FileText },
-            { title: "AI 어시스턴트", href: "/assistant", icon: Bot },
+            { title: "AI 어시스턴트", href: "/assistant", icon: Bot, badge: "연동" },
             { title: "전략 플래너", href: "/strategy", icon: Lightbulb },
         ],
     },
@@ -133,6 +135,7 @@ export function AppSidebar() {
                             <div className="space-y-0.5">
                                 {group.items.map((item) => {
                                     const active = isActive(item.href);
+                                    const badge = (item as { badge?: string }).badge;
                                     return (
                                         <Link
                                             key={item.href}
@@ -153,6 +156,15 @@ export function AppSidebar() {
                                                 )}
                                             />
                                             <span className="flex-1">{item.title}</span>
+                                            {badge && !active && (
+                                                <span
+                                                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded
+                                                               bg-slate-700/60 text-slate-400 flex-shrink-0"
+                                                    title="외부 소스 연동 시 실측값이 표출됩니다"
+                                                >
+                                                    {badge}
+                                                </span>
+                                            )}
                                             {active && (
                                                 <ChevronRight className="h-3 w-3 text-indigo-400 flex-shrink-0" />
                                             )}

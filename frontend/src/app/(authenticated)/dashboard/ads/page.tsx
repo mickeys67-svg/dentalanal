@@ -91,6 +91,20 @@ export default function AdsPage() {
                 </div>
             ) : (
                 <>
+                    {/* 전환수익 미설정 시 ROAS가 가정 기반임을 정직하게 고지 (실측 아님) */}
+                    {roasData?.data?.conversion_value_assumed && (
+                        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                            <span className="text-base leading-none mt-0.5">⚠️</span>
+                            <span>
+                                전환당 수익이 설정되지 않아 <strong>ROAS는 가정값 기준(실측 아님)</strong>입니다.
+                                <a href="/settings" className="ml-1 font-semibold underline hover:text-amber-900">
+                                    설정
+                                </a>
+                                에서 전환당 수익을 입력하면 실측 ROAS가 표시됩니다.
+                            </span>
+                        </div>
+                    )}
+
                     {/* KPI 카드 */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <AdsKpiCard

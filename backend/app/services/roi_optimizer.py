@@ -17,7 +17,12 @@ class ROIOptimizerService:
     3. 예산 재분배 추천
     """
 
-    DEFAULT_CONVERSION_VALUE = 150000.0
+    # ⚠️ 가짜 데이터 금지:
+    #   클라이언트가 '전환당 수익'을 설정하지 않았을 때 쓰는 가정값.
+    #   이전엔 이 값을 조용히 적용해 산출한 ROAS를 실측인 것처럼 표시했다(사기 소지).
+    #   이제 이 값을 쓸 때는 반드시 conversion_value_assumed=True 로 표기해
+    #   "가정 기반 ROAS(실측 아님)"임을 프론트에 노출한다.
+    ASSUMED_CONVERSION_VALUE = 150000.0
 
     def __init__(self, db: Session):
         self.db = db
@@ -29,15 +34,18 @@ class ROIOptimizerService:
         self.HIGH_CPA_PERCENTILE = 75  # CPA 상위 75% (비효율)
         self.MIN_SPEND_FOR_ANALYSIS = 50000  # 최소 광고비 5만원
 
-    def _get_client_conversion_value(self, client_id: UUID) -> float:
-        """클라이언트별 전환당 수익값 조회 (미설정 시 기본값 150,000원)"""
+    def _get_client_conversion_value(self, client_id: UUID) -> Tuple[float, bool]:
+        """
+        클라이언트별 전환당 수익값 조회.
+        반환: (전환수익, assumed).  assumed=True → 클라이언트 미설정으로 가정값 사용(실측 아님).
+        """
         try:
             client = self.db.query(Client).filter(Client.id == client_id).first()
             if client and client.conversion_value and client.conversion_value > 0:
-                return float(client.conversion_value)
+                return float(client.conversion_value), False
         except Exception:
             pass
-        return self.DEFAULT_CONVERSION_VALUE
+        return self.ASSUMED_CONVERSION_VALUE, True
 
     def track_campaign_roas(
         self,
@@ -57,7 +65,9 @@ class ROIOptimizerService:
             캠페인별 ROAS 데이터 및 트렌드
         """
         if conversion_value is None:
-            conversion_value = self._get_client_conversion_value(client_id)
+            conversion_value, conv_assumed = self._get_client_conversion_value(client_id)
+        else:
+            conv_assumed = False
         start_date = datetime.date.today() - datetime.timedelta(days=days)
 
         # 1. 캠페인별 전체 성과 집계
@@ -130,6 +140,14 @@ class ROIOptimizerService:
         return {
             "period": f"{start_date} ~ {datetime.date.today()}",
             "campaigns": campaigns_data,
+            # 전환수익 출처 투명화: assumed=True면 ROAS는 가정 기반(실측 아님) → 프론트 배너 표기
+            "conversion_value_used": conversion_value,
+            "conversion_value_assumed": conv_assumed,
+            "conversion_value_note": (
+                "전환당 수익이 설정되지 않아 가정값으로 ROAS를 계산했습니다(실측 아님). "
+                "[설정]에서 전환당 수익을 입력하면 실측 ROAS가 표시됩니다."
+                if conv_assumed else None
+            ),
             "summary": {
                 "total_campaigns": len(campaigns_data),
                 "avg_roas": round(statistics.mean([c["roas"] for c in campaigns_data]), 1) if campaigns_data else 0,
@@ -161,7 +179,9 @@ class ROIOptimizerService:
             비효율 광고 목록 및 개선 권장사항
         """
         if conversion_value is None:
-            conversion_value = self._get_client_conversion_value(client_id)
+            conversion_value, conv_assumed = self._get_client_conversion_value(client_id)
+        else:
+            conv_assumed = False
         start_date = datetime.date.today() - datetime.timedelta(days=days)
 
         # 캠페인별 성과 집계
@@ -226,9 +246,12 @@ class ROIOptimizerService:
             issues = []
             severity = "low"
 
-            # 1. ROAS 체크
+            # 1. ROAS 체크 (전환수익 미설정 시 가정 기반임을 명시 — 실측인 척 금지)
             if roas < self.POOR_ROAS_THRESHOLD:
-                issues.append(f"ROAS가 {round(roas, 1)}%로 목표({self.POOR_ROAS_THRESHOLD}%) 미달")
+                _assumed = " · 가정 전환수익 기준(실측 아님)" if conv_assumed else ""
+                issues.append(
+                    f"ROAS가 {round(roas, 1)}%로 목표({self.POOR_ROAS_THRESHOLD}%) 미달{_assumed}"
+                )
                 severity = "high"
 
             # 2. CTR 체크
