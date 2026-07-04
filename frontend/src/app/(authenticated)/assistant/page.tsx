@@ -195,26 +195,26 @@ export default function AssistantPage() {
         <div className="flex h-[calc(100vh-64px)]">
             {/* History Sidebar */}
             {showHistory && (
-                <div className="w-64 flex-shrink-0 bg-gray-50 border-r border-gray-100 flex flex-col">
-                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                        <span className="text-sm font-bold text-gray-700">대화 기록</span>
+                <div className="w-64 flex-shrink-0 bg-background border-r border-border flex flex-col">
+                    <div className="p-4 border-b border-border flex items-center justify-between">
+                        <span className="text-sm font-bold text-foreground">대화 기록</span>
                         <button
                             onClick={() => { resetChat(); setShowHistory(false); }}
-                            className="flex items-center gap-1 text-xs text-indigo-600 font-semibold hover:underline"
+                            className="flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
                         >
                             <Plus className="w-3.5 h-3.5" /> 새 대화
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto py-2">
                         {sessions.length === 0 ? (
-                            <p className="text-xs text-gray-400 text-center mt-8">저장된 대화가 없습니다.</p>
+                            <p className="text-xs text-muted-foreground text-center mt-8">저장된 대화가 없습니다.</p>
                         ) : (
                             sessions.map((s) => (
                                 <div
                                     key={s.id}
                                     className={clsx(
-                                        'group flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-white transition-colors text-sm',
-                                        s.id === activeSessionId ? 'bg-white font-bold text-indigo-700' : 'text-gray-600'
+                                        'group flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-card transition-colors text-sm',
+                                        s.id === activeSessionId ? 'bg-card font-bold text-primary' : 'text-muted-foreground'
                                     )}
                                     onClick={() => loadSession(s)}
                                 >
@@ -225,7 +225,7 @@ export default function AssistantPage() {
                                             deleteSessionMutation.mutate(s.id);
                                             if (s.id === activeSessionId) resetChat();
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition-all flex-shrink-0"
+                                        className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground/60 hover:text-red-400 transition-all flex-shrink-0"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -243,17 +243,17 @@ export default function AssistantPage() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowHistory((v) => !v)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-700"
+                            className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
                             title="대화 기록"
                         >
                             <PanelLeft className="w-4 h-4" />
                         </button>
-                        <div className="p-2.5 bg-indigo-600 rounded-xl shadow-md shadow-indigo-600/20">
+                        <div className="p-2.5 bg-primary rounded-xl shadow-md">
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-900">AI 마케팅 어시스턴트</h1>
-                            <p className="text-xs text-gray-400">
+                            <h1 className="text-xl font-bold text-foreground">AI 마케팅 어시스턴트</h1>
+                            <p className="text-xs text-muted-foreground">
                                 {selectedClient
                                     ? `${selectedClient.name} 데이터 기반 분석`
                                     : '업체를 선택하면 데이터 기반 답변이 가능합니다'}
@@ -262,13 +262,13 @@ export default function AssistantPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         {activeSessionId && (
-                            <span className="text-[10px] bg-indigo-50 text-indigo-500 font-semibold px-2 py-1 rounded-full border border-indigo-100 flex items-center gap-1">
+                            <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2 py-1 rounded-full border border-primary flex items-center gap-1">
                                 <History className="w-3 h-3" /> 저장됨
                             </span>
                         )}
                         <button
                             onClick={resetChat}
-                            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
                         >
                             <RotateCcw className="w-3.5 h-3.5" /> 초기화
                         </button>
@@ -283,7 +283,7 @@ export default function AssistantPage() {
                                 key={q.id}
                                 onClick={() => sendQuickQuery(q.id, q.label)}
                                 disabled={isPending}
-                                className="px-3 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors disabled:opacity-40"
+                                className="px-3 py-1.5 text-xs font-semibold bg-primary/10 text-primary rounded-full border border-primary hover:bg-primary/15 transition-colors disabled:opacity-40"
                                 title={q.description}
                             >
                                 {q.label}
@@ -303,7 +303,7 @@ export default function AssistantPage() {
                             )}
                         >
                             {msg.role === 'assistant' && (
-                                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
                                     <Sparkles className="w-4 h-4 text-white" />
                                 </div>
                             )}
@@ -311,15 +311,15 @@ export default function AssistantPage() {
                                 className={clsx(
                                     'max-w-[80%] rounded-2xl px-5 py-4 text-sm leading-relaxed',
                                     msg.role === 'user'
-                                        ? 'bg-indigo-600 text-white rounded-tr-sm'
-                                        : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-tl-sm'
+                                        ? 'bg-primary text-white rounded-tr-sm'
+                                        : 'bg-card border border-border shadow-sm text-foreground rounded-tl-sm'
                                 )}
                             >
                                 {msg.role === 'assistant' && msg.type === 'markdown' ? (
-                                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900">
+                                    <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground">
                                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                                         {msg.streaming && (
-                                            <span className="inline-block w-1.5 h-4 bg-indigo-500 ml-0.5 animate-pulse rounded-sm align-middle" />
+                                            <span className="inline-block w-1.5 h-4 bg-primary ml-0.5 animate-pulse rounded-sm align-middle" />
                                         )}
                                     </div>
                                 ) : (
@@ -327,8 +327,8 @@ export default function AssistantPage() {
                                 )}
                             </div>
                             {msg.role === 'user' && (
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <MessageCircle className="w-4 h-4 text-gray-500" />
+                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <MessageCircle className="w-4 h-4 text-muted-foreground" />
                                 </div>
                             )}
                         </div>
@@ -338,14 +338,14 @@ export default function AssistantPage() {
                 </div>
 
                 {/* Input */}
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-3 flex items-end gap-3">
+                <div className="bg-card border border-border rounded-2xl shadow-sm p-3 flex items-end gap-3">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="궁금한 것을 자유롭게 입력하세요... (Enter로 전송, Shift+Enter 줄바꿈)"
                         rows={1}
-                        className="flex-1 resize-none text-sm text-gray-800 placeholder-gray-400 bg-transparent outline-none leading-relaxed max-h-32 overflow-y-auto"
+                        className="flex-1 resize-none text-sm text-foreground placeholder-muted-foreground bg-transparent outline-none leading-relaxed max-h-32 overflow-y-auto"
                         style={{ scrollbarWidth: 'none' }}
                         disabled={isPending}
                     />
@@ -354,7 +354,7 @@ export default function AssistantPage() {
                         disabled={!isStreaming && !input.trim()}
                         className={clsx(
                             'flex-shrink-0 w-9 h-9 rounded-xl text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                            isStreaming ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'
+                            isStreaming ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'
                         )}
                         title={isStreaming ? '스트리밍 중단' : '전송'}
                     >
@@ -366,7 +366,7 @@ export default function AssistantPage() {
                     </button>
                 </div>
 
-                <p className="text-center text-[10px] text-gray-300 mt-2">
+                <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
                     Powered by KeywordLens AI · 분석 결과는 참고용입니다
                 </p>
             </div>

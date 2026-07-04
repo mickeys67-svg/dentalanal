@@ -27,10 +27,10 @@ export function PerformanceChart({
     color = "#4F46E5",
 }: PerformanceChartProps) {
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-card h-full flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-50 flex-shrink-0">
-                <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">최근 30일 성과 그래프</p>
+        <div className="bg-card rounded-2xl border border-border shadow-card h-full flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex-shrink-0">
+                <h3 className="text-[15px] font-semibold text-foreground">{title}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">최근 30일 성과 그래프</p>
             </div>
             <div className="flex-1 p-4 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">

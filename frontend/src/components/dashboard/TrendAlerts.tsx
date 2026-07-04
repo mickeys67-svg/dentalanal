@@ -61,7 +61,7 @@ function PredictionBadge({ prediction }: { prediction: string }) {
         </span>
     );
     return (
-        <span className="flex items-center gap-1 text-gray-500 text-xs font-medium">
+        <span className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
             <Minus className="w-3 h-3" /> {prediction}
         </span>
     );
@@ -174,7 +174,7 @@ export function TrendAlerts({ clientId }: TrendAlertsProps) {
                     )}
 
                     {!drops && !dropMutation.isPending && (
-                        <div className="text-center py-4 text-xs text-muted-foreground border rounded-lg bg-gray-50">
+                        <div className="text-center py-4 text-xs text-muted-foreground border rounded-lg bg-background">
                             버튼을 클릭해 순위 변화를 확인하세요.
                         </div>
                     )}
@@ -233,7 +233,7 @@ export function TrendAlerts({ clientId }: TrendAlertsProps) {
                                     {trendEntries.map(([keyword, pred]) => (
                                         <div
                                             key={keyword}
-                                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border"
+                                            className="flex items-center justify-between p-3 bg-background rounded-lg border"
                                         >
                                             <span className="font-medium text-sm truncate mr-2">{keyword}</span>
                                             <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">

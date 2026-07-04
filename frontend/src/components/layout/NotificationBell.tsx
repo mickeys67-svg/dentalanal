@@ -11,7 +11,7 @@ const TYPE_COLORS: Record<string, string> = {
     RANKING_DROP: "bg-red-100 text-red-700",
     BUDGET_OVERSPEND: "bg-orange-100 text-orange-700",
     SYSTEM: "bg-blue-100 text-blue-700",
-    INFO: "bg-gray-100 text-gray-600",
+    INFO: "bg-secondary text-muted-foreground",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -88,7 +88,7 @@ export function NotificationBell() {
 
             {/* 드롭다운 패널 */}
             {open && (
-                <div className="absolute right-0 top-11 w-80 bg-white border rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="absolute right-0 top-11 w-80 bg-card border rounded-xl shadow-xl z-50 overflow-hidden">
                     {/* 헤더 */}
                     <div className="flex items-center justify-between px-4 py-3 border-b">
                         <span className="font-semibold text-sm">
@@ -133,7 +133,7 @@ export function NotificationBell() {
                                     key={n.id}
                                     onClick={() => handleItemClick(n)}
                                     className={cn(
-                                        "w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors",
+                                        "w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-secondary transition-colors",
                                         !n.is_read && "bg-blue-50/60"
                                     )}
                                 >
@@ -161,7 +161,7 @@ export function NotificationBell() {
                                                     {timeAgo(n.created_at)}
                                                 </span>
                                             </div>
-                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                            <p className="text-sm font-medium text-foreground truncate">
                                                 {n.title}
                                             </p>
                                             {n.content && (
@@ -176,7 +176,7 @@ export function NotificationBell() {
                                                     e.stopPropagation();
                                                     readMutation.mutate(n.id);
                                                 }}
-                                                className="shrink-0 p-1 rounded hover:bg-white text-muted-foreground hover:text-blue-600"
+                                                className="shrink-0 p-1 rounded hover:bg-card text-muted-foreground hover:text-blue-600"
                                                 title="읽음 처리"
                                             >
                                                 <Check className="w-3 h-3" />

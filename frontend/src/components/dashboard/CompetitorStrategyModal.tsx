@@ -59,7 +59,7 @@ function TrendDirectionBadge({ direction }: { direction: string }) {
             </Badge>
         );
     return (
-        <Badge className="bg-gray-100 text-gray-600 border-gray-300">
+        <Badge className="bg-secondary text-muted-foreground border-input">
             <Minus className="w-3 h-3 mr-1" /> 보합
         </Badge>
     );
@@ -141,19 +141,19 @@ function AnalysisContent({ data }: { data: CompetitorStrategyAnalysis }) {
             {data.top_keywords.length > 0 && (
                 <div>
                     <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-purple-500" />
+                        <Tag className="w-4 h-4 text-primary" />
                         주력 키워드 TOP {data.top_keywords.length}
                     </h3>
                     <div className="space-y-2">
                         {data.top_keywords.slice(0, 8).map((kw, idx) => (
                             <div
                                 key={kw.term}
-                                className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border text-sm"
+                                className="flex items-center justify-between p-2.5 bg-background rounded-lg border text-sm"
                             >
                                 <div className="flex items-center gap-2">
                                     <span
                                         className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${
-                                            idx < 3 ? "bg-purple-500" : "bg-gray-400"
+                                            idx < 3 ? "bg-primary" : "bg-muted-foreground"
                                         }`}
                                     >
                                         {idx + 1}

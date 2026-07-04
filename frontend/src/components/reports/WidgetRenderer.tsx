@@ -176,12 +176,12 @@ export function WidgetRenderer({ widget, data }: WidgetRendererProps) {
   const renderAIDiagnosis = () => {
     return (
       <div className="prose max-w-none">
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+        <div className="bg-primary p-6 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl">🤖</span>
             <h3 className="text-lg font-semibold m-0">AI 진단</h3>
           </div>
-          <div className="text-sm text-gray-700 whitespace-pre-wrap">
+          <div className="text-sm text-foreground whitespace-pre-wrap">
             {data.diagnosis || data.message || "AI 분석 결과가 없습니다."}
           </div>
         </div>
@@ -198,9 +198,9 @@ export function WidgetRenderer({ widget, data }: WidgetRendererProps) {
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-bold">{item.your_value}</span>
               <span className="text-xs text-muted-foreground">vs</span>
-              <span className="text-sm text-gray-600">{item.industry_avg}</span>
+              <span className="text-sm text-muted-foreground">{item.industry_avg}</span>
             </div>
-            <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
                 style={{

@@ -60,14 +60,14 @@ export default function AdsPage() {
             {/* 헤더 */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         광고 성과 대시보드 <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                         {roasData?.data?.period ?? '광고 성과 데이터 분석 중...'}
                     </p>
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-xl">
+                <div className="flex bg-secondary p-1 rounded-xl">
                     {[7, 30, 90].map((d) => (
                         <button
                             key={d}
@@ -75,8 +75,8 @@ export default function AdsPage() {
                             className={clsx(
                                 "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
                                 days === d
-                                    ? "bg-white text-indigo-600 shadow-sm"
-                                    : "text-gray-400 hover:text-gray-600"
+                                    ? "bg-card text-primary shadow-sm"
+                                    : "text-muted-foreground hover:text-muted-foreground"
                             )}
                         >
                             {d === 7 ? '7일' : d === 30 ? '30일' : '90일'}
@@ -87,7 +87,7 @@ export default function AdsPage() {
 
             {isLoading ? (
                 <div className="flex justify-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
             ) : (
                 <>
@@ -244,7 +244,7 @@ export default function AdsPage() {
                                                         "w-4 h-4",
                                                         ad.severity === 'high' ? "text-red-500" : "text-amber-500"
                                                     )} />
-                                                    <span className="font-bold text-gray-900 text-sm">{ad.campaign_name}</span>
+                                                    <span className="font-bold text-foreground text-sm">{ad.campaign_name}</span>
                                                     <span className={clsx(
                                                         "text-[10px] font-black px-2 py-0.5 rounded",
                                                         ad.severity === 'high'
@@ -254,11 +254,11 @@ export default function AdsPage() {
                                                         {ad.severity === 'high' ? '심각' : '주의'}
                                                     </span>
                                                 </div>
-                                                <div className="flex gap-4 text-xs text-gray-500 mb-3">
-                                                    <span>ROAS <strong className="text-gray-800">{ad.roas}%</strong></span>
-                                                    <span>CTR <strong className="text-gray-800">{ad.ctr}%</strong></span>
-                                                    <span>CPA <strong className="text-gray-800">₩{(ad.cpa ?? 0).toLocaleString()}</strong></span>
-                                                    <span>지출 <strong className="text-gray-800">₩{(ad.spend ?? 0).toLocaleString()}</strong></span>
+                                                <div className="flex gap-4 text-xs text-muted-foreground mb-3">
+                                                    <span>ROAS <strong className="text-foreground">{ad.roas}%</strong></span>
+                                                    <span>CTR <strong className="text-foreground">{ad.ctr}%</strong></span>
+                                                    <span>CPA <strong className="text-foreground">₩{(ad.cpa ?? 0).toLocaleString()}</strong></span>
+                                                    <span>지출 <strong className="text-foreground">₩{(ad.spend ?? 0).toLocaleString()}</strong></span>
                                                 </div>
                                                 <div className="space-y-1">
                                                     {ad.issues?.map((issue: string, j: number) => (
@@ -268,7 +268,7 @@ export default function AdsPage() {
                                             </div>
                                             <div className="text-right space-y-1 max-w-xs">
                                                 {ad.recommendations?.map((rec: string, j: number) => (
-                                                    <p key={j} className="text-xs text-gray-600 bg-white px-3 py-1.5 rounded-lg border border-gray-100">{rec}</p>
+                                                    <p key={j} className="text-xs text-muted-foreground bg-card px-3 py-1.5 rounded-lg border border-border">{rec}</p>
                                                 ))}
                                             </div>
                                         </div>
@@ -276,7 +276,7 @@ export default function AdsPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-10 text-center text-gray-400 text-sm">
+                            <div className="py-10 text-center text-muted-foreground text-sm">
                                 <Target className="w-8 h-8 mx-auto mb-3 text-green-400" />
                                 비효율 광고가 감지되지 않았습니다. 모든 캠페인이 기준을 충족합니다.
                             </div>
@@ -293,15 +293,15 @@ export default function AdsPage() {
                         {budgetRecs.length > 0 ? (
                             <>
                                 <div className="mt-4 grid grid-cols-3 gap-4 mb-6">
-                                    <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                                        <p className="text-xs text-gray-400 mb-1">현재 총 예산</p>
-                                        <p className="text-lg font-black text-gray-900 font-mono">
+                                    <div className="bg-background rounded-2xl p-4 text-center">
+                                        <p className="text-xs text-muted-foreground mb-1">현재 총 예산</p>
+                                        <p className="text-lg font-black text-foreground font-mono">
                                             ₩{(budgetSummary.current_total_budget ?? 0).toLocaleString()}
                                         </p>
                                     </div>
-                                    <div className="bg-indigo-50 rounded-2xl p-4 text-center">
-                                        <p className="text-xs text-indigo-400 mb-1">추천 총 예산</p>
-                                        <p className="text-lg font-black text-indigo-700 font-mono">
+                                    <div className="bg-primary/10 rounded-2xl p-4 text-center">
+                                        <p className="text-xs text-primary mb-1">추천 총 예산</p>
+                                        <p className="text-lg font-black text-primary font-mono">
                                             ₩{(budgetSummary.recommended_total_budget ?? 0).toLocaleString()}
                                         </p>
                                     </div>
@@ -309,7 +309,7 @@ export default function AdsPage() {
                                         "rounded-2xl p-4 text-center",
                                         (budgetSummary.net_change ?? 0) <= 0 ? "bg-green-50" : "bg-amber-50"
                                     )}>
-                                        <p className="text-xs text-gray-400 mb-1">예산 변화</p>
+                                        <p className="text-xs text-muted-foreground mb-1">예산 변화</p>
                                         <p className={clsx(
                                             "text-lg font-black font-mono",
                                             (budgetSummary.net_change ?? 0) <= 0 ? "text-green-700" : "text-amber-700"
@@ -323,7 +323,7 @@ export default function AdsPage() {
                                     {budgetRecs.map((rec: any, i: number) => (
                                         <div
                                             key={i}
-                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100/50 transition-all"
+                                            className="flex items-center justify-between p-4 bg-background rounded-2xl hover:bg-secondary/50 transition-all"
                                         >
                                             <div className="flex items-center gap-3">
                                                 {rec.action === '증액' ? (
@@ -331,11 +331,11 @@ export default function AdsPage() {
                                                 ) : rec.action === '감액' ? (
                                                     <ArrowDownRight className="w-4 h-4 text-red-500 shrink-0" />
                                                 ) : (
-                                                    <Minus className="w-4 h-4 text-gray-400 shrink-0" />
+                                                    <Minus className="w-4 h-4 text-muted-foreground shrink-0" />
                                                 )}
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900">{rec.campaign_name}</p>
-                                                    <p className="text-xs text-gray-400">{rec.reason}</p>
+                                                    <p className="text-sm font-bold text-foreground">{rec.campaign_name}</p>
+                                                    <p className="text-xs text-muted-foreground">{rec.reason}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
@@ -343,11 +343,11 @@ export default function AdsPage() {
                                                     "text-sm font-black font-mono",
                                                     rec.action === '증액' ? "text-green-600"
                                                         : rec.action === '감액' ? "text-red-600"
-                                                        : "text-gray-500"
+                                                        : "text-muted-foreground"
                                                 )}>
                                                     {rec.change}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-muted-foreground">
                                                     ₩{(rec.recommended_spend ?? 0).toLocaleString()} 추천
                                                 </p>
                                             </div>
@@ -377,26 +377,26 @@ interface AdsKpiCardProps {
 
 function AdsKpiCard({ label, value, icon: Icon, color }: AdsKpiCardProps) {
     const colors = {
-        indigo: "bg-indigo-50 text-indigo-600",
+        indigo: "bg-primary/10 text-primary",
         green:  "bg-green-50 text-green-600",
         amber:  "bg-amber-50 text-amber-600",
         blue:   "bg-blue-50 text-blue-600",
     };
     return (
-        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md transition-all">
             <div className={clsx("inline-flex p-2 rounded-xl mb-3", colors[color])}>
                 <Icon className="w-5 h-5" />
             </div>
-            <p className="text-2xl font-black text-gray-900 font-mono tracking-tighter">{value}</p>
-            <p className="text-[11px] text-gray-400 mt-1 font-bold uppercase tracking-widest">{label}</p>
+            <p className="text-2xl font-black text-foreground font-mono tracking-tighter">{value}</p>
+            <p className="text-[11px] text-muted-foreground mt-1 font-bold uppercase tracking-widest">{label}</p>
         </div>
     );
 }
 
 function NoDataPlaceholder() {
     return (
-        <div className="py-12 text-center text-gray-400 text-sm">
-            <TrendingDown className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+        <div className="py-12 text-center text-muted-foreground text-sm">
+            <TrendingDown className="w-8 h-8 mx-auto mb-3 text-muted-foreground/60" />
             광고 연동 후 데이터가 수집되면 표시됩니다.
         </div>
     );

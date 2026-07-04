@@ -75,10 +75,10 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
   }
 
   const getRankColor = (rank: number | null): string => {
-    if (rank === null) return 'bg-gray-100 text-gray-400'
+    if (rank === null) return 'bg-secondary text-muted-foreground'
     if (rank === 1) return 'bg-green-500 text-white font-bold'
     if (rank <= 3) return 'bg-green-400 text-white'
-    if (rank <= 5) return 'bg-yellow-400 text-gray-900'
+    if (rank <= 5) return 'bg-yellow-400 text-foreground'
     if (rank <= 10) return 'bg-orange-400 text-white'
     return 'bg-red-400 text-white'
   }
@@ -87,7 +87,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
     switch (type) {
       case 'OWNER': return 'bg-blue-500'
       case 'COMPETITOR': return 'bg-red-500'
-      default: return 'bg-gray-500'
+      default: return 'bg-muted-foreground'
     }
   }
 
@@ -106,15 +106,15 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
           </CardTitle>
 
           {/* 플랫폼 토글 */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
             {platforms.map((p) => (
               <button
                 key={p}
                 onClick={() => setActivePlatform(p)}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   activePlatform === p
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {PLATFORM_LABELS[p]}
@@ -124,7 +124,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
         </div>
 
         {data?.snapshot_time && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             최종 수집: {new Date(data.snapshot_time).toLocaleString('ko-KR')}
           </p>
         )}
@@ -142,7 +142,7 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
             </Button>
           </div>
         ) : !data || data.keywords.length === 0 ? (
-          <p className="text-gray-500 text-center py-8 text-sm">
+          <p className="text-muted-foreground text-center py-8 text-sm">
             {PLATFORM_LABELS[activePlatform]}에서 추적 중인 키워드가 없습니다.
           </p>
         ) : (
@@ -151,13 +151,13 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="border p-2 bg-gray-50 text-left sticky left-0 z-10 text-sm">
+                    <th className="border p-2 bg-background text-left sticky left-0 z-10 text-sm">
                       타겟
                     </th>
                     {data.keywords.map((keyword, idx) => (
                       <th
                         key={idx}
-                        className="border p-2 bg-gray-50 text-center min-w-[80px]"
+                        className="border p-2 bg-background text-center min-w-[80px]"
                       >
                         <div className="text-xs font-medium truncate" title={keyword}>
                           {keyword}
@@ -168,8 +168,8 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
                 </thead>
                 <tbody>
                   {data.targets.map((target) => (
-                    <tr key={target.id} className="hover:bg-gray-50">
-                      <td className="border p-2 sticky left-0 bg-white z-10">
+                    <tr key={target.id} className="hover:bg-secondary">
+                      <td className="border p-2 sticky left-0 bg-card z-10">
                         <div className="flex items-center gap-2">
                           <Badge className={getTypeColor(target.type)}>
                             {target.type === 'OWNER' ? '우리' : '경쟁'}
@@ -191,13 +191,13 @@ const KeywordPositioningMap: React.FC<KeywordPositioningMapProps> = ({
             </div>
 
             {/* 범례 */}
-            <div className="mt-4 flex flex-wrap gap-3 text-xs text-gray-600">
+            <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
               {[
                 { color: 'bg-green-500', label: '1-3위' },
                 { color: 'bg-yellow-400', label: '4-5위' },
                 { color: 'bg-orange-400', label: '6-10위' },
                 { color: 'bg-red-400', label: '11위 이하' },
-                { color: 'bg-gray-100 border', label: '순위 없음' },
+                { color: 'bg-secondary border', label: '순위 없음' },
               ].map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-1">
                   <div className={`w-3 h-3 rounded ${color}`} />

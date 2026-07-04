@@ -16,8 +16,8 @@ export default function GlobalError({
     return (
         <html lang="ko">
             <body>
-                <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                    <div className="max-w-md w-full mx-auto p-8 bg-white rounded-2xl shadow-lg text-center">
+                <div className="min-h-screen flex items-center justify-center bg-background">
+                    <div className="max-w-md w-full mx-auto p-8 bg-card rounded-2xl shadow-lg text-center">
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -25,21 +25,21 @@ export default function GlobalError({
                                 />
                             </svg>
                         </div>
-                        <h1 className="text-xl font-bold text-gray-900 mb-2">
+                        <h1 className="text-xl font-bold text-foreground mb-2">
                             심각한 오류가 발생했습니다
                         </h1>
-                        <p className="text-sm text-gray-500 mb-6">
+                        <p className="text-sm text-muted-foreground mb-6">
                             애플리케이션을 불러오는 중 문제가 발생했습니다.<br />
                             페이지를 새로고침하거나 잠시 후 다시 시도해 주세요.
                         </p>
                         {error.digest && (
-                            <p className="text-xs text-gray-400 mb-4 font-mono">
+                            <p className="text-xs text-muted-foreground mb-4 font-mono">
                                 오류 코드: {error.digest}
                             </p>
                         )}
                         <button
                             onClick={reset}
-                            className="w-full py-2.5 px-4 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                            className="w-full py-2.5 px-4 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                         >
                             다시 시도
                         </button>

@@ -94,12 +94,12 @@ export default function UsersPage() {
             {/* 헤더 */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="bg-indigo-100 p-2 rounded-xl">
-                        <UserCog className="w-6 h-6 text-indigo-600" />
+                    <div className="bg-primary/15 p-2 rounded-xl">
+                        <UserCog className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">사용자 관리</h1>
-                        <p className="text-gray-500 text-sm">플랫폼 계정 및 접근 권한을 관리합니다.</p>
+                        <h1 className="text-2xl font-bold text-foreground">사용자 관리</h1>
+                        <p className="text-muted-foreground text-sm">플랫폼 계정 및 접근 권한을 관리합니다.</p>
                     </div>
                 </div>
                 {/* 인라인 피드백 */}
@@ -126,15 +126,15 @@ export default function UsersPage() {
                     <DashboardWidget title="새 계정 등록">
                         <form onSubmit={handleAddUser} className="p-6 space-y-4">
                             <div className="space-y-1">
-                                <label htmlFor="user-email" className="text-xs font-bold text-gray-500 ml-1">이메일</label>
+                                <label htmlFor="user-email" className="text-xs font-bold text-muted-foreground ml-1">이메일</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
                                         id="user-email"
                                         name="email"
                                         type="email"
                                         required
-                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                        className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
                                         placeholder="user@example.com"
                                         value={newEmail}
                                         onChange={(e) => setNewEmail(e.target.value)}
@@ -143,15 +143,15 @@ export default function UsersPage() {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="user-name" className="text-xs font-bold text-gray-500 ml-1">이름</label>
+                                <label htmlFor="user-name" className="text-xs font-bold text-muted-foreground ml-1">이름</label>
                                 <div className="relative">
-                                    <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
                                         id="user-name"
                                         name="name"
                                         type="text"
                                         required
-                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                        className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
                                         placeholder="홍길동"
                                         value={newName}
                                         onChange={(e) => setNewName(e.target.value)}
@@ -160,9 +160,9 @@ export default function UsersPage() {
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="user-password" className="text-xs font-bold text-gray-500 ml-1">비밀번호</label>
+                                <label htmlFor="user-password" className="text-xs font-bold text-muted-foreground ml-1">비밀번호</label>
                                 <div className="relative">
-                                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
                                         id="user-password"
                                         name="password"
@@ -170,21 +170,21 @@ export default function UsersPage() {
                                         required
                                         minLength={8}
                                         autoComplete="new-password"
-                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                        className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none"
                                         placeholder="••••••••"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         disabled={isSubmitting}
                                     />
                                 </div>
-                                <p className="text-[10px] text-gray-400 ml-1">* 최소 8자 이상</p>
+                                <p className="text-[10px] text-muted-foreground ml-1">* 최소 8자 이상</p>
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="user-role" className="text-xs font-bold text-gray-500 ml-1">권한 등급</label>
+                                <label htmlFor="user-role" className="text-xs font-bold text-muted-foreground ml-1">권한 등급</label>
                                 <select
                                     id="user-role"
                                     name="role"
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer"
+                                    className="w-full px-4 py-2 bg-background border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none appearance-none cursor-pointer"
                                     value={newRole}
                                     onChange={(e) => setNewRole(e.target.value as UserRole)}
                                     disabled={isSubmitting}
@@ -197,7 +197,7 @@ export default function UsersPage() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-md active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-md active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> 등록 중...</>
@@ -216,47 +216,47 @@ export default function UsersPage() {
                     <DashboardWidget title={`계정 목록 (${users.length}명)`}>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50/50 border-b border-gray-100">
+                                <thead className="bg-background/50 border-b border-border">
                                     <tr>
-                                        <th className="px-6 py-4 text-left font-bold text-gray-500 text-xs uppercase tracking-wider">사용자</th>
-                                        <th className="px-6 py-4 text-left font-bold text-gray-500 text-xs uppercase tracking-wider">권한</th>
-                                        <th className="px-6 py-4 text-right font-bold text-gray-500 text-xs uppercase tracking-wider">관리</th>
+                                        <th className="px-6 py-4 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider">사용자</th>
+                                        <th className="px-6 py-4 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider">권한</th>
+                                        <th className="px-6 py-4 text-right font-bold text-muted-foreground text-xs uppercase tracking-wider">관리</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50">
+                                <tbody className="divide-y divide-border">
                                     {isLoading ? (
                                         <tr>
                                             <td colSpan={3} className="px-6 py-12 text-center">
-                                                <Loader2 className="w-6 h-6 animate-spin text-indigo-400 mx-auto" />
+                                                <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
                                             </td>
                                         </tr>
                                     ) : users.length === 0 ? (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic text-sm">
+                                            <td colSpan={3} className="px-6 py-12 text-center text-muted-foreground italic text-sm">
                                                 등록된 계정이 없습니다.
                                             </td>
                                         </tr>
                                     ) : (
                                         users.map(u => (
                                             <tr key={u.id} className={clsx(
-                                                "hover:bg-gray-50/30 transition-colors",
-                                                u.id === currentUser?.id && "bg-indigo-50/30"
+                                                "hover:bg-secondary transition-colors",
+                                                u.id === currentUser?.id && "bg-primary/10"
                                             )}>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                                                            <span className="text-xs font-bold text-indigo-600">
+                                                        <div className="w-8 h-8 bg-primary/15 rounded-full flex items-center justify-center shrink-0">
+                                                            <span className="text-xs font-bold text-primary">
                                                                 {u.name?.[0]?.toUpperCase() ?? '?'}
                                                             </span>
                                                         </div>
                                                         <div>
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className="font-bold text-gray-900">{u.name}</span>
+                                                                <span className="font-bold text-foreground">{u.name}</span>
                                                                 {u.id === currentUser?.id && (
-                                                                    <span className="text-[9px] font-bold bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full uppercase">나</span>
+                                                                    <span className="text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full uppercase">나</span>
                                                                 )}
                                                             </div>
-                                                            <span className="text-xs text-gray-400">{u.email}</span>
+                                                            <span className="text-xs text-muted-foreground">{u.email}</span>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -267,7 +267,7 @@ export default function UsersPage() {
                                                             ? "bg-red-50 text-red-600"
                                                             : u.role === 'EDITOR'
                                                                 ? "bg-amber-50 text-amber-600"
-                                                                : "bg-gray-100 text-gray-500"
+                                                                : "bg-secondary text-muted-foreground"
                                                     )}>
                                                         {u.role}
                                                     </span>
@@ -279,8 +279,8 @@ export default function UsersPage() {
                                                         className={clsx(
                                                             "p-2 rounded-lg transition-colors",
                                                             u.id === currentUser?.id
-                                                                ? "text-gray-200 cursor-not-allowed"
-                                                                : "text-gray-300 hover:text-red-500 hover:bg-red-50"
+                                                                ? "text-muted-foreground/60 cursor-not-allowed"
+                                                                : "text-muted-foreground/60 hover:text-red-500 hover:bg-red-50"
                                                         )}
                                                         aria-label={`${u.name} 계정 삭제`}
                                                         title={u.id === currentUser?.id ? '본인 계정은 삭제할 수 없습니다' : '계정 삭제'}

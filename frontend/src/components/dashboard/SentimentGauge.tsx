@@ -42,9 +42,9 @@ export function SentimentGauge({ isLoading, data }: SentimentGaugeProps) {
         <Card className="h-[400px] flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <BrainCircuit className="w-5 h-5 text-purple-500" />
+                    <BrainCircuit className="w-5 h-5 text-primary" />
                     {UI_TEXT.VIRAL.SENTIMENT_TITLE}
-                    <Badge variant="secondary" className="bg-slate-100 text-slate-500 ml-auto text-[10px]">
+                    <Badge variant="secondary" className="bg-secondary text-muted-foreground ml-auto text-[10px]">
                         {hasRealData ? "AI" : "미연동"}
                     </Badge>
                 </CardTitle>
@@ -81,7 +81,7 @@ export function SentimentGauge({ isLoading, data }: SentimentGaugeProps) {
                                     verticalAlign="bottom"
                                     height={36}
                                     formatter={(value) => (
-                                        <span className="text-sm font-medium text-slate-600 ml-1">{value}</span>
+                                        <span className="text-sm font-medium text-muted-foreground ml-1">{value}</span>
                                     )}
                                 />
                             </PieChart>
@@ -89,7 +89,7 @@ export function SentimentGauge({ isLoading, data }: SentimentGaugeProps) {
 
                         {positivePct !== null && (
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] text-center pointer-events-none">
-                                <div className="text-2xl font-bold text-gray-900">{positivePct}%</div>
+                                <div className="text-2xl font-bold text-foreground">{positivePct}%</div>
                                 <div className="text-xs text-muted-foreground">{UI_TEXT.VIRAL.POSITIVE}</div>
                             </div>
                         )}

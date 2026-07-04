@@ -12,10 +12,10 @@ export function DashboardEmptyState({ onSync, isSyncing }: DashboardEmptyStatePr
     const { selectedClient } = useClient();
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[420px] rounded-2xl border-2 border-dashed border-slate-200 p-10 bg-slate-50/40">
+        <div className="flex flex-col items-center justify-center min-h-[420px] rounded-2xl border-2 border-dashed border-border p-10 bg-background/40">
             {/* Icon */}
             <div className="relative mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
                     <BarChart3 className="w-8 h-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
@@ -23,11 +23,11 @@ export function DashboardEmptyState({ onSync, isSyncing }: DashboardEmptyStatePr
                 </div>
             </div>
 
-            <h2 className="text-xl font-bold text-slate-900 mb-2 text-center">
+            <h2 className="text-xl font-bold text-foreground mb-2 text-center">
                 {selectedClient ? "아직 분석된 데이터가 없습니다" : "프로젝트를 선택해주세요"}
             </h2>
 
-            <p className="text-slate-500 text-center max-w-sm text-sm leading-relaxed mb-8">
+            <p className="text-muted-foreground text-center max-w-sm text-sm leading-relaxed mb-8">
                 {selectedClient
                     ? `'${selectedClient.name}' 프로젝트의 광고 성과 데이터가 비어있습니다. 실시간 조사를 시작하여 마케팅 인사이트를 확인해보세요.`
                     : "상단 헤더에서 분석할 프로젝트를 선택하면 성과 데이터와 AI 인사이트가 표시됩니다."}
@@ -37,9 +37,9 @@ export function DashboardEmptyState({ onSync, isSyncing }: DashboardEmptyStatePr
                 <button
                     onClick={onSync}
                     disabled={isSyncing}
-                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700
+                    className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90
                                text-white px-6 py-3 rounded-xl font-semibold text-sm
-                               shadow-lg shadow-indigo-200 hover:shadow-indigo-300
+                               shadow-lg
                                transition-all duration-200 active:scale-[0.98]
                                disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 >

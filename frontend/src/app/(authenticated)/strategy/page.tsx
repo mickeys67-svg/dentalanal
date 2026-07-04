@@ -151,13 +151,13 @@ export default function StrategyPage() {
         <div className="space-y-8 p-6 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">AI 전략 워크스페이스</h1>
-                    <p className="text-gray-500">데이터와 AI를 활용하여 최적의 마케팅 전략을 수립하세요.</p>
+                    <h1 className="text-2xl font-bold text-foreground">AI 전략 워크스페이스</h1>
+                    <p className="text-muted-foreground">데이터와 AI를 활용하여 최적의 마케팅 전략을 수립하세요.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
                         onClick={handleSaveSwot}
-                        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all"
+                        className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-all"
                     >
                         <Save className="h-4 w-4" /> 전략 저장
                     </button>
@@ -172,15 +172,15 @@ export default function StrategyPage() {
             </div>
 
             {/* AI Recommendation Section */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 p-8 text-white shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl bg-primary p-8 text-white shadow-lg">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="max-w-2xl">
-                        <div className="flex items-center gap-2 text-indigo-100 text-sm font-semibold mb-4">
+                        <div className="flex items-center gap-2 text-primary text-sm font-semibold mb-4">
                             <Cpu className="h-5 w-5" />
                             <span>AI 분석 리포트</span>
                         </div>
                         <h2 className="text-2xl font-bold mb-4">현재 캠페인 최적화 전략 제안</h2>
-                        <p className="text-indigo-50 leading-relaxed">
+                        <p className="text-primary leading-relaxed">
                             {isGenerating ? "AI가 데이터를 기반으로 최적의 전략을 구성하고 있습니다..." :
                                 aiCopy || "최근 데이터를 분석한 결과와 수립된 SWOT 분석을 바탕으로 AI가 구체적인 매체 믹스 및 광고 타겟팅 전략을 제안할 준비가 되었습니다. 'AI 전략 생성' 버튼을 클릭해 주세요."}
                         </p>
@@ -205,12 +205,12 @@ export default function StrategyPage() {
                                         <li key={i} className="flex items-center gap-2"><CheckCircle className="h-3 w-3" /> {item}</li>
                                     ))}
                                     {(!swotState[box.key as keyof SWOTData] || swotState[box.key as keyof SWOTData].length === 0) && (
-                                        <li className="text-gray-400 italic">내용을 추가해 주세요.</li>
+                                        <li className="text-muted-foreground italic">내용을 추가해 주세요.</li>
                                     )}
                                 </ul>
                                 <button
                                     onClick={() => openSwotModal(box.key as keyof SWOTData)}
-                                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-white/50 hover:bg-white text-gray-500"
+                                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-white/50 hover:bg-white text-muted-foreground"
                                 >
                                     <Plus className="h-3 w-3" />
                                 </button>
@@ -224,30 +224,30 @@ export default function StrategyPage() {
                     <div className="space-y-6">
                         {isGoalsLoading ? (
                             <div className="animate-pulse space-y-4">
-                                <div className="h-4 bg-gray-100 rounded w-3/4"></div>
-                                <div className="h-4 bg-gray-100 rounded w-full"></div>
+                                <div className="h-4 bg-secondary rounded w-3/4"></div>
+                                <div className="h-4 bg-secondary rounded w-full"></div>
                             </div>
                         ) : goals && goals.length > 0 ? (
                             goals.map((goal: StrategyGoal, idx: number) => (
                                 <div key={idx} className="space-y-2">
                                     <div className="flex justify-between text-xs font-medium">
-                                        <span className="text-gray-600 font-bold uppercase tracking-wider">{goal.title}</span>
+                                        <span className="text-muted-foreground font-bold uppercase tracking-wider">{goal.title}</span>
                                         <span className="text-primary">{goal.smart_m || '진행 중'}</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden">
                                         <div className="h-full bg-primary" style={{ width: '60%' }}></div>
                                     </div>
                                 </div>
                             ))
                         ) : (
                             <div className="text-center py-6">
-                                <Target className="h-8 w-8 text-gray-200 mx-auto mb-2" />
-                                <p className="text-xs text-gray-400">설정된 목표가 없습니다.</p>
+                                <Target className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+                                <p className="text-xs text-muted-foreground">설정된 목표가 없습니다.</p>
                             </div>
                         )}
                         <button
                             onClick={() => setIsGoalModalOpen(true)}
-                            className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg border border-gray-100 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer"
+                            className="w-full mt-4 flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-semibold text-foreground hover:bg-secondary transition-all cursor-pointer"
                         >
                             새 목표 설정 <ChevronRight className="h-4 w-4" />
                         </button>
@@ -263,7 +263,7 @@ export default function StrategyPage() {
             >
                 <div className="space-y-4">
                     <textarea
-                        className="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary h-24"
+                        className="w-full rounded-lg border-border text-sm focus:ring-primary focus:border-primary h-24"
                         placeholder="내용을 입력하세요"
                         value={newSwotValue}
                         onChange={(e) => setNewSwotValue(e.target.value)}
@@ -282,17 +282,17 @@ export default function StrategyPage() {
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">목표 설명</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">목표 설명</label>
                         <input
                             type="text"
-                            className="w-full rounded-lg border-gray-200 text-sm focus:ring-primary focus:border-primary"
+                            className="w-full rounded-lg border-border text-sm focus:ring-primary focus:border-primary"
                             placeholder="예: 네이버 플레이스 순위 상승"
                             value={newGoalTitle}
                             onChange={(e) => setNewGoalTitle(e.target.value)}
                         />
                     </div>
                     <div className="pt-4 flex gap-3">
-                        <button onClick={() => setIsGoalModalOpen(false)} className="flex-1 py-2 border rounded-lg text-sm font-medium text-gray-600">취소</button>
+                        <button onClick={() => setIsGoalModalOpen(false)} className="flex-1 py-2 border rounded-lg text-sm font-medium text-muted-foreground">취소</button>
                         <button onClick={handleAddGoal} className="flex-1 py-2 bg-primary text-white rounded-lg text-sm font-medium">등록하기</button>
                     </div>
                 </div>

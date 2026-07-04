@@ -24,15 +24,15 @@ export function MarketShareChart({ data, title }: MarketShareChartProps) {
 
     if (chartData.length === 0) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow h-[400px] flex items-center justify-center">
-                <p className="text-gray-500">점유율 데이터가 없습니다.</p>
+            <div className="bg-card p-6 rounded-lg shadow h-[400px] flex items-center justify-center">
+                <p className="text-muted-foreground">점유율 데이터가 없습니다.</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow h-[400px]">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">{title}</h3>
+        <div className="bg-card p-6 rounded-lg shadow h-[400px]">
+            <h3 className="text-lg font-medium leading-6 text-foreground mb-4">{title}</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie

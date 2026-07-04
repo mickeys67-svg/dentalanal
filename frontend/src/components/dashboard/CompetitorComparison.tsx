@@ -25,7 +25,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 export function CompetitorComparison({ data, isLoading }: CompetitorComparisonProps) {
     if (isLoading) {
         return (
-            <div className="w-full h-[400px] flex items-center justify-center border rounded-lg bg-gray-50/50">
+            <div className="w-full h-[400px] flex items-center justify-center border rounded-lg bg-background/50">
                 <div className="flex flex-col items-center gap-2">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     <p className="text-sm text-muted-foreground">{UI_TEXT.COMPETITOR.LOADING}</p>
@@ -87,9 +87,9 @@ export function CompetitorComparison({ data, isLoading }: CompetitorComparisonPr
                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                         <h4 className="text-sm font-semibold text-muted-foreground mb-2">{UI_TEXT.COMPETITOR.LIST_TITLE}</h4>
                         {data.competitors.map((comp, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                            <div key={idx} className="flex items-center justify-between p-3 bg-background rounded-lg border">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${idx < 3 ? "bg-primary" : "bg-gray-400"}`}>
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${idx < 3 ? "bg-primary" : "bg-muted-foreground"}`}>
                                         {idx + 1}
                                     </div>
                                     <div className="flex flex-col">

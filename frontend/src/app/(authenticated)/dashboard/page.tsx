@@ -111,8 +111,8 @@ export default function DashboardPage() {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">대시보드</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">대시보드</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">
                         {selectedClient
                             ? `${selectedClient.name}의 마케팅 데이터 현황`
                             : "분석할 프로젝트를 선택해주세요."}
@@ -123,8 +123,8 @@ export default function DashboardPage() {
                         onClick={handleSync}
                         disabled={isSyncing}
                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium
-                                   bg-white border border-slate-200 text-slate-700
-                                   hover:bg-slate-50 hover:border-slate-300
+                                   bg-card border border-border text-foreground
+                                   hover:bg-secondary hover:border-input
                                    rounded-xl transition-colors shadow-card
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                                     color="#4F46E5"
                                 />
                             ) : (
-                                <div className="h-full rounded-2xl border border-slate-100 bg-white flex items-center justify-center text-slate-400 text-sm shadow-card">
+                                <div className="h-full rounded-2xl border border-border bg-card flex items-center justify-center text-muted-foreground text-sm shadow-card">
                                     데이터 없음
                                 </div>
                             )}
@@ -183,7 +183,7 @@ export default function DashboardPage() {
                                     color="#10B981"
                                 />
                             ) : (
-                                <div className="h-full rounded-2xl border border-slate-100 bg-white flex items-center justify-center text-slate-400 text-sm shadow-card">
+                                <div className="h-full rounded-2xl border border-border bg-card flex items-center justify-center text-muted-foreground text-sm shadow-card">
                                     데이터 없음
                                 </div>
                             )}
@@ -198,31 +198,31 @@ export default function DashboardPage() {
                         ].map((item) => (
                             <div
                                 key={item.title}
-                                className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 h-[180px] flex items-center justify-center"
+                                className="rounded-2xl border border-dashed border-border bg-background/50 p-6 h-[180px] flex items-center justify-center"
                             >
                                 <div className="text-center">
-                                    <p className="text-sm font-semibold text-slate-500 mb-1">+ {item.title}</p>
-                                    <p className="text-xs text-slate-400">{item.desc}</p>
+                                    <p className="text-sm font-semibold text-muted-foreground mb-1">+ {item.title}</p>
+                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
 
                     {/* AI Quick Insight Panel */}
-                    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 to-white shadow-card p-6">
+                    <div className="rounded-2xl border border-primary bg-primary/10 shadow-card p-6">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2.5">
-                                <div className="p-1.5 bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200">
+                                <div className="p-1.5 bg-primary rounded-lg shadow-sm">
                                     <Sparkles className="w-4 h-4 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-900">AI 빠른 인사이트</h3>
-                                    <p className="text-xs text-slate-400">AI 기반 마케팅 분석</p>
+                                    <h3 className="text-sm font-bold text-foreground">AI 빠른 인사이트</h3>
+                                    <p className="text-xs text-muted-foreground">AI 기반 마케팅 분석</p>
                                 </div>
                             </div>
                             <Link
                                 href="/assistant"
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary transition-colors"
                             >
                                 전체 어시스턴트
                                 <ChevronRight className="w-3.5 h-3.5" />
@@ -242,8 +242,8 @@ export default function DashboardPage() {
                                     className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-all duration-150
                                                 disabled:opacity-40 ${
                                         activeQuickQuery === q.id && aiResult
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                            : "bg-white text-indigo-700 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50"
+                                            ? "bg-primary text-white border-primary shadow-sm"
+                                            : "bg-card text-primary border-primary hover:border-primary hover:bg-primary/10"
                                     }`}
                                 >
                                     {q.label}
@@ -252,18 +252,18 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Result area */}
-                        <div className="min-h-[80px] bg-white/80 rounded-xl border border-indigo-100/60 p-4">
+                        <div className="min-h-[80px] bg-card/80 rounded-xl border border-primary/60 p-4">
                             {aiMutation.isPending ? (
-                                <div className="flex items-center gap-2 text-indigo-500 text-sm">
+                                <div className="flex items-center gap-2 text-primary text-sm">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     AI가 분석 중입니다...
                                 </div>
                             ) : aiResult ? (
-                                <div className="prose prose-sm max-w-none prose-p:text-slate-700 prose-strong:text-slate-900 prose-headings:text-slate-900">
+                                <div className="prose prose-sm max-w-none prose-p:text-foreground prose-strong:text-foreground prose-headings:text-foreground">
                                     <ReactMarkdown>{aiResult}</ReactMarkdown>
                                 </div>
                             ) : (
-                                <p className="text-slate-400 text-xs">
+                                <p className="text-muted-foreground text-xs">
                                     위 버튼을 클릭하면 AI 인사이트를 바로 확인할 수 있습니다.
                                 </p>
                             )}

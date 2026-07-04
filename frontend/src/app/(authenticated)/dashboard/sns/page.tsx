@@ -96,7 +96,7 @@ export default function SnsPage() {
                                     </div>
                                     <p className="text-xs text-muted-foreground">{s.method}</p>
                                     {!s.configured && (
-                                        <p className="text-[11px] text-indigo-500 mt-1.5 font-medium">
+                                        <p className="text-[11px] text-primary mt-1.5 font-medium">
                                             {s.supported
                                                 ? "고객님의 API 키 연동 시 실측 데이터가 표출됩니다."
                                                 : "전문 데이터 벤더 연동 시 실측 데이터가 표출됩니다."}

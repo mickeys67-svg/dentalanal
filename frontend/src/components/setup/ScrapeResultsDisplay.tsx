@@ -34,10 +34,10 @@ export function ScrapeResultsDisplay({
     }
 
     return (
-        <div className="mt-12 pt-8 border-t border-gray-50 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+        <div className="mt-12 pt-8 border-t border-border animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">조사 결과</h3>
-                <p className="text-gray-500">
+                <h3 className="text-2xl font-bold text-foreground mb-2">조사 결과</h3>
+                <p className="text-muted-foreground">
                     키워드: {scrapeResults.keyword} | 매체: {
                         scrapeResults.platform === 'NAVER_PLACE' ? '네이버 플레이스' :
                         scrapeResults.platform === 'NAVER_VIEW' ? '네이버 VIEW' :
@@ -69,9 +69,9 @@ export function ScrapeResultsDisplay({
                                     {scrapeResults.results.slice(0, 5).map((result, idx) => (
                                         <tr key={idx} className="border-b border-green-100 hover:bg-green-50/50 transition-colors">
                                             <td className="py-3 px-4 font-bold text-green-700">{result.rank}위</td>
-                                            <td className="py-3 px-4 text-gray-800 font-medium">{result.target_name}</td>
-                                            <td className="py-3 px-4 text-gray-600 text-xs">{result.target_type || '-'}</td>
-                                            <td className="py-3 px-4 text-gray-500 text-xs">
+                                            <td className="py-3 px-4 text-foreground font-medium">{result.target_name}</td>
+                                            <td className="py-3 px-4 text-muted-foreground text-xs">{result.target_type || '-'}</td>
+                                            <td className="py-3 px-4 text-muted-foreground text-xs">
                                                 {new Date(result.captured_at).toLocaleString('ko-KR')}
                                             </td>
                                         </tr>
@@ -80,7 +80,7 @@ export function ScrapeResultsDisplay({
                             </table>
                         </div>
                         {scrapeResults.total_count > 5 && (
-                            <p className="text-xs text-gray-600 mt-4 font-medium">
+                            <p className="text-xs text-muted-foreground mt-4 font-medium">
                                 ... 외 {scrapeResults.total_count - 5}개 결과 (대시보드에서 전체 확인 가능)
                             </p>
                         )}

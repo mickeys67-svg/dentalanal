@@ -51,9 +51,9 @@ export function MentionFeed({ data, isLoading }: MentionFeedProps) {
                 <ScrollArea className="h-full px-6 pb-4">
                     <div className="space-y-4 pt-1">
                         {data.map((item, index) => (
-                            <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
+                            <div key={index} className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50 hover:bg-secondary transition-colors">
                                 <div className="flex items-start justify-between gap-2">
-                                    <h4 className="font-medium text-sm text-gray-900 leading-snug line-clamp-2">
+                                    <h4 className="font-medium text-sm text-foreground leading-snug line-clamp-2">
                                         {item.title.replace(/<[^>]*>?/gm, '')} {/* Remove HTML tags if any */}
                                     </h4>
                                     <Badge variant="outline" className={`shrink-0 text-[10px] ${item.blog_name?.includes('cafe') ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-green-50 text-green-600 border-green-200'}`}>

@@ -93,19 +93,19 @@ export default function EfficiencyPage() {
         if (active && payload && payload.length) {
             const data = payload[0].payload as EfficiencyItem;
             return (
-                <div className="bg-white p-4 shadow-xl border border-gray-100 rounded-2xl">
-                    <p className="font-bold text-gray-900 mb-2">{data.name}</p>
+                <div className="bg-card p-4 shadow-xl border border-border rounded-2xl">
+                    <p className="font-bold text-foreground mb-2">{data.name}</p>
                     <div className="space-y-1 text-xs">
                         <div className="flex justify-between gap-4">
-                            <span className="text-gray-400">비용:</span>
-                            <span className="font-mono font-bold text-gray-900">₩{data.spend.toLocaleString()}</span>
+                            <span className="text-muted-foreground">비용:</span>
+                            <span className="font-mono font-bold text-foreground">₩{data.spend.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between gap-4">
-                            <span className="text-gray-400">전환:</span>
-                            <span className="font-bold text-indigo-600">{data.conversions}건</span>
+                            <span className="text-muted-foreground">전환:</span>
+                            <span className="font-bold text-primary">{data.conversions}건</span>
                         </div>
-                        <div className="flex justify-between gap-4 border-t border-gray-50 pt-1 mt-1">
-                            <span className="text-gray-400">ROAS:</span>
+                        <div className="flex justify-between gap-4 border-t border-border pt-1 mt-1">
+                            <span className="text-muted-foreground">ROAS:</span>
                             <span className="font-black text-primary">{data.roas}%</span>
                         </div>
                     </div>
@@ -120,19 +120,19 @@ export default function EfficiencyPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         성과 효율 리뷰 <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
                     </h1>
-                    <p className="text-sm text-gray-500">{review?.period || '성과 지표 분석 중...'}</p>
+                    <p className="text-sm text-muted-foreground">{review?.period || '성과 지표 분석 중...'}</p>
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-xl">
+                <div className="flex bg-secondary p-1 rounded-xl">
                     {[7, 30, 90].map((d) => (
                         <button
                             key={d}
                             onClick={() => setDays(d)}
                             className={clsx(
                                 "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
-                                days === d ? "bg-white text-primary shadow-sm" : "text-gray-400 hover:text-gray-600"
+                                days === d ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
                             )}
                         >
                             {d === 30 ? '한 달' : d === 7 ? '일주일' : '분기'}
@@ -164,9 +164,9 @@ export default function EfficiencyPage() {
                     color="blue"
                     subtitle="매체 집행액 기준"
                 />
-                <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
+                <div className="bg-primary p-6 rounded-3xl shadow-xl text-white relative overflow-hidden">
                     <div className="relative z-10">
-                        <h3 className="text-xs font-bold text-indigo-100 mb-1 uppercase tracking-widest">AI INSIGHT</h3>
+                        <h3 className="text-xs font-bold text-white/70 mb-1 uppercase tracking-widest">AI INSIGHT</h3>
                         <p className="text-sm font-medium leading-relaxed opacity-90">
                             현재 {(review?.overall_roas || 0) > 500 ? '매우 우수한' : '개선 작업이 필요한'} 효율을 보여주고 있습니다.
                         </p>
@@ -219,24 +219,24 @@ export default function EfficiencyPage() {
 
                 {/* AI Detailed Review */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white h-full rounded-3xl border border-gray-100 shadow-sm flex flex-col">
-                        <div className="p-6 border-b border-gray-50 flex items-center justify-between">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <div className="bg-card h-full rounded-3xl border border-border shadow-sm flex flex-col">
+                        <div className="p-6 border-b border-border flex items-center justify-between">
+                            <h3 className="font-bold text-foreground flex items-center gap-2">
                                 <MessageSquare className="w-4 h-4 text-primary" /> AI 성과 비평
                             </h3>
                             <div className="flex gap-1">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                <div className="text-[10px] font-black text-gray-400">ANALYZING</div>
+                                <div className="text-[10px] font-black text-muted-foreground">ANALYZING</div>
                             </div>
                         </div>
                         <div className="p-6 overflow-y-auto max-h-[450px] scrollbar-hide flex-1">
-                            <div className="prose prose-sm prose-indigo max-w-none prose-p:leading-relaxed prose-li:my-1 text-gray-600">
+                            <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-li:my-1 text-muted-foreground">
                                 <ReactMarkdown>
                                     {review?.ai_review || '데이터 분석 중... 잠시만 기다려주세요.'}
                                 </ReactMarkdown>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 border-t border-gray-50 text-[10px] text-gray-400 text-center rounded-b-3xl">
+                        <div className="p-4 bg-background border-t border-border text-[10px] text-muted-foreground text-center rounded-b-3xl">
                             위 분석은 실시간 광고 집행 성능 데이터를 기반으로 생성되었습니다.
                         </div>
                     </div>
@@ -248,18 +248,18 @@ export default function EfficiencyPage() {
                 <div className="overflow-x-auto mt-4">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                            <tr className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border">
                                 <th className="py-4 px-2">캠페인 및 매체</th>
                                 <th className="py-4">집행 비용 / ROAS</th>
                                 <th className="py-4">AI 최적화 제안 (Action Item)</th>
                                 <th className="py-4 text-right">관리</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 text-sm">
+                        <tbody className="divide-y divide-border text-sm">
                             {review?.items?.map((item: EfficiencyItem, i: number) => (
-                                <tr key={i} className="hover:bg-gray-50/50 transition-all group">
+                                <tr key={i} className="hover:bg-secondary transition-all group">
                                     <td className="py-6 px-2 w-[25%]">
-                                        <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">{item.name}</div>
+                                        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</div>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className={clsx(
                                                 "px-2 py-0.5 rounded text-[9px] font-black",
@@ -267,38 +267,38 @@ export default function EfficiencyPage() {
                                             )}>
                                                 ROAS {item.roas}%
                                             </span>
-                                            <span className="text-[10px] text-gray-400 font-mono">₩{item.spend.toLocaleString()}</span>
+                                            <span className="text-[10px] text-muted-foreground font-mono">₩{item.spend.toLocaleString()}</span>
                                         </div>
                                     </td>
                                     <td className="py-6 w-[20%]">
                                         <div className="flex flex-col gap-1">
                                             <div className="flex justify-between text-[11px] pr-8">
-                                                <span className="text-gray-400">CTR</span>
+                                                <span className="text-muted-foreground">CTR</span>
                                                 <span className="font-bold">{item.ctr}%</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] pr-8">
-                                                <span className="text-gray-400">CVR</span>
-                                                <span className="font-bold text-indigo-600">{item.cvr}%</span>
+                                                <span className="text-muted-foreground">CVR</span>
+                                                <span className="font-bold text-primary">{item.cvr}%</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] pr-8">
-                                                <span className="text-gray-400">CPA</span>
+                                                <span className="text-muted-foreground">CPA</span>
                                                 <span className="font-bold">₩{item.cpa.toLocaleString()}</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="py-6 px-4">
                                         {item.suggestion ? (
-                                            <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50 relative group/sug">
-                                                <div className="text-xs text-indigo-900 leading-relaxed font-medium">
-                                                    <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded mr-2 font-black uppercase">Suggestion</span>
+                                            <div className="bg-primary/10 p-4 rounded-2xl border border-primary relative group/sug">
+                                                <div className="text-xs text-primary leading-relaxed font-medium">
+                                                    <span className="inline-flex items-center gap-1 bg-primary text-white text-[9px] px-1.5 py-0.5 rounded mr-2 font-black uppercase">Suggestion</span>
                                                     {item.suggestion}
                                                 </div>
                                                 <div className="absolute top-2 right-2 opacity-0 group-hover/sug:opacity-100 transition-opacity">
-                                                    <Sparkles className="w-3 h-3 text-indigo-400" />
+                                                    <Sparkles className="w-3 h-3 text-primary" />
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="text-xs text-gray-400 italic">충분한 데이터 수집 후 제안이 생성됩니다.</div>
+                                            <div className="text-xs text-muted-foreground italic">충분한 데이터 수집 후 제안이 생성됩니다.</div>
                                         )}
                                     </td>
                                     <td className="py-6 text-right px-4">
@@ -306,7 +306,7 @@ export default function EfficiencyPage() {
                                             <button
                                                 onClick={() => handleCreateTask(item)}
                                                 disabled={processingTaskId === item.name}
-                                                className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-gray-50 hover:border-primary hover:text-primary transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                                                className="flex items-center gap-2 bg-card border border-border text-muted-foreground px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-secondary hover:border-primary hover:text-primary transition-all shadow-sm active:scale-95 disabled:opacity-50"
                                             >
                                                 {processingTaskId === item.name ? (
                                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -338,21 +338,21 @@ interface EfficiencyCardProps {
 function EfficiencyCard({ title, value, icon: Icon, color, subtitle }: EfficiencyCardProps) {
     const colorClasses = {
         primary: "bg-primary/5 text-primary",
-        indigo: "bg-indigo-50 text-indigo-600",
+        indigo: "bg-primary/10 text-primary",
         blue: "bg-blue-50 text-blue-600",
     };
 
     return (
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-4">
                 <div className={clsx("p-2 rounded-xl", colorClasses[color])}>
                     <Icon className="w-5 h-5" />
                 </div>
                 {title.includes('ROAS') && <div className="text-[10px] font-black text-green-500">+4.2%</div>}
             </div>
-            <div className="text-2xl font-black text-gray-900 font-mono tracking-tighter">{value}</div>
-            <div className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-widest">{title}</div>
-            <div className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
+            <div className="text-2xl font-black text-foreground font-mono tracking-tighter">{value}</div>
+            <div className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-widest">{title}</div>
+            <div className="mt-3 text-[10px] text-muted-foreground flex items-center gap-1">
                 <Clock className="w-3 h-3" /> {subtitle}
             </div>
         </div>

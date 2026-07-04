@@ -60,6 +60,16 @@ const config = {
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         danger: "hsl(var(--danger))",
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          bright: "hsl(var(--gold-bright))",
+        },
+        "sidebar-fg": "hsl(var(--sidebar-fg))",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Pretendard Variable", "Pretendard", "sans-serif"],
+        display: ["var(--font-serif)", "Noto Serif KR", "serif"],
+        serif: ["var(--font-serif)", "Noto Serif KR", "serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -93,9 +103,9 @@ const config = {
         "fade-in": "fade-in 0.3s ease-out",
       },
       boxShadow: {
-        "card": "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)",
-        "card-hover": "0 4px 12px 0 rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05)",
-        "sidebar": "4px 0 16px 0 rgba(0, 0, 0, 0.12)",
+        "card": "0 1px 3px 0 rgba(31, 28, 23, 0.05), 0 1px 2px -1px rgba(31, 28, 23, 0.04)",
+        "card-hover": "0 6px 20px -4px rgba(31, 28, 23, 0.10), 0 2px 6px -2px rgba(31, 28, 23, 0.06)",
+        "sidebar": "4px 0 24px 0 rgba(24, 21, 17, 0.16)",
       },
     },
   },

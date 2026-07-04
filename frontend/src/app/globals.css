@@ -4,74 +4,94 @@
 
 @layer base {
   :root {
-    /* Base colors */
-    --background: 210 20% 98%;           /* #F8FAFC - Slate 50 */
-    --foreground: 222 47% 11%;           /* #0F172A - Slate 900 */
+    /* ── KeywordLens 디자인: 따뜻한 크림 + 골드 에디토리얼 팔레트 ── */
 
-    /* Card */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Base colors */
+    --background: 40 24% 92%;            /* #EFECE4 - 따뜻한 크림 */
+    --foreground: 39 17% 11%;            /* #1F1C17 - 웜 블랙 */
+
+    /* Card / surface */
+    --card: 44 40% 97%;                  /* #FBFAF6 - 오프화이트 서피스 */
+    --card-foreground: 39 17% 11%;
 
     /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 44 40% 97%;
+    --popover-foreground: 39 17% 11%;
 
-    /* Primary: Indigo 600 */
-    --primary: 243 75% 59%;             /* #4F46E5 */
-    --primary-foreground: 0 0% 100%;
+    /* Primary: 골드 (#B08D4C) */
+    --primary: 39 40% 49%;
+    --primary-foreground: 40 30% 96%;
 
-    /* Secondary */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary: 웜 샌드 */
+    --secondary: 41 22% 87%;            /* #E4E0D5 */
+    --secondary-foreground: 39 17% 11%;
 
     /* Muted */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;    /* #64748B - Slate 500 */
+    --muted: 41 22% 87%;
+    --muted-foreground: 41 11% 49%;     /* #8A8272 - 웜 그레이 */
 
     /* Accent */
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 41 22% 87%;
+    --accent-foreground: 39 17% 11%;
 
-    /* Destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* Destructive: 웜 레드 (#A85751) */
+    --destructive: 4 35% 49%;
+    --destructive-foreground: 40 30% 96%;
 
     /* Border / Input */
-    --border: 214 32% 91%;              /* #E2E8F0 - Slate 200 */
-    --input: 214 32% 91%;
-    --ring: 243 75% 59%;
+    --border: 40 18% 87%;               /* 웜 보더 */
+    --input: 40 18% 84%;
+    --ring: 39 40% 49%;
 
     /* Radius */
-    --radius: 0.75rem;
+    --radius: 0.875rem;                 /* 14px 카드 */
 
     /* Custom semantic tokens */
-    --sidebar-bg: 222 47% 11%;          /* #0F172A - Slate 900 */
-    --sidebar-border: 217 33% 17%;      /* Slate 800 */
-    --success: 160 84% 39%;             /* #10B981 - Emerald 500 */
-    --warning: 38 92% 50%;              /* #F59E0B - Amber 500 */
-    --danger: 0 84% 60%;               /* #EF4444 - Red 500 */
+    --sidebar-bg: 36 19% 8%;            /* #181511 - 웜 다크 */
+    --sidebar-border: 40 6% 20%;
+    --success: 138 25% 39%;             /* #4A7C59 - 웜 그린 */
+    --warning: 39 60% 45%;              /* #B8873C - 골드 계열 앰버 */
+    --danger: 4 35% 49%;                /* #A85751 - 웜 레드 */
+
+    /* KeywordLens 확장 토큰 */
+    --gold: 39 40% 49%;                 /* #B08D4C */
+    --gold-bright: 39 55% 66%;          /* #D8B878 - 다크 서피스 위 강조 */
+    --sidebar-fg: 40 26% 90%;           /* #EDE8DE */
+
+    /* 폰트 패밀리 (Pretendard 본문 · Noto Serif KR 디스플레이) */
+    --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+    --font-serif: 'Noto Serif KR', serif;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 243 75% 59%;
+    --background: 36 19% 8%;            /* #181511 */
+    --foreground: 40 26% 90%;
+    --card: 38 14% 12%;
+    --card-foreground: 40 26% 90%;
+    --popover: 38 14% 12%;
+    --popover-foreground: 40 26% 90%;
+    --primary: 39 55% 60%;             /* 다크에선 밝은 골드 */
+    --primary-foreground: 36 19% 8%;
+    --secondary: 40 8% 18%;
+    --secondary-foreground: 40 26% 90%;
+    --muted: 40 8% 18%;
+    --muted-foreground: 40 10% 62%;
+    --accent: 40 8% 18%;
+    --accent-foreground: 40 26% 90%;
+    --destructive: 4 45% 55%;
+    --destructive-foreground: 40 26% 90%;
+    --border: 40 8% 20%;
+    --input: 40 8% 20%;
+    --ring: 39 55% 60%;
+
+    --sidebar-bg: 36 24% 6%;
+    --sidebar-border: 40 8% 18%;
+    --success: 138 30% 52%;
+    --warning: 39 60% 58%;
+    --danger: 4 45% 58%;
+    --gold: 39 55% 60%;
+    --gold-bright: 39 55% 70%;
+    --sidebar-fg: 40 26% 90%;
   }
 }
 
@@ -81,6 +101,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans), 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: hsl(var(--gold) / 0.2);
   }
 }
 
@@ -111,6 +136,13 @@
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
   }
+  @keyframes klFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .animate-kl-fade {
+    animation: klFade 0.5s ease both;
+  }
   .duration-500 { animation-duration: 500ms; }
   .duration-700 { animation-duration: 700ms; }
   .duration-300 { animation-duration: 300ms; }
@@ -118,11 +150,15 @@
 
 /* Typography utilities */
 @layer utilities {
+  /* 숫자·헤드라인용 세리프 디스플레이 (Noto Serif KR) */
+  .font-display {
+    font-family: var(--font-serif), 'Noto Serif KR', serif;
+  }
   .text-heading-xl {
-    @apply text-3xl font-bold tracking-tight text-foreground;
+    @apply font-display text-3xl font-semibold tracking-tight text-foreground;
   }
   .text-heading-lg {
-    @apply text-xl font-semibold tracking-tight text-foreground;
+    @apply font-display text-xl font-semibold tracking-tight text-foreground;
   }
   .text-heading-md {
     @apply text-base font-semibold text-foreground;

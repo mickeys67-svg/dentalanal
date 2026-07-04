@@ -44,7 +44,7 @@ export default function CollectionPage() {
         return (
             <div className="flex h-[80vh] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-gray-500 font-medium">연동 상태를 불러오는 중...</span>
+                <span className="ml-3 text-muted-foreground font-medium">연동 상태를 불러오는 중...</span>
             </div>
         );
     }
@@ -77,8 +77,8 @@ export default function CollectionPage() {
     return (
         <div className="space-y-8 p-6 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">데이터 수집 센터</h1>
-                <p className="text-gray-500">마케팅 채널을 연결하여 데이터를 자동으로 통합하세요.</p>
+                <h1 className="text-2xl font-bold text-foreground">데이터 수집 센터</h1>
+                <p className="text-muted-foreground">마케팅 채널을 연결하여 데이터를 자동으로 통합하세요.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -93,14 +93,14 @@ export default function CollectionPage() {
                                         "h-12 w-12 rounded-lg flex items-center justify-center border",
                                         connector.id === 'naver_ads' ? "bg-green-50 border-green-100 text-green-600" :
                                             connector.id === 'google_ads' ? "bg-blue-50 border-blue-100 text-blue-600" :
-                                                "bg-indigo-50 border-indigo-100 text-indigo-600"
+                                                "bg-primary/10 border-primary text-primary"
                                     )}>
                                         <Link2 className="h-6 w-6" />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
-                                            <h4 className="font-semibold text-gray-900">{connector.name}</h4>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                            <h4 className="font-semibold text-foreground">{connector.name}</h4>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                                 {connector.category}
                                             </span>
                                         </div>
@@ -122,7 +122,7 @@ export default function CollectionPage() {
                                     </div>
                                 </div>
 
-                                <p className="text-sm text-gray-500 mb-8 flex-1 leading-relaxed">
+                                <p className="text-sm text-muted-foreground mb-8 flex-1 leading-relaxed">
                                     {connector.description}
                                 </p>
 
@@ -133,7 +133,7 @@ export default function CollectionPage() {
                                         "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all",
                                         (connector.status === 'AVAILABLE' && !isConnected)
                                             ? "bg-primary text-white hover:bg-opacity-90 shadow-sm active:scale-95"
-                                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : "bg-secondary text-muted-foreground cursor-not-allowed"
                                     )}
                                 >
                                     {isConnected ? '이미 연결됨' : connectMutation.isPending ? '연결 중...' : connector.status === 'AVAILABLE' ? (
@@ -151,17 +151,17 @@ export default function CollectionPage() {
                 <DashboardWidget title="CSV/Excel 업로드">
                     <div className="flex flex-col h-full opacity-60">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100">
-                                <Link2 className="h-6 w-6 text-gray-400" />
+                            <div className="h-12 w-12 rounded-lg bg-background flex items-center justify-center border border-border">
+                                <Link2 className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                                 파일 업로드
                             </span>
                         </div>
-                        <p className="text-sm text-gray-500 mb-8 flex-1">
+                        <p className="text-sm text-muted-foreground mb-8 flex-1">
                             API 연동이 불가능한 매체의 데이터를 파일 업로드 방식으로 직접 추가할 수 있습니다.
                         </p>
-                        <button disabled className="bg-gray-100 text-gray-400 rounded-lg py-2.5 text-sm font-semibold cursor-not-allowed">
+                        <button disabled className="bg-secondary text-muted-foreground rounded-lg py-2.5 text-sm font-semibold cursor-not-allowed">
                             준비 중
                         </button>
                     </div>

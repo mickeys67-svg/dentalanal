@@ -82,21 +82,21 @@ export default function ViralPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{UI_TEXT.VIRAL.TITLE}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">{UI_TEXT.VIRAL.TITLE}</h1>
                     <p className="text-muted-foreground mt-1">{UI_TEXT.VIRAL.SUBTITLE}</p>
                 </div>
             </div>
 
             {/* Search */}
-            <div className="bg-white p-6 rounded-xl border shadow-sm">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">{UI_TEXT.VIRAL.SEARCH_LABEL}</label>
+            <div className="bg-card p-6 rounded-xl border shadow-sm">
+                <label className="text-sm font-medium text-foreground mb-2 block">{UI_TEXT.VIRAL.SEARCH_LABEL}</label>
                 <div className="flex gap-3 max-w-lg">
                     <Input
                         placeholder={UI_TEXT.VIRAL.SEARCH_PLACEHOLDER}
                         value={keyword}
                         onChange={(e) => setKeyword(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        className="bg-white"
+                        className="bg-card"
                     />
                     <Button
                         onClick={handleSearch}

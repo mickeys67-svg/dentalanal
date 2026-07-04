@@ -28,24 +28,24 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
     });
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                    <div className="p-1.5 bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200">
+                    <div className="p-1.5 bg-primary rounded-lg shadow-sm">
                         <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-semibold text-slate-900">AI 마케팅 데이터 분석 리포트</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">AI 기반 심층 분석</p>
+                        <h3 className="text-[15px] font-semibold text-foreground">AI 마케팅 데이터 분석 리포트</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">AI 기반 심층 분석</p>
                     </div>
                 </div>
                 <button
                     onClick={() => mutation.mutate()}
                     disabled={mutation.isPending || !keyword || !targetHospital}
-                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700
+                    className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90
                                text-white px-4 py-2 rounded-xl text-sm font-semibold
-                               shadow-sm shadow-indigo-200 transition-all
+                               shadow-sm transition-all
                                disabled:opacity-50 disabled:cursor-not-allowed
                                active:scale-[0.98]"
                 >
@@ -61,12 +61,12 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
             <div className="p-6">
                 {/* Empty state */}
                 {!report && !mutation.isPending && !errorStatus && (
-                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-10 text-center bg-slate-50/50">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
-                            <Sparkles className="w-6 h-6 text-indigo-400" />
+                    <div className="border-2 border-dashed border-border rounded-xl p-10 text-center bg-background/50">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                            <Sparkles className="w-6 h-6 text-primary" />
                         </div>
-                        <p className="text-slate-600 font-medium text-sm">AI 마케팅 분석을 시작하세요</p>
-                        <p className="text-xs text-slate-400 mt-1">경쟁 브랜드 SOV와 내 브랜드 데이터를 비교 분석합니다.</p>
+                        <p className="text-muted-foreground font-medium text-sm">AI 마케팅 분석을 시작하세요</p>
+                        <p className="text-xs text-muted-foreground mt-1">경쟁 브랜드 SOV와 내 브랜드 데이터를 비교 분석합니다.</p>
                     </div>
                 )}
 
@@ -74,7 +74,7 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
                 {mutation.isPending && (
                     <div className="space-y-3 animate-pulse">
                         {[3, 5, 4, 6, 3].map((w, i) => (
-                            <div key={i} className={`h-4 bg-slate-100 rounded-lg w-${w}/6`} />
+                            <div key={i} className={`h-4 bg-secondary rounded-lg w-${w}/6`} />
                         ))}
                     </div>
                 )}
@@ -101,11 +101,11 @@ export function AIReport({ keyword, targetHospital, topN }: AIReportProps) {
 
                 {/* Report content */}
                 {report && (
-                    <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100">
-                        <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
+                    <div className="bg-primary/10 rounded-xl p-5 border border-primary">
+                        <div className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
                             {report}
                         </div>
-                        <div className="mt-5 pt-4 border-t border-indigo-100 flex items-center gap-1.5 text-xs text-indigo-400">
+                        <div className="mt-5 pt-4 border-t border-primary flex items-center gap-1.5 text-xs text-primary">
                             <AlertCircle className="w-3.5 h-3.5" />
                             본 리포트는 AI에 의해 생성된 분석이며, 참고용으로 활용해 주세요.
                         </div>

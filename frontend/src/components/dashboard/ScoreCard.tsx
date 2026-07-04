@@ -18,9 +18,9 @@ interface ScoreCardProps {
 
 const accentStyles: Record<AccentColor, { bar: string; iconBg: string; iconColor: string }> = {
     indigo: {
-        bar: "bg-indigo-500",
-        iconBg: "bg-indigo-50",
-        iconColor: "text-indigo-600",
+        bar: "bg-primary",
+        iconBg: "bg-primary/10",
+        iconColor: "text-primary",
     },
     emerald: {
         bar: "bg-emerald-500",
@@ -38,9 +38,9 @@ const accentStyles: Record<AccentColor, { bar: string; iconBg: string; iconColor
         iconColor: "text-rose-600",
     },
     violet: {
-        bar: "bg-violet-500",
-        iconBg: "bg-violet-50",
-        iconColor: "text-violet-600",
+        bar: "bg-primary",
+        iconBg: "bg-primary/10",
+        iconColor: "text-primary",
     },
 };
 
@@ -57,13 +57,13 @@ export function ScoreCard({
     const styles = accentStyles[accentColor];
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden hover:shadow-card-hover transition-shadow duration-200">
+        <div className="bg-card rounded-2xl border border-border shadow-card overflow-hidden hover:shadow-card-hover transition-shadow duration-200">
             {/* Top accent bar */}
             <div className={cn("h-1", styles.bar)} />
 
             <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
-                    <span className="text-sm font-medium text-slate-500 leading-tight">{title}</span>
+                    <span className="text-sm font-medium text-muted-foreground leading-tight">{title}</span>
                     {Icon && (
                         <div className={cn("p-2 rounded-lg flex-shrink-0", styles.iconBg)}>
                             <Icon className={cn("h-4 w-4", styles.iconColor)} />
@@ -72,7 +72,7 @@ export function ScoreCard({
                 </div>
 
                 <div>
-                    <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                    <span className="text-2xl font-bold text-foreground tracking-tight">
                         {prefix}
                         {value}
                         {suffix}
@@ -95,7 +95,7 @@ export function ScoreCard({
                         )}
                         {Math.abs(change)}%
                     </span>
-                    <span className="text-xs text-slate-400">지난달 대비</span>
+                    <span className="text-xs text-muted-foreground">지난달 대비</span>
                 </div>
             </div>
         </div>

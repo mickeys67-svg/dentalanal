@@ -426,7 +426,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             {/* Step Indicator */}
             <div className="mb-8">
                 <div className="flex items-center justify-between max-w-md mx-auto relative">
-                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0" />
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-secondary -translate-y-1/2 z-0" />
                     <div className={clsx("absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-500 -translate-y-1/2 z-0",
                         currentStep === 1 ? "w-0" : currentStep === 2 ? "w-1/2" : "w-full")} />
 
@@ -438,11 +438,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                         <div key={s.step} className="relative z-10 flex flex-col items-center gap-2">
                             <div className={clsx(
                                 "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300",
-                                currentStep >= s.step ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-white border-gray-200 text-gray-400"
+                                currentStep >= s.step ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" : "bg-card border-border text-muted-foreground"
                             )}>
                                 <s.icon className="w-4 h-4" />
                             </div>
-                            <span className={clsx("text-[10px] font-bold", currentStep >= s.step ? "text-primary" : "text-gray-400")}>
+                            <span className={clsx("text-[10px] font-bold", currentStep >= s.step ? "text-primary" : "text-muted-foreground")}>
                                 {s.label}
                             </span>
                         </div>
@@ -451,18 +451,18 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
 
             {/* Content Area */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-3xl p-6 sm:p-8 shadow-xl shadow-gray-200/50 flex flex-col relative overflow-visible">
+            <div className="bg-card/70 backdrop-blur-xl border border-white/40 rounded-3xl p-6 sm:p-8 shadow-xl shadow-foreground/10 flex flex-col relative overflow-visible">
                 <div className="flex-1">
                     {currentStep === 1 && (
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">어떤 브랜드를 분석할까요?</h2>
-                                <p className="text-gray-500">기존 브랜드를 선택하거나 새 브랜드를 등록해주세요.</p>
+                                <h2 className="text-3xl font-bold text-foreground mb-2">어떤 브랜드를 분석할까요?</h2>
+                                <p className="text-muted-foreground">기존 브랜드를 선택하거나 새 브랜드를 등록해주세요.</p>
                             </div>
 
                             {recentClients.length > 0 && (
                                 <div className="space-y-4">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-bold text-foreground flex items-center gap-2">
                                         <Briefcase className="w-4 h-4 text-primary" /> 등록된 브랜드 (퀵 셀렉트)
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -470,19 +470,19 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                             <button
                                                 key={client.id}
                                                 onClick={() => handleSelectExistingClient(client)}
-                                                className="group p-4 bg-white border border-gray-100 rounded-2xl text-left hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all outline-none"
+                                                className="group p-4 bg-card border border-border rounded-2xl text-left hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all outline-none"
                                             >
-                                                <div className="text-xs text-gray-400 mb-1 group-hover:text-primary transition-colors">{client.industry}</div>
-                                                <div className="font-bold text-gray-800 line-clamp-1">{client.name}</div>
+                                                <div className="text-xs text-muted-foreground mb-1 group-hover:text-primary transition-colors">{client.industry}</div>
+                                                <div className="font-bold text-foreground line-clamp-1">{client.name}</div>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-6 max-w-md relative pt-6 border-t border-gray-50">
+                            <div className="space-y-6 max-w-md relative pt-6 border-t border-border">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-bold text-foreground flex items-center gap-2">
                                         <Plus className="w-4 h-4 text-primary" /> 새 브랜드 등록
                                     </label>
                                     <input
@@ -490,28 +490,28 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                         value={clientName}
                                         onChange={(e) => setClientName(e.target.value)}
                                         placeholder="브랜드명을 입력하세요"
-                                        className="w-full h-14 bg-gray-50/50 border border-gray-100 rounded-2xl px-5 text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none"
+                                        className="w-full h-14 bg-background/50 border border-border rounded-2xl px-5 text-lg focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none"
                                     />
                                     {clientSuggestions.length > 0 && (
-                                        <div className="absolute top-[85px] left-0 w-full bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="absolute top-[85px] left-0 w-full bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                             {clientSuggestions.map(c => (
                                                 <button
                                                     key={c.id}
                                                     onClick={() => handleSelectExistingClient(c)}
-                                                    className="w-full px-5 py-4 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors"
+                                                    className="w-full px-5 py-4 text-left hover:bg-secondary flex items-center justify-between group transition-colors"
                                                 >
                                                     <div>
-                                                        <span className="font-bold text-gray-800">{c.name}</span>
-                                                        <span className="ml-2 text-xs text-gray-400">{c.industry}</span>
+                                                        <span className="font-bold text-foreground">{c.name}</span>
+                                                        <span className="ml-2 text-xs text-muted-foreground">{c.industry}</span>
                                                     </div>
-                                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
+                                                    <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-primary transition-colors" />
                                                 </button>
                                             ))}
                                         </div>
                                     )}
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">카테고리</label>
+                                    <label className="text-sm font-bold text-foreground">카테고리</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         {['이커머스', '뷰티', '식음료', '기타'].map(opt => (
                                             <button
@@ -519,7 +519,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                                 onClick={() => setIndustry(opt)}
                                                 className={clsx(
                                                     "h-12 rounded-xl text-sm font-bold transition-all border",
-                                                    industry === opt ? "bg-indigo-50 border-primary text-primary" : "bg-white border-gray-100 text-gray-500 hover:border-gray-200"
+                                                    industry === opt ? "bg-primary/10 border-primary text-primary" : "bg-card border-border text-muted-foreground hover:border-border"
                                                 )}
                                             >
                                                 {opt}
@@ -534,13 +534,13 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     {currentStep === 2 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">분석 대상을 지정해주세요</h2>
-                                <p className="text-gray-500">우리 브랜드와 비교하고 싶은 경쟁 브랜드를 등록합니다.</p>
+                                <h2 className="text-3xl font-bold text-foreground mb-2">분석 대상을 지정해주세요</h2>
+                                <p className="text-muted-foreground">우리 브랜드와 비교하고 싶은 경쟁 브랜드를 등록합니다.</p>
                             </div>
 
                             {recentTargets.length > 0 && (
                                 <div className="space-y-4">
-                                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <label className="text-sm font-bold text-foreground flex items-center gap-2">
                                         <Sparkles className="w-4 h-4 text-primary" /> 추천/최근 브랜드 (퀵 셀렉트)
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -548,7 +548,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                             <button
                                                 key={s.id}
                                                 onClick={() => handleSelectExistingTarget(s)}
-                                                className="p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all shadow-sm flex flex-col gap-1 text-left"
+                                                className="p-3 bg-card border border-border rounded-xl text-xs font-bold text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary transition-all shadow-sm flex flex-col gap-1 text-left"
                                             >
                                                 <div className="flex items-center gap-1">
                                                     <Plus className="w-3 h-3 text-primary" />
@@ -560,15 +560,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 </div>
                             )}
 
-                            <div className="space-y-4 pt-6 border-t border-gray-50">
+                            <div className="space-y-4 pt-6 border-t border-border">
                                 {targets.map((t, idx) => (
                                     <div key={idx} className={clsx(
                                         "p-6 rounded-2xl border transition-all flex items-center gap-4 relative overflow-visible",
-                                        t.target_type === 'OWNER' ? "bg-indigo-50 border-indigo-100 ring-2 ring-primary/10" : "bg-white border-gray-100 shadow-sm"
+                                        t.target_type === 'OWNER' ? "bg-primary/10 border-primary ring-2 ring-primary/10" : "bg-card border-border shadow-sm"
                                     )}>
                                         <div className={clsx(
                                             "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0",
-                                            t.target_type === 'OWNER' ? "bg-primary text-white" : "bg-gray-100 text-gray-500"
+                                            t.target_type === 'OWNER' ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
                                         )}>
                                             {t.target_type === 'OWNER' ? '나' : idx}
                                         </div>
@@ -581,10 +581,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                                     onFocus={() => setActiveTargetIdx(idx)}
                                                     onBlur={() => setTimeout(() => setActiveTargetIdx(null), 200)}
                                                     onChange={(e) => updateTarget(idx, 'name', e.target.value)}
-                                                    className="w-full bg-transparent border-b border-gray-200 py-2 outline-none focus:border-primary font-bold transition-all"
+                                                    className="w-full bg-transparent border-b border-input py-2 outline-none focus:border-primary font-bold transition-all"
                                                 />
                                                 {activeTargetIdx === idx && targetSuggestions.length > 0 && (
-                                                    <div className="absolute top-[45px] left-0 w-full bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                    <div className="absolute top-[45px] left-0 w-full bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                                         {targetSuggestions.map(s => (
                                                             <button
                                                                 key={s.id}
@@ -593,28 +593,28 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                                                     updateTarget(idx, 'url', s.urls?.default || '');
                                                                     setTargetSuggestions([]);
                                                                 }}
-                                                                className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors text-sm"
+                                                                className="w-full px-4 py-3 text-left hover:bg-secondary flex items-center justify-between group transition-colors text-sm"
                                                             >
-                                                                <span className="font-bold text-gray-700">{s.name}</span>
-                                                                <LinkIcon className="w-3 h-3 text-gray-300" />
+                                                                <span className="font-bold text-foreground">{s.name}</span>
+                                                                <LinkIcon className="w-3 h-3 text-muted-foreground/60" />
                                                             </button>
                                                         ))}
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <LinkIcon className="w-4 h-4 text-gray-400" />
+                                                <LinkIcon className="w-4 h-4 text-muted-foreground" />
                                                 <input
                                                     type="url"
                                                     placeholder="네이버 플레이스 URL (선택)"
                                                     value={t.url}
                                                     onChange={(e) => updateTarget(idx, 'url', e.target.value)}
-                                                    className="flex-1 bg-transparent border-b border-gray-100 py-2 outline-none focus:border-primary text-sm transition-all text-gray-500"
+                                                    className="flex-1 bg-transparent border-b border-border py-2 outline-none focus:border-primary text-sm transition-all text-muted-foreground"
                                                 />
                                             </div>
                                         </div>
                                         {t.target_type === 'COMPETITOR' && (
-                                            <button onClick={() => removeTarget(idx)} className="text-gray-300 hover:text-red-500 transition-colors">
+                                            <button onClick={() => removeTarget(idx)} className="text-muted-foreground/60 hover:text-red-500 transition-colors">
                                                 <Trash2 className="w-5 h-5" />
                                             </button>
                                         )}
@@ -622,7 +622,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 ))}
                                 <button
                                     onClick={addTarget}
-                                    className="w-full h-14 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-all font-bold"
+                                    className="w-full h-14 border-2 border-dashed border-input rounded-2xl flex items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-all font-bold"
                                 >
                                     <Plus className="w-5 h-5" /> 경쟁사 추가하기
                                 </button>
@@ -633,22 +633,22 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                     {currentStep === 3 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">어떤 검색어로 조사할까요?</h2>
-                                <p className="text-gray-500">마지막입니다! 분석하고 싶은 키워드와 매체를 선택하세요.</p>
+                                <h2 className="text-3xl font-bold text-foreground mb-2">어떤 검색어로 조사할까요?</h2>
+                                <p className="text-muted-foreground">마지막입니다! 분석하고 싶은 키워드와 매체를 선택하세요.</p>
                             </div>
 
                             <div className="space-y-10">
                                 <div className="space-y-4">
-                                    <label className="text-sm font-bold text-gray-700">조사 키워드</label>
+                                    <label className="text-sm font-bold text-foreground">조사 키워드</label>
                                     <div className="relative max-w-md">
-                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
                                         <input
                                             type="text"
                                             placeholder="예: 제주도여행"
                                             value={keyword}
                                             onChange={(e) => setKeyword(e.target.value)}
                                             disabled={scrapingStatus === 'scraping' || scrapingStatus === 'fetching'}
-                                            className="w-full h-16 bg-gray-50/50 border border-gray-100 rounded-2xl pl-12 pr-5 text-xl font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none shadow-sm disabled:opacity-50"
+                                            className="w-full h-16 bg-background/50 border border-border rounded-2xl pl-12 pr-5 text-xl font-bold focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none shadow-sm disabled:opacity-50"
                                         />
                                     </div>
                                     {scrapeError && scrapingStatus === 'error' && (
@@ -669,7 +669,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <label className="text-sm font-bold text-gray-700">분석 매체</label>
+                                    <label className="text-sm font-bold text-foreground">분석 매체</label>
                                     <div className="flex gap-4">
                                         {[
                                             { id: 'NAVER_PLACE', name: '네이버 플레이스', color: 'bg-green-500' },
@@ -681,7 +681,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                                 onClick={() => setPlatform(p.id)}
                                                 className={clsx(
                                                     "px-6 py-4 rounded-2xl font-bold transition-all border flex items-center gap-3",
-                                                    platform === p.id ? "bg-white border-primary text-primary shadow-lg shadow-primary/5" : "bg-gray-50 border-gray-100 text-gray-400"
+                                                    platform === p.id ? "bg-card border-primary text-primary shadow-lg shadow-primary/5" : "bg-background border-border text-muted-foreground"
                                                 )}
                                             >
                                                 <div className={clsx("w-2 h-2 rounded-full", p.color)} />
@@ -692,8 +692,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                 </div>
 
                                 {history.length > 0 && (
-                                    <div className="space-y-4 pt-6 border-t border-gray-50">
-                                        <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <div className="space-y-4 pt-6 border-t border-border">
+                                        <label className="text-sm font-bold text-foreground flex items-center gap-2">
                                             <History className="w-4 h-4 text-primary" /> 최근 분석 이력
                                         </label>
                                         <div className="flex flex-wrap gap-2">
@@ -701,7 +701,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                                 <button
                                                     key={i}
                                                     onClick={() => selectHistory(h)}
-                                                    className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-full text-xs font-bold text-gray-600 hover:bg-primary hover:text-white hover:border-primary transition-all flex items-center gap-2 group"
+                                                    className="px-4 py-2 bg-background border border-border rounded-full text-xs font-bold text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all flex items-center gap-2 group"
                                                 >
                                                     {h.keyword}
                                                     <span className="text-[10px] opacity-40 group-hover:opacity-100">{h.platform.split('_')[1]}</span>
@@ -739,11 +739,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 )}
 
                 {/* Footer Buttons */}
-                <div className="mt-12 flex items-center justify-between pt-8 border-t border-gray-50">
+                <div className="mt-12 flex items-center justify-between pt-8 border-t border-border">
                     <button
                         disabled={currentStep === 1}
                         onClick={() => setCurrentStep(prev => prev > 1 ? (prev - 1) as Step : prev)}
-                        className="flex items-center gap-2 text-gray-400 font-bold hover:text-gray-600 transition-colors disabled:opacity-0"
+                        className="flex items-center gap-2 text-muted-foreground font-bold hover:text-foreground transition-colors disabled:opacity-0"
                     >
                         <ChevronLeft className="w-5 h-5" /> 이전으로
                     </button>

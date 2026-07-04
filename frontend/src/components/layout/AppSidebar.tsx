@@ -18,7 +18,6 @@ import {
     TrendingUp,
     FileText,
     Bot,
-    BrainCircuit,
     HandCoins,
     Lightbulb,
     Layers,
@@ -85,7 +84,7 @@ export function AppSidebar() {
         <>
             {/* Mobile Toggle Button */}
             <button
-                className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg"
+                className="md:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar text-sidebar-fg rounded-lg shadow-lg"
                 onClick={() => setMobileOpen(!mobileOpen)}
                 aria-label="메뉴"
             >
@@ -104,24 +103,21 @@ export function AppSidebar() {
             <aside
                 className={cn(
                     "fixed inset-y-0 left-0 z-40 w-64 flex flex-col",
-                    "bg-slate-900 shadow-sidebar",
+                    "bg-sidebar text-sidebar-fg shadow-sidebar",
                     "transition-transform duration-300 ease-in-out",
                     "md:translate-x-0",
                     mobileOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
                 {/* Logo Area */}
-                <div className="h-16 flex items-center px-5 border-b border-slate-800 flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 flex-shrink-0">
-                            <BrainCircuit className="h-[18px] w-[18px] text-white" />
-                        </div>
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-white font-bold text-[15px] tracking-tight">KeywordLens</span>
-                            <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-semibold tracking-wide">
-                                Pro
-                            </span>
-                        </div>
+                <div className="h-[72px] flex items-center px-6 border-b border-white/10 flex-shrink-0">
+                    <div className="flex flex-col gap-0.5">
+                        <span className="font-display text-[19px] font-semibold tracking-[0.02em] text-sidebar-fg">
+                            KeywordLens
+                        </span>
+                        <span className="text-[10px] tracking-[0.22em] text-gold uppercase">
+                            Marketing Insight
+                        </span>
                     </div>
                 </div>
 
@@ -129,7 +125,7 @@ export function AppSidebar() {
                 <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-5">
                     {menuGroups.map((group) => (
                         <div key={group.label}>
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 px-3 mb-1.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 px-3 mb-1.5">
                                 {group.label}
                             </p>
                             <div className="space-y-0.5">
@@ -145,28 +141,28 @@ export function AppSidebar() {
                                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium",
                                                 "transition-all duration-150",
                                                 active
-                                                    ? "bg-indigo-500/10 text-indigo-400"
-                                                    : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-200"
+                                                    ? "bg-gold/[0.16] text-gold-bright font-semibold"
+                                                    : "text-white/60 hover:bg-white/[0.07] hover:text-white/90"
                                             )}
                                         >
                                             <item.icon
                                                 className={cn(
                                                     "h-4 w-4 flex-shrink-0",
-                                                    active ? "text-indigo-400" : "text-slate-500"
+                                                    active ? "text-gold-bright" : "text-white/45"
                                                 )}
                                             />
                                             <span className="flex-1">{item.title}</span>
                                             {badge && !active && (
                                                 <span
                                                     className="text-[9px] font-semibold px-1.5 py-0.5 rounded
-                                                               bg-slate-700/60 text-slate-400 flex-shrink-0"
+                                                               bg-white/10 text-white/45 flex-shrink-0"
                                                     title="외부 소스 연동 시 실측값이 표출됩니다"
                                                 >
                                                     {badge}
                                                 </span>
                                             )}
                                             {active && (
-                                                <ChevronRight className="h-3 w-3 text-indigo-400 flex-shrink-0" />
+                                                <ChevronRight className="h-3 w-3 text-gold-bright flex-shrink-0" />
                                             )}
                                         </Link>
                                     );
@@ -177,22 +173,22 @@ export function AppSidebar() {
                 </nav>
 
                 {/* User Profile */}
-                <div className="p-3 border-t border-slate-800 flex-shrink-0">
-                    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-slate-800 transition-colors">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                <div className="p-3 border-t border-white/10 flex-shrink-0">
+                    <div className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-white/[0.06] transition-colors">
+                        <div className="h-9 w-9 rounded-full bg-gold flex items-center justify-center font-display text-sm font-semibold text-sidebar flex-shrink-0">
                             {user?.name?.charAt(0).toUpperCase() || "A"}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-200 truncate">
+                            <p className="text-sm font-medium text-sidebar-fg truncate">
                                 {user?.name || "Admin"}
                             </p>
-                            <p className="text-xs text-slate-500 truncate">
+                            <p className="text-xs text-white/45 truncate">
                                 {user?.email || "admin@keywordlens.com"}
                             </p>
                         </div>
                         <button
                             onClick={logout}
-                            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
+                            className="p-1.5 text-white/45 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors flex-shrink-0"
                             title="로그아웃"
                         >
                             <LogOut className="h-4 w-4" />

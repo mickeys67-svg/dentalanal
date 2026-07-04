@@ -15,7 +15,7 @@ export function KeywordSummary({ rankings, competitors, isLoading }: KeywordSumm
         return (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse" />
+                    <div key={i} className="h-24 rounded-xl bg-secondary animate-pulse" />
                 ))}
             </div>
         );
@@ -62,7 +62,7 @@ export function KeywordSummary({ rankings, competitors, isLoading }: KeywordSumm
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">추적 키워드</CardTitle>
-                    <Hash className="h-4 w-4 text-gray-500" />
+                    <Hash className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{totalKeywords} <span className="text-xs text-muted-foreground font-normal">개</span></div>
@@ -74,7 +74,7 @@ export function KeywordSummary({ rankings, competitors, isLoading }: KeywordSumm
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">경쟁 강도</CardTitle>
-                    <Users className="h-4 w-4 text-purple-500" />
+                    <Users className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
                     {topCompetitor ? (

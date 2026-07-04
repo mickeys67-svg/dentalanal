@@ -24,14 +24,14 @@ export const Notification: React.FC<NotificationProps> = ({ message, type, onClo
     const icons = {
         SUCCESS: <CheckCircle className="h-5 w-5 text-success" />,
         ERROR: <AlertCircle className="h-5 w-5 text-red-500" />,
-        INFO: <Info className="h-5 w-5 text-indigo-500" />,
+        INFO: <Info className="h-5 w-5 text-primary" />,
         WARNING: <AlertCircle className="h-5 w-5 text-amber-500" />,
     };
 
     const styles = {
         SUCCESS: "bg-success/10 border-success/20",
         ERROR: "bg-red-50 border-red-100",
-        INFO: "bg-indigo-50 border-indigo-100",
+        INFO: "bg-primary/10 border-primary",
         WARNING: "bg-amber-50 border-amber-100",
     };
 
@@ -41,9 +41,9 @@ export const Notification: React.FC<NotificationProps> = ({ message, type, onClo
             styles[type]
         )}>
             {icons[type]}
-            <p className="text-sm font-medium text-gray-800">{message}</p>
+            <p className="text-sm font-medium text-foreground">{message}</p>
             <button onClick={onClose} className="p-1 hover:bg-black/5 rounded-full transition-colors">
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4 text-muted-foreground" />
             </button>
         </div>
     );

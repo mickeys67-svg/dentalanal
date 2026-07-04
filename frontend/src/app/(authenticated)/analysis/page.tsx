@@ -106,7 +106,7 @@ export default function AnalysisPage() {
         // [Safety Check] Ensure data is valid array
         if (!funnelData || !Array.isArray(funnelData) || funnelData.length === 0) {
             return (
-                <div className="h-80 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-xl border border-dashed">
+                <div className="h-80 flex flex-col items-center justify-center text-muted-foreground bg-background rounded-xl border border-dashed">
                     <Target className="h-10 w-10 mb-2 opacity-20" />
                     <span>퍼널 데이터가 없습니다.</span>
                 </div>
@@ -136,32 +136,32 @@ export default function AnalysisPage() {
 
         // [Safety Check]
         if (!cohortData || !Array.isArray(cohortData) || cohortData.length === 0) {
-            return <div className="h-80 flex items-center justify-center text-gray-400">데이터가 없습니다.</div>;
+            return <div className="h-80 flex items-center justify-center text-muted-foreground">데이터가 없습니다.</div>;
         }
 
         return (
             <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="p-3 font-bold text-gray-500">유입 월</th>
-                            <th className="p-3 font-bold text-gray-500">모수</th>
-                            {[0, 1, 2, 3, 4, 5].map(m => <th key={m} className="p-3 font-bold text-gray-500">{m}개월 후</th>)}
+                        <tr className="bg-background border-b border-border">
+                            <th className="p-3 font-bold text-muted-foreground">유입 월</th>
+                            <th className="p-3 font-bold text-muted-foreground">모수</th>
+                            {[0, 1, 2, 3, 4, 5].map(m => <th key={m} className="p-3 font-bold text-muted-foreground">{m}개월 후</th>)}
                         </tr>
                     </thead>
                     <tbody>
                         {cohortData.map((row: CohortRow, i: number) => (
-                            <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                <td className="p-3 font-semibold text-gray-700">{row.month}</td>
-                                <td className="p-3 text-gray-400">{row.size}명</td>
+                            <tr key={i} className="border-b border-border hover:bg-secondary">
+                                <td className="p-3 font-semibold text-foreground">{row.month}</td>
+                                <td className="p-3 text-muted-foreground">{row.size}명</td>
                                 {Array.isArray(row.retention) && row.retention.map((val: number, j: number) => (
                                     <td key={j} className="p-3">
                                         <div className={clsx(
                                             "w-full py-2 rounded text-center font-bold",
-                                            val > 80 ? "bg-indigo-600 text-white" :
-                                                val > 60 ? "bg-indigo-400 text-white" :
-                                                    val > 40 ? "bg-indigo-200 text-indigo-800" :
-                                                        "bg-indigo-50 text-indigo-400"
+                                            val > 80 ? "bg-primary text-white" :
+                                                val > 60 ? "bg-primary/70 text-white" :
+                                                    val > 40 ? "bg-primary/15 text-primary" :
+                                                        "bg-primary/10 text-primary"
                                         )}>
                                             {val}%
                                         </div>
@@ -180,7 +180,7 @@ export default function AnalysisPage() {
 
         // [Safety Check]
         if (!attributionData || !Array.isArray(attributionData) || attributionData.length === 0) {
-            return <div className="h-80 flex items-center justify-center text-gray-400">기여도 데이터가 없습니다.</div>;
+            return <div className="h-80 flex items-center justify-center text-muted-foreground">기여도 데이터가 없습니다.</div>;
         }
 
         return (
@@ -192,7 +192,7 @@ export default function AnalysisPage() {
                             onClick={() => setAttrModel(model)}
                             className={clsx(
                                 "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all",
-                                attrModel === model ? "bg-primary text-white" : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                                attrModel === model ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-secondary"
                             )}
                         >
                             {model === 'first_touch' ? '처음 터치' : model === 'last_touch' ? '마지막 터치' : '선형 기여'}
@@ -225,25 +225,25 @@ export default function AnalysisPage() {
 
         // [Safety Check]
         if (!segmentData || !Array.isArray(segmentData) || segmentData.length === 0) {
-            return <div className="h-80 flex items-center justify-center text-gray-400">세그먼트 데이터가 없습니다.</div>;
+            return <div className="h-80 flex items-center justify-center text-muted-foreground">세그먼트 데이터가 없습니다.</div>;
         }
 
         return (
             <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
                     <thead>
-                        <tr className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider">
+                        <tr className="bg-background text-muted-foreground font-bold uppercase tracking-wider">
                             <th className="p-4">세그먼트</th>
                             <th className="p-4 text-center">방문자</th>
                             <th className="p-4 text-center">전환율</th>
                             <th className="p-4 text-center">ROAS</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border">
                         {segmentData.map((row: SegmentRow, i: number) => (
-                            <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="p-4 font-semibold text-gray-700">{row.segment}</td>
-                                <td className="p-4 text-center text-gray-500">{row.visitors.toLocaleString()}</td>
+                            <tr key={i} className="hover:bg-secondary transition-colors">
+                                <td className="p-4 font-semibold text-foreground">{row.segment}</td>
+                                <td className="p-4 text-center text-muted-foreground">{row.visitors.toLocaleString()}</td>
                                 <td className="p-4 text-center">
                                     <span className="font-bold text-success">{row.conversion_rate}%</span>
                                 </td>
@@ -284,8 +284,8 @@ export default function AnalysisPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2">
-                        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                            <h4 className="text-sm font-bold text-gray-800 mb-4">순위 변동 트렌드 (14일)</h4>
+                        <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                            <h4 className="text-sm font-bold text-foreground mb-4">순위 변동 트렌드 (14일)</h4>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={trendData}>
@@ -308,23 +308,23 @@ export default function AnalysisPage() {
                                 </ResponsiveContainer>
                             </div>
                             {(!trendData || trendData.length === 0) && !isTrendLoading && (
-                                <div className="text-center py-10 text-gray-400 text-xs mt-[-150px]">
+                                <div className="text-center py-10 text-muted-foreground text-xs mt-[-150px]">
                                     트렌드 데이터를 불러올 수 없습니다. (충분한 이력이 필요합니다)
                                 </div>
                             )}
                         </div>
                     </div>
-                    <div className="lg:col-span-1 border rounded-xl p-4 bg-gray-50/50">
-                        <h4 className="text-sm font-bold text-gray-800 mb-4">실시간 현황 요약</h4>
+                    <div className="lg:col-span-1 border rounded-xl p-4 bg-secondary">
+                        <h4 className="text-sm font-bold text-foreground mb-4">실시간 현황 요약</h4>
                         <div className="space-y-4">
-                            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                                <div className="text-[10px] text-gray-400">현재 순위</div>
-                                <div className="text-2xl font-black text-indigo-600">
+                            <div className="p-3 bg-card rounded-lg shadow-sm border border-border">
+                                <div className="text-[10px] text-muted-foreground">현재 순위</div>
+                                <div className="text-2xl font-black text-primary">
                                     {rankingData?.find((r: any) => r.title.includes(selectedClient?.name || ''))?.rank || '권외'}
                                 </div>
                             </div>
-                            <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                                <div className="text-[10px] text-gray-400">전일 대비</div>
+                            <div className="p-3 bg-card rounded-lg shadow-sm border border-border">
+                                <div className="text-[10px] text-muted-foreground">전일 대비</div>
                                 <div className="text-lg font-bold text-success">▲ 2 (Simulated)</div>
                             </div>
                         </div>
@@ -334,14 +334,14 @@ export default function AnalysisPage() {
                 <div className="overflow-x-auto border rounded-xl overflow-hidden">
                     <table className="w-full text-xs text-left">
                         <thead>
-                            <tr className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider">
+                            <tr className="bg-background text-muted-foreground font-bold uppercase tracking-wider">
                                 <th className="p-4 w-16 text-center">순위</th>
                                 <th className="p-4">대상 (Title/Target)</th>
                                 <th className="p-4">링크</th>
                                 <th className="p-4 text-right">수집 시간</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border">
                             {rankingData?.map((row: any, i: number) => {
                                 // [Safety Check]
                                 const rank = row?.rank || '-';
@@ -351,16 +351,16 @@ export default function AnalysisPage() {
                                 const timeStr = row?.created_at ? new Date(row.created_at).toLocaleTimeString() : '-';
 
                                 return (
-                                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="p-4 text-center font-bold text-gray-900">{rank}</td>
-                                        <td className="p-4 font-semibold text-gray-700">
+                                    <tr key={i} className="hover:bg-secondary transition-colors">
+                                        <td className="p-4 text-center font-bold text-foreground">{rank}</td>
+                                        <td className="p-4 font-semibold text-foreground">
                                             {title}
-                                            {blogName && <span className="text-gray-400 text-[10px] ml-2">({blogName})</span>}
+                                            {blogName && <span className="text-muted-foreground text-[10px] ml-2">({blogName})</span>}
                                         </td>
-                                        <td className="p-4 text-gray-500 truncate max-w-[200px]">
+                                        <td className="p-4 text-muted-foreground truncate max-w-[200px]">
                                             {link !== '#' ? <a href={link} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">{link}</a> : '-'}
                                         </td>
-                                        <td className="p-4 text-right text-gray-400">
+                                        <td className="p-4 text-right text-muted-foreground">
                                             {timeStr}
                                         </td>
                                     </tr>
@@ -368,7 +368,7 @@ export default function AnalysisPage() {
                             })}
                             {(!rankingData || rankingData.length === 0) && (
                                 <tr>
-                                    <td colSpan={4} className="p-8 text-center text-gray-400">
+                                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
                                         데이터가 없습니다. 키워드를 확인하거나 스크래핑을 실행해주세요.
                                     </td>
                                 </tr>
@@ -386,7 +386,7 @@ export default function AnalysisPage() {
         // [Safety Check] Ensure data is valid array
         if (!sovData || !Array.isArray(sovData) || sovData.length === 0) {
             return (
-                <div className="flex flex-col items-center justify-center p-20 text-gray-400 bg-gray-50 rounded-xl border border-dashed">
+                <div className="flex flex-col items-center justify-center p-20 text-muted-foreground bg-background rounded-xl border border-dashed">
                     <Activity className="h-10 w-10 mb-2 opacity-20" />
                     <span>데이터가 수집되지 않았습니다.</span>
                     <span className="text-xs mt-1">(조사가 진행 중이거나 연결된 데이터가 없습니다)</span>
@@ -424,15 +424,15 @@ export default function AnalysisPage() {
                             const score = typeof item?.sov_score === 'number' ? item.sov_score : 0;
 
                             return (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div key={idx} className="flex items-center justify-between p-3 bg-background rounded-xl">
                                     <div>
-                                        <div className="text-sm font-bold text-gray-900">{keyword}</div>
-                                        <div className="text-[10px] text-gray-400">최고 순위: {rank}위</div>
+                                        <div className="text-sm font-bold text-foreground">{keyword}</div>
+                                        <div className="text-[10px] text-muted-foreground">최고 순위: {rank}위</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-lg font-bold text-indigo-600">{score.toFixed(1)}%</div>
-                                        <div className="w-24 bg-gray-200 h-1 rounded-full mt-1 overflow-hidden">
-                                            <div className="bg-indigo-500 h-full" style={{ width: `${score}%` }} />
+                                        <div className="text-lg font-bold text-primary">{score.toFixed(1)}%</div>
+                                        <div className="w-24 bg-secondary h-1 rounded-full mt-1 overflow-hidden">
+                                            <div className="bg-primary h-full" style={{ width: `${score}%` }} />
                                         </div>
                                     </div>
                                 </div>
@@ -465,8 +465,8 @@ export default function AnalysisPage() {
             </Head>
             <div className="flex flex-col gap-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">데이터 심층 분석 (Deep Analytics)</h1>
-                    <p className="text-gray-500">정교한 분석 엔진으로 마케팅 퍼널과 기여도를 측정하세요.</p>
+                    <h1 className="text-2xl font-bold text-foreground">데이터 심층 분석 (Deep Analytics)</h1>
+                    <p className="text-muted-foreground">정교한 분석 엔진으로 마케팅 퍼널과 기여도를 측정하세요.</p>
                 </div>
             </div>
 
@@ -480,24 +480,24 @@ export default function AnalysisPage() {
                                 "w-full text-left p-4 rounded-xl border transition-all duration-200",
                                 selectedType === type.id
                                     ? "bg-primary/5 border-primary/20 shadow-sm"
-                                    : "bg-white border-gray-100 hover:border-gray-200"
+                                    : "bg-card border-border hover:border-border"
                             )}
                         >
                             <div className="flex items-center gap-3">
                                 <div className={clsx(
                                     "p-2 rounded-lg",
-                                    selectedType === type.id ? "bg-primary text-white" : "bg-gray-50 text-gray-400"
+                                    selectedType === type.id ? "bg-primary text-white" : "bg-background text-muted-foreground"
                                 )}>
                                     <type.icon className="h-5 w-5" />
                                 </div>
                                 <div>
                                     <h4 className={clsx(
                                         "text-sm font-semibold",
-                                        selectedType === type.id ? "text-primary" : "text-gray-700"
+                                        selectedType === type.id ? "text-primary" : "text-foreground"
                                     )}>
                                         {type.name}
                                     </h4>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">{type.description}</p>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">{type.description}</p>
                                 </div>
                             </div>
                         </button>
@@ -520,8 +520,8 @@ export default function AnalysisPage() {
                                 <li className="flex items-start gap-4">
                                     <div className="mt-1 h-2 w-2 rounded-full bg-success"></div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-800">성능 최적화 지점 발견</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">
+                                        <p className="text-sm font-medium text-foreground">성능 최적화 지점 발견</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
                                             {selectedType === 'funnel' ? "상단 퍼널에서 하단 전환까지의 흐름이 시각화되었습니다. 병목 지점을 확인하세요." :
                                                 selectedType === 'cohort' ? "유입 시기별 고객 유지율(Retention)을 통해 장기 가치를 분석할 수 있습니다." :
                                                     selectedType === 'attribution' ? "각 매체가 전환에 기여한 비중을 가중치 모델별로 확인할 수 있습니다." :
@@ -533,18 +533,18 @@ export default function AnalysisPage() {
                                 <li className="flex items-start gap-4">
                                     <div className="mt-1 h-2 w-2 rounded-full bg-amber-400"></div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-800">주의 필요</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">문의 신청 단계에서의 이탈률이 0.5% 증가했습니다. 폼 최적화가 필요합니다.</p>
+                                        <p className="text-sm font-medium text-foreground">주의 필요</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">문의 신청 단계에서의 이탈률이 0.5% 증가했습니다. 폼 최적화가 필요합니다.</p>
                                     </div>
                                 </li>
                             </ul>
                         </DashboardWidget>
                         <DashboardWidget title="AI 권장 전략">
-                            <div className="flex flex-col h-full bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                                <p className="text-xs text-indigo-700 leading-relaxed font-medium">
+                            <div className="flex flex-col h-full bg-primary/10 p-4 rounded-xl border border-primary">
+                                <p className="text-xs text-primary leading-relaxed font-medium">
                                     "현재 분석 데이터에 따르면 초기 유입은 소셜 매체가 우세하나, 최종 전환은 검색 광고가 리드하고 있습니다. 크로스 채널 리마케팅 비중을 20% 높이는 전략을 추천합니다."
                                 </p>
-                                <div className="mt-4 flex items-center gap-2 text-[10px] text-indigo-400">
+                                <div className="mt-4 flex items-center gap-2 text-[10px] text-primary">
                                     <TrendingUp className="h-3 w-3" /> AI 심층 분석 결과
                                 </div>
                             </div>

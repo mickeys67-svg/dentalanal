@@ -61,7 +61,7 @@ export default function SettlementPage() {
 
     if (!selectedClient) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
+            <div className="flex flex-col items-center justify-center h-[60vh] text-muted-foreground">
                 <Calculator className="w-16 h-16 mb-4 opacity-10" />
                 <p>프로젝트를 선택하면 정산 내역을 확인할 수 있습니다.</p>
             </div>
@@ -76,13 +76,13 @@ export default function SettlementPage() {
             {/* ... Rest of JSX remains basically same but using typed s */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">정산 및 대금 관리</h1>
-                    <p className="text-sm text-gray-500">광고 집행 데이터 기반 자동 정산 및 청구 내역입니다.</p>
+                    <h1 className="text-2xl font-bold text-foreground">정산 및 대금 관리</h1>
+                    <p className="text-sm text-muted-foreground">광고 집행 데이터 기반 자동 정산 및 청구 내역입니다.</p>
                 </div>
                 <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-opacity-90 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-opacity-90 transition-all disabled:opacity-50"
                 >
                     {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     지난 달 정산 생성 (실시간)
@@ -90,18 +90,18 @@ export default function SettlementPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-indigo-50 text-primary rounded-lg text-xs font-bold uppercase tracking-wider">미결제 합계</div>
+                        <div className="p-2 bg-primary/10 text-primary rounded-lg text-xs font-bold uppercase tracking-wider">미결제 합계</div>
                         <AlertCircle className="w-4 h-4 text-amber-400" />
                     </div>
-                    <div className="text-3xl font-black text-gray-900 font-mono">
+                    <div className="text-3xl font-black text-foreground font-mono">
                         ₩ {pendingAmount.toLocaleString()}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-2">입금 대기 중인 정산 건수: {settlements?.filter(s => s.status === 'PENDING').length || 0}건</p>
+                    <p className="text-[10px] text-muted-foreground mt-2">입금 대기 중인 정산 건수: {settlements?.filter(s => s.status === 'PENDING').length || 0}건</p>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-gray-900">
+                <div className="bg-card p-6 rounded-3xl border border-border shadow-sm text-foreground">
                     <div className="flex items-center justify-between mb-4">
                         <div className="p-2 bg-green-50 text-green-600 rounded-lg text-xs font-bold uppercase tracking-wider">최근 광고비 집행</div>
                         <Calendar className="w-4 h-4 text-green-400" />
@@ -109,16 +109,16 @@ export default function SettlementPage() {
                     <div className="text-3xl font-black font-mono tracking-tighter">
                         ₩ {lastMonthSpend.toLocaleString()}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-2">대상 기간: {settlements?.[0]?.period || '없음'}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2">대상 기간: {settlements?.[0]?.period || '없음'}</p>
                 </div>
 
-                <div className="bg-indigo-600 p-6 rounded-3xl shadow-xl shadow-indigo-100 text-white flex flex-col justify-between">
+                <div className="bg-primary p-6 rounded-3xl shadow-xl text-white flex flex-col justify-between">
                     <div>
-                        <div className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-1">PRO SERVICE</div>
+                        <div className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">PRO SERVICE</div>
                         <h3 className="font-bold">자동 세금계산서 발행</h3>
                     </div>
                     <div className="flex items-center justify-between">
-                        <p className="text-[10px] text-indigo-100 leading-tight">정산 완료 시 이메일로<br />영수증이 자동 발송됩니다.</p>
+                        <p className="text-[10px] text-white/70 leading-tight">정산 완료 시 이메일로<br />영수증이 자동 발송됩니다.</p>
                         <Receipt className="w-8 h-8 opacity-20" />
                     </div>
                 </div>
@@ -129,14 +129,14 @@ export default function SettlementPage() {
                 {isLoading ? (
                     <div className="py-20 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                 ) : !settlements || settlements.length === 0 ? (
-                    <div className="py-20 text-center text-gray-400 font-medium">
+                    <div className="py-20 text-center text-muted-foreground font-medium">
                         정산 내역이 없습니다. (지난 달 정산을 생성해주세요)
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                                <tr className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border">
                                     <th className="py-4 px-2">정산 기간</th>
                                     <th className="py-4">상태</th>
                                     <th className="py-4">집행 광고비</th>
@@ -146,27 +146,27 @@ export default function SettlementPage() {
                                     <th className="py-4 text-right">관리</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-border">
                                 {settlements.map((s: Settlement) => (
-                                    <tr key={s.id} className="hover:bg-gray-50/50 transition-all group">
+                                    <tr key={s.id} className="hover:bg-secondary transition-all group">
                                         <td className="py-6 px-2">
-                                            <div className="font-bold text-gray-900">{s.period}</div>
-                                            <div className="text-[10px] text-gray-400">ID: {s.id.substring(0, 8)}...</div>
+                                            <div className="font-bold text-foreground">{s.period}</div>
+                                            <div className="text-[10px] text-muted-foreground">ID: {s.id.substring(0, 8)}...</div>
                                         </td>
                                         <td className="py-6">
                                             <span className={clsx(
                                                 "px-3 py-1 rounded-full text-[10px] font-black tracking-tighter uppercase",
                                                 s.status === 'PAID' ? "bg-green-100 text-green-700" :
                                                     s.status === 'PENDING' ? "bg-amber-100 text-amber-700" :
-                                                        "bg-gray-100 text-gray-400"
+                                                        "bg-secondary text-muted-foreground"
                                             )}>
                                                 {s.status}
                                             </span>
                                         </td>
-                                        <td className="py-6 font-mono text-xs text-gray-500">₩ {s.total_spend.toLocaleString()}</td>
-                                        <td className="py-6 font-mono text-xs text-gray-500">₩ {s.fee_amount.toLocaleString()} (+{(s.tax_amount).toLocaleString()})</td>
-                                        <td className="py-6 font-black text-sm text-gray-900 font-mono">₩ {s.total_amount.toLocaleString()}</td>
-                                        <td className="py-6 text-xs text-gray-400">
+                                        <td className="py-6 font-mono text-xs text-muted-foreground">₩ {s.total_spend.toLocaleString()}</td>
+                                        <td className="py-6 font-mono text-xs text-muted-foreground">₩ {s.fee_amount.toLocaleString()} (+{(s.tax_amount).toLocaleString()})</td>
+                                        <td className="py-6 font-black text-sm text-foreground font-mono">₩ {s.total_amount.toLocaleString()}</td>
+                                        <td className="py-6 text-xs text-muted-foreground">
                                             {s.paid_at ? (
                                                 <div className="flex items-center gap-1 text-green-600 font-bold">
                                                     <CheckCircle2 className="w-3 h-3" /> {new Date(s.paid_at).toLocaleDateString()}
@@ -187,7 +187,7 @@ export default function SettlementPage() {
                                                         입금 확인
                                                     </button>
                                                 )}
-                                                <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-all">
+                                                <button className="p-2 hover:bg-secondary rounded-lg text-muted-foreground transition-all">
                                                     <Download className="w-4 h-4" />
                                                 </button>
                                             </div>

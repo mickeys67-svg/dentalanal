@@ -350,7 +350,7 @@ export default function KeywordIntelligencePage() {
                                         <span
                                             key={r.keyword}
                                             title={`월간검색수 ${fmtMasked(r.monthly_total, r.masked)}`}
-                                            className="text-slate-700 hover:text-blue-600 transition-colors"
+                                            className="text-foreground hover:text-blue-600 transition-colors"
                                             style={{
                                                 fontSize: `${fontSizeFor(r.monthly_total ?? 0, relMin, relMax)}px`,
                                                 lineHeight: 1.3,

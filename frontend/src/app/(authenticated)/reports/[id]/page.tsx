@@ -56,12 +56,12 @@ export default function ReportDetailPage() {
             <div className="flex flex-col h-screen items-center justify-center space-y-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <div className="text-center">
-                    <h2 className="text-xl font-bold text-gray-900">리포트 생성 중...</h2>
-                    <p className="text-gray-500">데이터를 분석하여 리포트를 생성하고 있습니다. 잠시만 기다려 주세요.</p>
+                    <h2 className="text-xl font-bold text-foreground">리포트 생성 중...</h2>
+                    <p className="text-muted-foreground">데이터를 분석하여 리포트를 생성하고 있습니다. 잠시만 기다려 주세요.</p>
                 </div>
                 <button
                     onClick={() => window.location.reload()}
-                    className="mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="mt-4 px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary transition-colors"
                 >
                     새로고침
                 </button>
@@ -72,14 +72,14 @@ export default function ReportDetailPage() {
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 py-4 border-b border-gray-100 print:hidden">
+            <div className="flex items-center justify-between sticky top-0 bg-card/80 backdrop-blur-md z-10 py-4 border-b border-border print:hidden">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <button onClick={() => router.back()} className="p-2 hover:bg-secondary rounded-full transition-colors">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">{report.title}</h1>
-                        <p className="text-xs text-gray-500">생성일: {new Date(report.created_at).toLocaleString()}</p>
+                        <h1 className="text-xl font-bold text-foreground">{report.title}</h1>
+                        <p className="text-xs text-muted-foreground">생성일: {new Date(report.created_at).toLocaleString()}</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -103,7 +103,7 @@ export default function ReportDetailPage() {
                                 toast.error('PDF 다운로드에 실패했습니다.');
                             }
                         }}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-all font-medium"
+                        className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm hover:bg-secondary transition-all font-medium"
                     >
                         <Download className="w-4 h-4" /> PDF 다운로드
                     </button>
@@ -115,7 +115,7 @@ export default function ReportDetailPage() {
                             setEmailSummary('');
                             setShowEmailModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 rounded-lg text-sm hover:bg-indigo-50 transition-all font-medium"
+                        className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-lg text-sm hover:bg-primary/10 transition-all font-medium"
                     >
                         <Mail className="w-4 h-4" /> 이메일 발송
                     </button>
@@ -134,30 +134,30 @@ export default function ReportDetailPage() {
             {/* 이메일 발송 모달 */}
             {showEmailModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
                         {/* 모달 헤더 */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                        <div className="flex items-center justify-between p-6 border-b border-border">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                    <Mail className="w-5 h-5 text-indigo-600" />
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Mail className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-gray-900">리포트 이메일 발송</h2>
-                                    <p className="text-xs text-gray-400">PDF 리포트를 이메일로 전달합니다</p>
+                                    <h2 className="text-base font-bold text-foreground">리포트 이메일 발송</h2>
+                                    <p className="text-xs text-muted-foreground">PDF 리포트를 이메일로 전달합니다</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowEmailModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                className="p-2 hover:bg-secondary rounded-full transition-colors"
                             >
-                                <X className="w-4 h-4 text-gray-500" />
+                                <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                         </div>
 
                         {/* 모달 본문 */}
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                                     수신자 이메일 <span className="text-red-400">*</span>
                                 </label>
                                 <input
@@ -165,12 +165,12 @@ export default function ReportDetailPage() {
                                     value={emailTo}
                                     onChange={e => setEmailTo(e.target.value)}
                                     placeholder="example@email.com (쉼표로 여러 명 입력)"
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all"
+                                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                 />
-                                <p className="text-[10px] text-gray-400 mt-1">쉼표(,)로 여러 수신자를 구분하세요</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">쉼표(,)로 여러 수신자를 구분하세요</p>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                                     이메일 제목 <span className="text-red-400">*</span>
                                 </label>
                                 <input
@@ -178,11 +178,11 @@ export default function ReportDetailPage() {
                                     value={emailSubject}
                                     onChange={e => setEmailSubject(e.target.value)}
                                     placeholder="이메일 제목을 입력하세요"
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all"
+                                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                                     요약 메시지
                                 </label>
                                 <textarea
@@ -190,7 +190,7 @@ export default function ReportDetailPage() {
                                     onChange={e => setEmailSummary(e.target.value)}
                                     placeholder="클라이언트에게 전달할 핵심 내용을 간략히 입력하세요 (선택)"
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all resize-none"
+                                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
                                 />
                             </div>
                         </div>
@@ -199,7 +199,7 @@ export default function ReportDetailPage() {
                         <div className="flex gap-3 p-6 pt-0">
                             <button
                                 onClick={() => setShowEmailModal(false)}
-                                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                                className="flex-1 px-4 py-2.5 border border-border text-muted-foreground rounded-lg text-sm font-medium hover:bg-secondary transition-colors"
                             >
                                 취소
                             </button>
@@ -228,7 +228,7 @@ export default function ReportDetailPage() {
                                         setIsSending(false);
                                     }
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSending ? (
                                     <><Loader2 className="w-4 h-4 animate-spin" /> 발송 중...</>
@@ -242,10 +242,10 @@ export default function ReportDetailPage() {
             )}
 
             {/* Print Header (Only visible when printing) */}
-            <div className="hidden print:block text-center border-b-2 border-gray-900 pb-8 mb-10">
+            <div className="hidden print:block text-center border-b-2 border-foreground pb-8 mb-10">
                 <div className="text-3xl font-black mb-2">DIGITAL AD PERFORMANCE REPORT</div>
-                <div className="text-sm text-gray-400">{report.title} | {new Date(report.created_at).toLocaleDateString()}</div>
-                <div className="text-xs mt-4 text-gray-400">Copyright © 2024 KeywordLens All Right Reserved.</div>
+                <div className="text-sm text-muted-foreground">{report.title} | {new Date(report.created_at).toLocaleDateString()}</div>
+                <div className="text-xs mt-4 text-muted-foreground">Copyright © 2024 KeywordLens All Right Reserved.</div>
             </div>
 
             {/* Dynamic Widgets */}
@@ -280,10 +280,10 @@ function renderWidget(widget: any) {
             const bench = widget.data;
             if (!bench) return null;
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm space-y-6">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">{widget.title || "업종별 벤치마크 비교"}</h3>
-                        <span className="text-xs bg-indigo-50 text-primary px-3 py-1 rounded-full font-semibold">업종: {bench.industry}</span>
+                        <h3 className="text-lg font-bold text-foreground">{widget.title || "업종별 벤치마크 비교"}</h3>
+                        <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-semibold">업종: {bench.industry}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {renderBenchMetric("클릭률 (CTR)", bench.client_kpis?.ctr, bench.industry_avg?.avg_ctr, "%")}
@@ -296,8 +296,8 @@ function renderWidget(widget: any) {
             const sovData = widget.data?.keyword_details || [];
             if (!sovData.length) return null;
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "키워드별 노출 점유율 (SOV)"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "키워드별 노출 점유율 (SOV)"}</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
@@ -312,12 +312,12 @@ function renderWidget(widget: any) {
                         </div>
                         <div className="space-y-4">
                             {sovData.map((item: any, idx: number) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                                    <div className="text-sm font-bold text-gray-900">{item.keyword}</div>
+                                <div key={idx} className="flex items-center justify-between p-3 bg-secondary rounded-xl">
+                                    <div className="text-sm font-bold text-foreground">{item.keyword}</div>
                                     <div className="text-right">
-                                        <div className="text-lg font-bold text-indigo-600 font-mono">{item.sov.toFixed(1)}%</div>
-                                        <div className="w-24 bg-gray-200 h-1 rounded-full mt-1 overflow-hidden">
-                                            <div className="bg-indigo-500 h-full" style={{ width: `${item.sov}%` }} />
+                                        <div className="text-lg font-bold text-primary font-mono">{item.sov.toFixed(1)}%</div>
+                                        <div className="w-24 bg-secondary h-1 rounded-full mt-1 overflow-hidden">
+                                            <div className="bg-primary h-full" style={{ width: `${item.sov}%` }} />
                                         </div>
                                     </div>
                                 </div>
@@ -329,24 +329,24 @@ function renderWidget(widget: any) {
         case "COMPETITORS":
             const competitors = widget.data?.competitors || [];
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || `경쟁사 점유율 분석 (${widget.data?.keyword || ''})`}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || `경쟁사 점유율 분석 (${widget.data?.keyword || ''})`}</h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead>
-                                <tr className="text-gray-400 font-bold border-b border-gray-50 uppercase tracking-tighter text-[10px]">
+                                <tr className="text-muted-foreground font-bold border-b border-border uppercase tracking-tighter text-[10px]">
                                     <th className="pb-4">브랜드명</th>
                                     <th className="pb-4">노출 횟수</th>
                                     <th className="pb-4">평균 순위</th>
                                     <th className="pb-4">점유율</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-border">
                                 {competitors.map((c: any, i: number) => (
-                                    <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-4 font-bold text-gray-800">{c.name}</td>
-                                        <td className="py-4 text-gray-500 font-mono">{c.rank_count}회</td>
-                                        <td className="py-4 text-gray-500 font-mono">{c.avg_rank.toFixed(1)}위</td>
+                                    <tr key={i} className="hover:bg-secondary transition-colors">
+                                        <td className="py-4 font-bold text-foreground">{c.name}</td>
+                                        <td className="py-4 text-muted-foreground font-mono">{c.rank_count}회</td>
+                                        <td className="py-4 text-muted-foreground font-mono">{c.avg_rank.toFixed(1)}위</td>
                                         <td className="py-4 font-bold text-primary font-mono">{c.share.toFixed(1)}%</td>
                                     </tr>
                                 ))}
@@ -358,18 +358,18 @@ function renderWidget(widget: any) {
         case "RANKINGS":
             const rankings = widget.data || [];
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "주요 키워드 노출 순위 리스트"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "주요 키워드 노출 순위 리스트"}</h3>
                     <div className="space-y-3">
                         {rankings.map((r: any, i: number) => (
-                            <div key={i} className="flex items-center justify-between p-4 border border-gray-50 rounded-xl hover:shadow-sm transition-all group">
+                            <div key={i} className="flex items-center justify-between p-4 border border-border rounded-xl hover:shadow-sm transition-all group">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-primary font-black text-xs">
+                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
                                         {r.rank}
                                     </div>
-                                    <div className="font-bold text-gray-800 group-hover:text-primary transition-colors">{r.title}</div>
+                                    <div className="font-bold text-foreground group-hover:text-primary transition-colors">{r.title}</div>
                                 </div>
-                                <div className="text-[10px] text-gray-400">수집: {new Date(r.created_at).toLocaleTimeString()}</div>
+                                <div className="text-[10px] text-muted-foreground">수집: {new Date(r.created_at).toLocaleTimeString()}</div>
                             </div>
                         ))}
                     </div>
@@ -377,14 +377,14 @@ function renderWidget(widget: any) {
             );
         case "FUNNEL":
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "퍼널 분석 데이터"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "퍼널 분석 데이터"}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {widget.data?.map((f: any, i: number) => (
-                            <div key={i} className="p-6 bg-gray-50 rounded-xl relative overflow-hidden group">
-                                <div className="text-xs text-gray-400 mb-1">{f.stage}</div>
-                                <div className="text-2xl font-bold text-gray-900">{f.value.toLocaleString()}</div>
-                                {f.rate && <div className="text-[10px] font-bold text-indigo-500 mt-2">{f.unit}: {f.rate}%</div>}
+                            <div key={i} className="p-6 bg-secondary rounded-xl relative overflow-hidden group">
+                                <div className="text-xs text-muted-foreground mb-1">{f.stage}</div>
+                                <div className="text-2xl font-bold text-foreground">{f.value.toLocaleString()}</div>
+                                {f.rate && <div className="text-[10px] font-bold text-primary mt-2">{f.unit}: {f.rate}%</div>}
                                 <div className="absolute right-0 bottom-0 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Target className="w-16 h-16 -mr-4 -mb-4" />
                                 </div>
@@ -395,8 +395,8 @@ function renderWidget(widget: any) {
             );
         case "LINE_CHART":
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "성과 추이 일자별 리포트"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "성과 추이 일자별 리포트"}</h3>
                     <div className="h-80">
                         <PerformanceChart data={widget.data} title={widget.title || "성과 추이"} />
                     </div>
@@ -405,10 +405,10 @@ function renderWidget(widget: any) {
         case "TREND_CHART": {
             const trendData = widget.data?.data || [];
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "광고 성과 일별 트렌드"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "광고 성과 일별 트렌드"}</h3>
                     {trendData.length === 0 ? (
-                        <div className="h-[280px] flex items-center justify-center text-gray-400 text-sm">수집된 트렌드 데이터가 없습니다.</div>
+                        <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">수집된 트렌드 데이터가 없습니다.</div>
                     ) : (
                         <div className="h-[280px]">
                             <ResponsiveContainer width="100%" height="100%">
@@ -437,10 +437,10 @@ function renderWidget(widget: any) {
         case "ROI_COMPARISON": {
             const campaigns = widget.data?.campaigns || [];
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "캠페인별 ROAS 비교"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "캠페인별 ROAS 비교"}</h3>
                     {campaigns.length === 0 ? (
-                        <div className="text-center text-gray-400 text-sm py-10">캠페인 데이터가 없습니다.</div>
+                        <div className="text-center text-muted-foreground text-sm py-10">캠페인 데이터가 없습니다.</div>
                     ) : (
                         <>
                             <div className="h-[240px] mb-6">
@@ -463,7 +463,7 @@ function renderWidget(widget: any) {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
                                     <thead>
-                                        <tr className="text-gray-400 font-bold border-b border-gray-50 uppercase tracking-tighter text-[10px]">
+                                        <tr className="text-muted-foreground font-bold border-b border-border uppercase tracking-tighter text-[10px]">
                                             <th className="pb-3">캠페인명</th>
                                             <th className="pb-3">플랫폼</th>
                                             <th className="pb-3">ROAS</th>
@@ -472,15 +472,15 @@ function renderWidget(widget: any) {
                                             <th className="pb-3">CPA</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50">
+                                    <tbody className="divide-y divide-border">
                                         {campaigns.map((c: any, i: number) => (
-                                            <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                                <td className="py-3 font-bold text-gray-800 text-xs max-w-[160px] truncate">{c.campaign_name}</td>
-                                                <td className="py-3 text-gray-400 text-xs">{c.platform}</td>
-                                                <td className="py-3 font-bold text-indigo-600 font-mono">{c.roas}%</td>
-                                                <td className="py-3 text-gray-500 font-mono text-xs">₩{Number(c.total_spend).toLocaleString()}</td>
-                                                <td className="py-3 text-gray-500 font-mono text-xs">{c.total_conversions}건</td>
-                                                <td className="py-3 text-gray-500 font-mono text-xs">₩{Number(c.cpa).toLocaleString()}</td>
+                                            <tr key={i} className="hover:bg-secondary transition-colors">
+                                                <td className="py-3 font-bold text-foreground text-xs max-w-[160px] truncate">{c.campaign_name}</td>
+                                                <td className="py-3 text-muted-foreground text-xs">{c.platform}</td>
+                                                <td className="py-3 font-bold text-primary font-mono">{c.roas}%</td>
+                                                <td className="py-3 text-muted-foreground font-mono text-xs">₩{Number(c.total_spend).toLocaleString()}</td>
+                                                <td className="py-3 text-muted-foreground font-mono text-xs">{c.total_conversions}건</td>
+                                                <td className="py-3 text-muted-foreground font-mono text-xs">₩{Number(c.cpa).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -494,15 +494,15 @@ function renderWidget(widget: any) {
         case "COHORT": {
             const cohorts: Array<{ month: string; size: number; retention: number[] }> = widget.data?.cohorts || [];
             return (
-                <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6">{widget.title || "고객 코호트 리텐션 분석"}</h3>
+                <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-6">{widget.title || "고객 코호트 리텐션 분석"}</h3>
                     {cohorts.length === 0 ? (
-                        <div className="text-center text-gray-400 text-sm py-10">코호트 분석을 위한 리드 데이터가 없습니다.</div>
+                        <div className="text-center text-muted-foreground text-sm py-10">코호트 분석을 위한 리드 데이터가 없습니다.</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead>
-                                    <tr className="text-gray-400 font-bold border-b border-gray-100 text-[10px] uppercase tracking-wider">
+                                    <tr className="text-muted-foreground font-bold border-b border-border text-[10px] uppercase tracking-wider">
                                         <th className="pb-3 pr-4">코호트</th>
                                         <th className="pb-3 pr-4">규모</th>
                                         {[0, 1, 2, 3, 4, 5].map(m => (
@@ -510,11 +510,11 @@ function renderWidget(widget: any) {
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50">
+                                <tbody className="divide-y divide-border">
                                     {cohorts.map((c, i) => (
-                                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                            <td className="py-3 pr-4 font-bold text-gray-700 text-xs">{c.month}</td>
-                                            <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{c.size}명</td>
+                                        <tr key={i} className="hover:bg-secondary transition-colors">
+                                            <td className="py-3 pr-4 font-bold text-foreground text-xs">{c.month}</td>
+                                            <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">{c.size}명</td>
                                             {[0, 1, 2, 3, 4, 5].map(m => {
                                                 const val = c.retention[m];
                                                 const opacity = val != null ? Math.max(0.1, val / 100) : 0;
@@ -531,7 +531,7 @@ function renderWidget(widget: any) {
                                                                 {val}%
                                                             </span>
                                                         ) : (
-                                                            <span className="text-gray-200 text-xs">—</span>
+                                                            <span className="text-muted-foreground/60 text-xs">—</span>
                                                         )}
                                                     </td>
                                                 );
@@ -547,8 +547,8 @@ function renderWidget(widget: any) {
         }
         case "AI_DIAGNOSIS":
             return (
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden break-inside-avoid">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                <div className="bg-primary/10 p-8 rounded-2xl border border-primary shadow-sm relative overflow-hidden break-inside-avoid">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl"></div>
                     <div className="flex items-center gap-2 mb-6 text-primary">
                         <div className="p-2 bg-white rounded-lg shadow-sm">
                             <AlertCircle className="w-5 h-5" />
@@ -556,7 +556,7 @@ function renderWidget(widget: any) {
                         <h3 className="text-lg font-bold">AI 마케팅 정밀 진단</h3>
                     </div>
                     <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 prose max-w-none">
-                        <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-sans text-sm md:text-base">
+                        <div className="whitespace-pre-wrap text-foreground leading-relaxed font-sans text-sm md:text-base">
                             {widget.data?.content}
                         </div>
                     </div>
@@ -564,7 +564,7 @@ function renderWidget(widget: any) {
             );
         default:
             return (
-                <div className="p-6 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center text-gray-400">
+                <div className="p-6 bg-secondary rounded-xl border border-dashed border-border text-center text-muted-foreground">
                     지원되지 않는 위젯 타입입니다: {widget.type}
                 </div>
             );
@@ -577,20 +577,20 @@ function renderBenchMetric(label: string, clientVal: number, avgVal: number, uni
 
     return (
         <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-500">{label}</p>
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
             <div className="flex items-end gap-2">
-                <span className="text-2xl font-bold text-gray-900">{clientVal.toLocaleString()}{unit}</span>
+                <span className="text-2xl font-bold text-foreground">{clientVal.toLocaleString()}{unit}</span>
                 <span className={`text-xs font-bold mb-1 px-1.5 py-0.5 rounded ${isGood ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {diff > 0 ? '+' : ''}{diff.toLocaleString()}{unit}
                 </span>
             </div>
-            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                 <div
                     className={`h-full rounded-full ${isGood ? 'bg-success' : 'bg-primary'}`}
                     style={{ width: `${Math.min((clientVal / (avgVal * 1.5)) * 100, 100)}%` }}
                 ></div>
             </div>
-            <p className="text-[10px] text-gray-400">시장 평균: {avgVal.toLocaleString()}{unit}</p>
+            <p className="text-[10px] text-muted-foreground">시장 평균: {avgVal.toLocaleString()}{unit}</p>
         </div>
     );
 }

@@ -37,7 +37,7 @@ function ScoreBar({ score }: { score: number }) {
         pct >= 70 ? "bg-red-500" : pct >= 40 ? "bg-orange-400" : "bg-yellow-400";
     return (
         <div className="flex items-center gap-2 w-full">
-            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
             </div>
             <span className="text-xs font-semibold tabular-nums w-8 text-right">{pct}%</span>
@@ -63,14 +63,14 @@ function CompetitorCard({
         <>
             <div
                 className={`border rounded-lg p-4 transition-colors ${
-                    danger ? "border-red-200 bg-red-50/30" : "border-gray-200 bg-white"
+                    danger ? "border-red-200 bg-red-50/30" : "border-border bg-card"
                 }`}
             >
                 <div className="flex items-start gap-3">
                     {/* 순위 뱃지 */}
                     <div
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                            rank <= 3 ? "bg-red-500" : rank <= 6 ? "bg-orange-400" : "bg-gray-400"
+                            rank <= 3 ? "bg-red-500" : rank <= 6 ? "bg-orange-400" : "bg-muted-foreground"
                         }`}
                     >
                         {rank}
@@ -187,15 +187,15 @@ export function CompetitorDiscovery({ clientId, platform = "NAVER_PLACE" }: Comp
                     </CardTitle>
 
                     {/* 플랫폼 토글 */}
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
                         {platforms.map((p) => (
                             <button
                                 key={p}
                                 onClick={() => setActivePlatform(p)}
                                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                                     activePlatform === p
-                                        ? "bg-white text-gray-900 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-700"
+                                        ? "bg-card text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                                 {PLATFORM_LABELS[p]}
@@ -271,7 +271,7 @@ export function CompetitorDiscovery({ clientId, platform = "NAVER_PLACE" }: Comp
 
                 {/* 초기 안내 */}
                 {!result && !discoverMutation.isPending && (
-                    <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg bg-gray-50">
+                    <div className="text-center py-6 text-sm text-muted-foreground border rounded-lg bg-background">
                         버튼을 클릭하면 최근 30일 데이터를 분석해<br />
                         경쟁 업체를 자동으로 발굴합니다.
                     </div>
