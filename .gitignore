@@ -95,3 +95,6 @@ test_api2.py
 
 # GitHub PAT for git-push.ps1 (NEVER commit)
 .github_token
+
+# 배포용 크리덴셜 (NEVER commit)
+deploy-keys.env
