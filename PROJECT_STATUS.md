@@ -59,10 +59,10 @@ gcloud run deploy dentalanal-backend --source "E:\dentalanal\backend" --project 
   - `NAVER_CLIENT_ID/SECRET` 주입(rev `00005-gm7`). 대규모 시뮬 7/7 PASS.
   - 실데이터 검증: 크리스마스 12월=100 vs 6월=1.79(계절성), 키워드별 피크 상이, 성별/연령 세그먼트 13개 정상(partial=False).
 
-### ⚠️ 코드는 준비됨, API 키 주입 필요
-| 기능 | 필요 키 |
-|------|---------|
-| 유튜브 영상수/조회수 | `YOUTUBE_API_KEY` (아직 미주입 → 정직 503) |
+- **유튜브 언급량** (영상 조회수/월별 분포) ✅ 2026-07-04 활성화
+  - `YOUTUBE_API_KEY` 주입(rev `00008-pnn`). 라이브 검증: 다이어트 조회수합 18.1M / 임플란트 5.4M(키워드별 상이).
+  - ⚠️ "영상수(근사)"는 유튜브 totalResults 특성상 100만 상한 근사치(코드에 "근사" 표기). 신뢰수치=샘플 조회수합·월별 분포.
+  - 유튜브는 객관적 공개 데이터라 **운영자 공용 키 1개가 정답**(사용자별 키 불필요). 네이버 키워드/데이터랩과 동일 성격.
 
 → 라이브 주입: `gcloud run services update dentalanal-backend --project snsproject-501311 --region us-west1 --update-env-vars "KEY=값"` (재빌드 없이 새 리비전, 기존 env 보존). 값은 gitignore된 `deploy-keys.env` 자리에 넣어둠.
 
