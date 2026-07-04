@@ -238,14 +238,14 @@ def get_market_landscape(
     return service.get_competitor_landscape(keyword, p_type, top_n)
 
 @router.get("/market/spend")
-def estimate_competitor_spend(
+async def estimate_competitor_spend(
     keywords: str, # Comma separated
     db: Session = Depends(get_db)
 ):
     from app.services.competitor_service import CompetitorService
     service = CompetitorService(db)
     kw_list = [k.strip() for k in keywords.split(",")]
-    return service.estimate_ad_spend(kw_list)
+    return await service.estimate_ad_spend(kw_list)
 
 @router.get("/market/reputation")
 def compare_market_reputation(

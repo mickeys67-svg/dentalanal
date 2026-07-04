@@ -127,15 +127,16 @@ export default function LoginPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Email */}
+                        {/* Email or ID */}
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-slate-700">이메일</label>
+                            <label className="text-sm font-semibold text-slate-700">이메일 또는 아이디</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                                 <input
-                                    type="email"
+                                    type="text"
                                     required
-                                    placeholder="admin@keywordlens.com"
+                                    autoComplete="username"
+                                    placeholder="admin"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl

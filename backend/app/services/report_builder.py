@@ -347,10 +347,16 @@ class ReportBuilderService:
             cpc = (spend / clicks) if clicks > 0 else 0
             cvr = (conversions / clicks * 100) if clicks > 0 else 0
 
+            # ⚠️ 가짜 데이터 금지:
+            #   client_kpis 는 실측 MetricsDaily 집계값(실데이터)이므로 유지한다.
+            #   industry_avg(업종평균)는 이전엔 고정 상수 2.5/800/3.2 를 지어냈다(사기).
+            #   실제 업종 벤치마크 데이터 소스가 없으므로 지어내지 않고 미제공으로 표기한다.
             return {
                 "industry": "일반",
                 "client_kpis": {"ctr": round(ctr, 2), "cpc": round(cpc), "cvr": round(cvr, 2)},
-                "industry_avg": {"avg_ctr": 2.5, "avg_cpc": 800, "avg_cvr": 3.2}
+                "industry_avg": None,
+                "industry_avg_available": False,
+                "note": "업종 평균 벤치마크는 실데이터 소스 미연동으로 제공하지 않습니다.",
             }
 
         elif widget_type == "SOV":
