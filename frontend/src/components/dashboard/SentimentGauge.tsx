@@ -2,9 +2,10 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { BrainCircuit, Loader2, Info } from "lucide-react";
+import { BrainCircuit, Loader2 } from "lucide-react";
 import { UI_TEXT } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
+import { ConnectPrompt } from "@/components/ui/ConnectPrompt";
 
 interface SentimentItem {
     name: string;
@@ -50,15 +51,12 @@ export function SentimentGauge({ isLoading, data }: SentimentGaugeProps) {
             </CardHeader>
             <CardContent className="flex-1 min-h-0">
                 {!hasRealData ? (
-                    // 정직한 미연동 상태 — 가짜 수치 없음
-                    <div className="h-full w-full flex flex-col items-center justify-center text-center px-6">
-                        <Info className="w-8 h-8 text-slate-300 mb-3" />
-                        <p className="text-sm font-medium text-slate-500">감성 분석 미연동</p>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                            실제 언급 텍스트 기반 감성 분류가 아직 연동되지 않았습니다.
-                            <br />연동 전까지는 수치를 표시하지 않습니다.
-                        </p>
-                    </div>
+                    // 정직한 미연동 상태 — 가짜 수치 없이 전문 연동 안내
+                    <ConnectPrompt
+                        title="감성 분석 미연동"
+                        description="고객님의 감성 분석 엔진(언급 텍스트 기반)을 연동하시면 실측 긍정·중립·부정 비율이 표출됩니다."
+                        compact
+                    />
                 ) : (
                     <div className="h-full w-full relative">
                         <ResponsiveContainer width="100%" height="100%">

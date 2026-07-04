@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, AlertCircle, Youtube, CheckCircle2, XCircle } from "lucide-react";
 import { getYouTubeStats, getSnsStatus, YouTubeStats } from "@/lib/api";
+import { ConnectPrompt } from "@/components/ui/ConnectPrompt";
 import {
     BarChart,
     Bar,
@@ -94,6 +95,13 @@ export default function SnsPage() {
                                         )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">{s.method}</p>
+                                    {!s.configured && (
+                                        <p className="text-[11px] text-indigo-500 mt-1.5 font-medium">
+                                            {s.supported
+                                                ? "고객님의 API 키 연동 시 실측 데이터가 표출됩니다."
+                                                : "전문 데이터 벤더 연동 시 실측 데이터가 표출됩니다."}
+                                        </p>
+                                    )}
                                 </div>
                             ))}
                     </div>
@@ -108,28 +116,39 @@ export default function SnsPage() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <div className="flex gap-2">
-                        <Input
-                            value={keyword}
-                            placeholder="검색어 입력 (예: 다이어트)"
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && keyword.trim() && mutation.mutate(keyword.trim())}
+                    {status && !status.youtube?.configured ? (
+                        // YouTube 미연동 — 검색 대신 전문 연동 안내 (503 대신 명확한 가이드)
+                        <ConnectPrompt
+                            source="YouTube Data API 키"
+                            description="고객님의 YouTube Data API 키를 연동하시면 검색어 포함 영상수·조회수 실측 데이터가 표출됩니다."
+                            actionHint="[설정 > 데이터 수집]"
                         />
-                        <Button
-                            onClick={() => keyword.trim() && mutation.mutate(keyword.trim())}
-                            disabled={mutation.isPending}
-                        >
-                            {mutation.isPending ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                                <Search className="h-4 w-4 mr-1" />
-                            )}
-                            검색
-                        </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        ⚠️ 총 영상수는 유튜브 공식 근사치, 조회수는 현재 누적값(시점별 추이 아님)입니다.
-                    </p>
+                    ) : (
+                        <>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={keyword}
+                                    placeholder="검색어 입력 (예: 다이어트)"
+                                    onChange={(e) => setKeyword(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && keyword.trim() && mutation.mutate(keyword.trim())}
+                                />
+                                <Button
+                                    onClick={() => keyword.trim() && mutation.mutate(keyword.trim())}
+                                    disabled={mutation.isPending}
+                                >
+                                    {mutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    ) : (
+                                        <Search className="h-4 w-4 mr-1" />
+                                    )}
+                                    검색
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                ⚠️ 총 영상수는 유튜브 공식 근사치, 조회수는 현재 누적값(시점별 추이 아님)입니다.
+                            </p>
+                        </>
+                    )}
                 </CardContent>
             </Card>
 
