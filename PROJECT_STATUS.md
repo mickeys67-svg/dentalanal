@@ -105,9 +105,19 @@ gcloud run deploy dentalanal-backend --source "E:\dentalanal\backend" --project 
 - **estimate_ad_spend**: cpc=1500/volume=2000 고정 → **네이버 키워드도구 실측 연동**. 라이브 검증: 다이어트 43,950 / 임플란트 24,940 / 노트북 215,200(키워드마다 실측), 고정2000·가짜cpc 제거. CPC 실소스 없어 광고비(원)는 미제공.
 - **평판/Meta/Google/벤치마크/SentimentGauge**: 의사난수·하드코딩 제거 → 정직 "미연동" 상태. (평판 rating=null 라이브 검증)
 
-### 🟡 남은 가짜/가정 (실연동하려면 외부 소스 필요)
-- `roi_optimizer.py` `DEFAULT_CONVERSION_VALUE=150000` — 클라이언트 미설정 시 이 값으로 ROAS 계산(가정값). → 전환수익 설정 강제 + ROAS "가정" 플래그 노출 권장.
-- **진짜 연동에 외부 자격/소스 필요**: Meta/Google 광고성과(광고계정 OAuth), 감성분석(감성분류 모델), 업종 벤치마크(벤치마크 데이터소스). 없으면 현행 "미연동" 정직 상태 유지.
+### ✅ ROI 가정값 투명화 + 메뉴 정리 (2026-07-04, 커밋 `e6889ee`)
+- `roi_optimizer.py`: `DEFAULT_CONVERSION_VALUE=150000` 조용한 가정 제거 → `ASSUMED_CONVERSION_VALUE`, 응답에 `conversion_value_assumed` 플래그. ads 페이지에 "가정 ROAS(실측 아님)" 경고 배너. detect_inefficient_ads 이슈 문구에 명시.
+- AppSidebar: 핵심(키워드·SNS 인텔리전스) 히어로 그룹화 + 외부 연동 필요 항목에 "연동" 배지(빈 화면 오해 방지). 라우트 유지.
+- 미연동 빈 영역 전문 안내 `ConnectPrompt` 컴포넌트(감성게이지·SNS 적용): "고객님의 {소스} 연동 시 실측 데이터가 표출됩니다".
+
+### ⚠️ 외부 자격/소스 필요 — 제공 시 실연동 (가짜 안 만듦, 현재 정직 "미연동")
+| 기능 | 필요한 것 | 넣는 곳 |
+|------|-----------|---------|
+| Meta 광고 성과 | Meta 광고계정 + `META_ADS_ACCESS_TOKEN`/`META_AD_ACCOUNT_ID` (+Graph API 구현) | env |
+| Google 광고 성과 | Google Ads 계정 + `GOOGLE_ADS_*` developer token (승인 필요) | env |
+| 감성분석 | LLM 키(`ANTHROPIC_API_KEY` 등) — 현재 config에 없음 | env + 분류 구현 |
+| 업종 벤치마크 | 외부 벤치마크 데이터소스 (또는 자사 클라이언트 실데이터 집계) | - |
+→ 네이버 키처럼 값 제공 시 각 통합 구현+검증. 소스 없이는 가짜 대신 "미연동" 유지.
 
 ### ✅ 견고성 수정 완료 (2026-07-04, 대규모 시뮬레이션 발견 → 수정·재배포·재검증)
 `naver_keyword_tool.py`, Cloud Run revision `dentalanal-backend-00004-bd9`:
