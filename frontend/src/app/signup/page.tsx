@@ -100,7 +100,7 @@ export default function SignupPage() {
                     </ul>
                 </div>
 
-                <p className="relative z-10 text-white/45 text-xs">© 2025 KeywordLens. All rights reserved.</p>
+                <p className="relative z-10 text-white/45 text-xs">© 2026 KeywordLens. All rights reserved.</p>
             </div>
 
             {/* Right form panel */}

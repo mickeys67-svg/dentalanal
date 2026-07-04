@@ -102,7 +102,7 @@ export default function LoginPage() {
                 {/* Footer */}
                 <div className="relative z-10">
                     <p className="text-white/45 text-xs">
-                        © 2025 KeywordLens. All rights reserved.
+                        © 2026 KeywordLens. All rights reserved.
                     </p>
                 </div>
             </div>
