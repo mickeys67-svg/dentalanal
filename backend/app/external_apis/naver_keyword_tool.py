@@ -12,6 +12,7 @@ Naver Search Ad - Keyword Tool API (키워드도구)
 자격증명: NAVER_AD_CUSTOMER_ID / NAVER_AD_ACCESS_LICENSE / NAVER_AD_SECRET_KEY
 """
 import time
+import asyncio
 import hmac
 import hashlib
 import base64
@@ -26,6 +27,12 @@ logger = logging.getLogger(__name__)
 
 # 키워드도구는 한 번에 최대 5개의 hintKeywords 를 허용합니다.
 MAX_HINTS_PER_CALL = 5
+
+# 네이버 검색광고 API 는 짧은 시간 다수 호출 시 429(Too Many Requests)를 반환한다.
+# 프로세스 내 동시 호출을 제한해 429 발생 자체를 줄이고(세마포어),
+# 그래도 발생하면 지수 백오프로 재시도한다. (naver_datalab.py 선례와 동일)
+KEYWORDTOOL_CONCURRENCY = 2
+_kw_semaphore = asyncio.Semaphore(KEYWORDTOOL_CONCURRENCY)
 
 
 def _parse_count(value: Any) -> Tuple[Optional[int], bool]:
@@ -91,8 +98,13 @@ class NaverKeywordToolClient:
             "X-Signature": signature,
         }
 
-    async def _fetch_raw(self, hint_keywords: List[str]) -> List[Dict[str, Any]]:
-        """최대 5개 힌트 키워드에 대한 원시 keywordList 반환."""
+    async def _fetch_raw(
+        self, hint_keywords: List[str], max_retries: int = 3
+    ) -> List[Dict[str, Any]]:
+        """
+        최대 5개 힌트 키워드에 대한 원시 keywordList 반환.
+        동시 호출 제한(세마포어) + 429 지수 백오프 재시도로 레이트리밋에 견딘다.
+        """
         # 네이버 키워드도구는 공백 포함 키워드를 허용하지 않으므로 공백 제거.
         cleaned = [k.replace(" ", "") for k in hint_keywords if k.strip()]
         if not cleaned:
@@ -102,19 +114,31 @@ class NaverKeywordToolClient:
             "hintKeywords": ",".join(cleaned),
             "showDetail": "1",
         }
-        headers = self._headers("GET", self.PATH)
 
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(
-                self.BASE_URL + self.PATH, headers=headers, params=params
-            )
-            if resp.status_code != 200:
-                logger.error(
-                    f"[KeywordTool] API error {resp.status_code}: {resp.text[:300]}"
-                )
-                resp.raise_for_status()
-            data = resp.json()
-        return data.get("keywordList", []) or []
+        async with _kw_semaphore:
+            async with httpx.AsyncClient(timeout=15) as client:
+                for attempt in range(max_retries + 1):
+                    # 서명은 timestamp 기반이므로 재시도마다 새로 생성해야 한다.
+                    headers = self._headers("GET", self.PATH)
+                    resp = await client.get(
+                        self.BASE_URL + self.PATH, headers=headers, params=params
+                    )
+                    if resp.status_code == 429 and attempt < max_retries:
+                        sleep_s = 0.5 * (2 ** attempt)
+                        logger.warning(
+                            f"[KeywordTool] 429 rate limit, {sleep_s}s 후 재시도 "
+                            f"({attempt+1}/{max_retries})"
+                        )
+                        await asyncio.sleep(sleep_s)
+                        continue
+                    if resp.status_code != 200:
+                        logger.error(
+                            f"[KeywordTool] API error {resp.status_code}: {resp.text[:300]}"
+                        )
+                        resp.raise_for_status()
+                    return resp.json().get("keywordList", []) or []
+        # 재시도 소진(마지막 시도도 429) — 방어적
+        raise httpx.HTTPError("[KeywordTool] 429 재시도 소진")
 
     @staticmethod
     def _normalize_row(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -163,7 +187,28 @@ class NaverKeywordToolClient:
         for kw in keywords:
             if not kw.strip():
                 continue
-            rows = await self._fetch_raw([kw])
+            # 키워드별 예외 격리: 한 키워드(예: 이모지/특수문자로 네이버가 400 반환)가
+            # 실패해도 배치 전체를 죽이지 않고, 그 키워드만 no_data 로 표기한다.
+            try:
+                rows = await self._fetch_raw([kw])
+            except Exception as e:
+                logger.warning(f"[KeywordTool] 키워드 '{kw}' 조회 실패(건너뜀): {e}")
+                stats.append(
+                    {
+                        "keyword": kw,
+                        "input_keyword": kw,
+                        "monthly_pc": None,
+                        "monthly_mobile": None,
+                        "monthly_total": None,
+                        "monthly_masked": False,
+                        "monthly_avg_pc_clicks": None,
+                        "monthly_avg_mobile_clicks": None,
+                        "comp_idx": None,
+                        "no_data": True,
+                    }
+                )
+                related_map[kw] = []
+                continue
             normalized = [self._normalize_row(r) for r in rows]
             kw_norm = kw.replace(" ", "").lower()
 

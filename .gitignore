@@ -88,3 +88,7 @@ final_healthcheck.py
 quick_check.py
 check_deployment_status.py
 DEPLOYMENT_ANALYSIS.md
+
+# Local one-off debug/scratch scripts (never commit — may embed credentials)
+db_debug*.py
+test_api2.py
