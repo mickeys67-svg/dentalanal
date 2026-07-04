@@ -55,14 +55,16 @@ gcloud run deploy dentalanal-backend --source "E:\dentalanal\backend" --project 
 - **최초 검색일** 영속화 (`keyword_search_stats` 테이블)
 - **마스킹 정직 처리** (검색수 10 미만 → `< 10`, 상수 위장 없음)
 - 엑셀(CSV) 다운로드
+- **검색 트렌드 / 성별·연령 / 월별·요일별 (데이터랩)** ✅ 2026-07-04 활성화
+  - `NAVER_CLIENT_ID/SECRET` 주입(rev `00005-gm7`). 대규모 시뮬 7/7 PASS.
+  - 실데이터 검증: 크리스마스 12월=100 vs 6월=1.79(계절성), 키워드별 피크 상이, 성별/연령 세그먼트 13개 정상(partial=False).
 
 ### ⚠️ 코드는 준비됨, API 키 주입 필요
 | 기능 | 필요 키 |
 |------|---------|
-| 검색 트렌드 / 성별·연령 / 월별·요일별 (데이터랩) | `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` |
-| 유튜브 영상수/조회수 | `YOUTUBE_API_KEY` |
+| 유튜브 영상수/조회수 | `YOUTUBE_API_KEY` (아직 미주입 → 정직 503) |
 
-→ 백엔드 재배포 시 `--env-vars-file`(backend-env.yaml)에 추가하면 활성화.
+→ 라이브 주입: `gcloud run services update dentalanal-backend --project snsproject-501311 --region us-west1 --update-env-vars "KEY=값"` (재빌드 없이 새 리비전, 기존 env 보존). 값은 gitignore된 `deploy-keys.env` 자리에 넣어둠.
 
 ### ⛔ 미구현 (벤더/예산 결정 대기)
 - 인스타그램 / 엑스(X) / 틱톡 언급량 — 공식 API 제약. `/sns/status`가 "키 필요/벤더 필요"로 정직 표기.
@@ -97,12 +99,15 @@ gcloud run deploy dentalanal-backend --source "E:\dentalanal\backend" --project 
 
 ## 7. 알려진 이슈 / 남은 작업
 
-### 🔴 잔존 가짜 데이터 (NO FAKE DATA — 실연동 필요)
-리브랜딩 중 발견. 문구는 범용화했으나 **값은 여전히 가짜**:
-- `backend/app/services/competitor_service.py` `estimate_ad_spend` — 임의 cpc/volume (→ 네이버 키워드도구로 교체 가능)
-- `backend/app/services/report_builder.py` BENCHMARK — 업종평균 고정값(2.5 / 800 / 3.2)
-- `backend/app/services/meta_ads.py` — 목업 캠페인
-- 일부 대시보드 목업 (SentimentGauge 등)
+### ✅ 로그인 관문 + 가짜 데이터 제거 (2026-07-04, 사용자관점 분석 → 수정·배포·검증)
+커밋 `9ceb972`. 백엔드 rev `00006-j7g`, 프론트 rev `00007-ml2`:
+- **로그인 UI 관문**: 이메일 칸 `type=email`이 실제 아이디 `admin`을 거부하던 것 → `type=text`, 라벨 "이메일 또는 아이디". 라이브 검증(라벨/placeholder 서빙 확인).
+- **estimate_ad_spend**: cpc=1500/volume=2000 고정 → **네이버 키워드도구 실측 연동**. 라이브 검증: 다이어트 43,950 / 임플란트 24,940 / 노트북 215,200(키워드마다 실측), 고정2000·가짜cpc 제거. CPC 실소스 없어 광고비(원)는 미제공.
+- **평판/Meta/Google/벤치마크/SentimentGauge**: 의사난수·하드코딩 제거 → 정직 "미연동" 상태. (평판 rating=null 라이브 검증)
+
+### 🟡 남은 가짜/가정 (실연동하려면 외부 소스 필요)
+- `roi_optimizer.py` `DEFAULT_CONVERSION_VALUE=150000` — 클라이언트 미설정 시 이 값으로 ROAS 계산(가정값). → 전환수익 설정 강제 + ROAS "가정" 플래그 노출 권장.
+- **진짜 연동에 외부 자격/소스 필요**: Meta/Google 광고성과(광고계정 OAuth), 감성분석(감성분류 모델), 업종 벤치마크(벤치마크 데이터소스). 없으면 현행 "미연동" 정직 상태 유지.
 
 ### ✅ 견고성 수정 완료 (2026-07-04, 대규모 시뮬레이션 발견 → 수정·재배포·재검증)
 `naver_keyword_tool.py`, Cloud Run revision `dentalanal-backend-00004-bd9`:
