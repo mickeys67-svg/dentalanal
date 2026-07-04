@@ -92,3 +92,6 @@ DEPLOYMENT_ANALYSIS.md
 # Local one-off debug/scratch scripts (never commit — may embed credentials)
 db_debug*.py
 test_api2.py
+
+# GitHub PAT for git-push.ps1 (NEVER commit)
+.github_token
